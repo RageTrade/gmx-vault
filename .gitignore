@@ -1,0 +1,13 @@
+node_modules
+dist
+.vscode
+
+#Hardhat files
+cache
+artifacts
+typechain
+typechain-types
+coverage
+coverage.json
+deployments/localhost
+.env
