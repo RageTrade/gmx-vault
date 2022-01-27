@@ -1,0 +1,36 @@
+name: build-and-test
+
+on:
+  push:
+    branches: ['main']
+  pull_request:
+    branches: ['*']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: CI
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 16
+      - run: yarn install --frozen-lockfile
+      - run: yarn compile
+      - run: yarn test
+        env:
+          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+          MNEMONIC: ${{ secrets.MNEMONIC }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+  format:
+    runs-on: ubuntu-latest
+    environment: CI
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 16
+      - run: yarn install --frozen-lockfile
+      - run: yarn format
