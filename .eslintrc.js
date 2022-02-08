@@ -20,5 +20,6 @@ module.exports = {
       "error",
       { ignores: ["modules"] },
     ],
+    "quotes": [2, "single", { "avoidEscape": true }],
   },
 };

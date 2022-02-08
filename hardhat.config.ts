@@ -105,6 +105,10 @@ export default {
     externalArtifacts: [
       'node_modules/@uniswap/v3-core/artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json',
       'node_modules/@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3PoolDeployer.sol/IUniswapV3PoolDeployer.json',
+      'node_modules/@uniswap/v2-core/build/IUniswapV2Factory.json',
+      'node_modules/@uniswap/v2-core/build/IUniswapV2Pair.json',
+      'node_modules/@uniswap/v2-periphery/build/IUniswapV2Router02.json',
+      
     ],
   },
   etherscan: {
