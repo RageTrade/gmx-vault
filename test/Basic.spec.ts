@@ -259,7 +259,7 @@ describe('Clearing House Scenario 1', () => {
     wethUsdcSushiPair = await hre.ethers.getContractAt('IUniswapV2Pair', wethUsdcPairAddress);
     clearingHouse.addCollateralSupport(rBase.address, rBaseOracle.address, 300);
 
-    const baseVaultFactory = await hre.ethers.getContractFactory('BaseVault');
+    const baseVaultFactory = await hre.ethers.getContractFactory('BaseSushiVault');
     baseVault = await baseVaultFactory.deploy(wethUsdcPairAddress, 'RageVault', 'RV', vTokenAddress);
 
     const collateralTokenFactory = await hre.ethers.getContractFactory('CollateralToken');
