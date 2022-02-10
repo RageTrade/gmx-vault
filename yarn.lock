@@ -677,9 +677,9 @@
   resolved "https://registry.npmjs.org/@openzeppelin/contracts/-/contracts-4.4.2.tgz"
   integrity sha512-NyJV7sJgoGYqbtNUWgzzOGW4T6rR19FmX1IJgXGdapGPWsuMelGJn9h03nos0iqfforCbCB0iYIR0MtIuIFLLw==
 
-"@ragetrade/contracts@https://github.com/rage-trade/perpswap-contracts.git#cf9c45c8988b242efe56750581aef43a2f4c0ba6":
+"@ragetrade/contracts@https://github.com/rage-trade/perpswap-contracts.git#fac5f271942add6c0365adcc2bc81f75f02993eb":
   version "0.0.1"
-  resolved "https://github.com/rage-trade/perpswap-contracts.git#cf9c45c8988b242efe56750581aef43a2f4c0ba6"
+  resolved "https://github.com/rage-trade/perpswap-contracts.git#fac5f271942add6c0365adcc2bc81f75f02993eb"
   dependencies:
     "@134dd3v/arbos-precompiles" "^1.0.4"
     "@openzeppelin/contracts" "^4.0.0"
