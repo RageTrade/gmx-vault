@@ -26,6 +26,8 @@ import {
   IUniswapV2Pair,
   BaseVault,
   CollateralToken,
+  BaseSushiVault,
+  IAggregatorV3Interface,
 } from '../typechain-types';
 
 // import { ConstantsStruct } from '../typechain-types/ClearingHouse';
@@ -52,7 +54,7 @@ import {
   priceX128ToPrice,
 } from './utils/price-tick';
 
-import { smock } from '@defi-wonderland/smock';
+import { FakeContract, smock, SmockContractBase } from '@defi-wonderland/smock';
 import { ADDRESS_ZERO, priceToClosestTick } from '@uniswap/v3-sdk';
 const whaleForBase = '0x47ac0Fb4F2D84898e4D9E7b4DaB3C24507a6D503';
 const whaleForWETH = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
@@ -77,8 +79,10 @@ describe('Clearing House Scenario 1', () => {
   let sushiFactory: IUniswapV2Factory;
   let sushiRouter: IUniswapV2Router02;
   let wethUsdcSushiPair: IUniswapV2Pair;
-  let baseVault: BaseVault;
+  let baseVault: BaseSushiVault;
   let collateralToken: CollateralToken;
+  let usdcOracle: FakeContract<IAggregatorV3Interface>;
+  let wethOracle: FakeContract<IAggregatorV3Interface>;
 
   let miniChef: IMiniChefV2;
   let vPool: IUniswapV3Pool;
@@ -257,6 +261,7 @@ describe('Clearing House Scenario 1', () => {
     sushiRouter = (await hre.ethers.getContractAt('IUniswapV2Router02', SUSHI_ROUTER_ADDRESS)) as IUniswapV2Router02;
     const wethUsdcPairAddress = await sushiFactory.getPair(USDC_ADDRESS, WETH_ADDRESS);
     wethUsdcSushiPair = await hre.ethers.getContractAt('IUniswapV2Pair', wethUsdcPairAddress);
+    console.log(wethUsdcPairAddress);
     clearingHouse.addCollateralSupport(rBase.address, rBaseOracle.address, 300);
 
     const baseVaultFactory = await hre.ethers.getContractFactory('BaseSushiVault');
@@ -264,6 +269,9 @@ describe('Clearing House Scenario 1', () => {
 
     const collateralTokenFactory = await hre.ethers.getContractFactory('CollateralToken');
     collateralToken = await collateralTokenFactory.deploy();
+
+    usdcOracle = await smock.fake<IAggregatorV3Interface>('IAggregatorV3Interface');
+    wethOracle = await smock.fake<IAggregatorV3Interface>('IAggregatorV3Interface');
   });
 
   after(deactivateMainnetFork);
@@ -382,7 +390,26 @@ describe('Clearing House Scenario 1', () => {
       await wethUsdcSushiPair.connect(user0).approve(baseVault.address, UINT256_MAX);
     });
     it('Initialize', async () => {
-      await baseVault.__BaseVault_init(admin.address, clearingHouse.address, collateralToken.address);
+      const sushiParams = {
+        sushiRouter: sushiRouter.address,
+        token0: USDC_ADDRESS,
+        token1: WETH_ADDRESS,
+        token0Oracle: usdcOracle.address,
+        token1Oracle: wethOracle.address,
+        maxOracleDelayTime: 10n ** 5n,
+        sushiPair: wethUsdcSushiPair.address,
+        baseToToken0Route: [],
+        baseToToken1Route: [USDC_ADDRESS, WETH_ADDRESS],
+        token0ToBaseRoute: [],
+        token1ToBaseRoute: [WETH_ADDRESS, USDC_ADDRESS],
+      };
+      await baseVault.initialize(
+        admin.address,
+        clearingHouse.address,
+        collateralToken.address,
+        USDC_ADDRESS,
+        sushiParams,
+      );
     });
     it('Deposit', async () => {
       const lpTokenBalanceFinal = await wethUsdcSushiPair.balanceOf(user0.address);
@@ -390,6 +417,18 @@ describe('Clearing House Scenario 1', () => {
 
       const baseVaultBalance = await baseVault.balanceOf(user0.address);
       console.log(baseVaultBalance.toBigInt());
+    });
+  });
+
+  describe('#Sushi Vault', () => {
+    it('Market Value', async () => {
+      const block = await hre.ethers.provider.getBlock('latest');
+      initialBlockTimestamp = block.timestamp;
+      usdcOracle.latestRoundData.returns([0, 100000000, 0, block.timestamp, 0]);
+      wethOracle.latestRoundData.returns([0, 300000000000, 0, block.timestamp, 0]);
+
+      const value = await baseVault.getMarketValue(1);
+      console.log(value.toBigInt());
     });
   });
 });

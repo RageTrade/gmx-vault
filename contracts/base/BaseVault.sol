@@ -15,6 +15,8 @@ import { CollateralToken } from '../CollateralToken.sol';
 import { RTokenLib } from '@ragetrade/contracts/contracts/libraries/RTokenLib.sol';
 import { SignedMath } from '@ragetrade/contracts/contracts/libraries/SignedMath.sol';
 
+import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadata.sol';
+
 abstract contract BaseVault is IBaseVault, ERC4626, IBaseYeildStrategy, OwnableUpgradeable {
     using SafeCast for uint256;
     using SafeCast for int256;
@@ -26,6 +28,7 @@ abstract contract BaseVault is IBaseVault, ERC4626, IBaseYeildStrategy, OwnableU
     CollateralToken public rageCollateralToken;
     address public immutable VWETH_ADDRESS;
     uint32 public immutable VWETH_TRUNCATED_ADDRESS;
+    IERC20Metadata public rageBaseToken;
 
     constructor(
         ERC20 _asset,
@@ -40,14 +43,15 @@ abstract contract BaseVault is IBaseVault, ERC4626, IBaseYeildStrategy, OwnableU
     function __BaseVault_init(
         address _owner,
         address _rageClearingHouse,
-        address _rageCollateralToken
-    ) external initializer {
+        address _rageCollateralToken,
+        address _rageBaseToken
+    ) internal onlyInitializing {
         __Ownable_init();
         transferOwnership(_owner);
         rageClearingHouse = IClearingHouse(_rageClearingHouse);
         rageAccountNo = rageClearingHouse.createAccount();
         rageCollateralToken = CollateralToken(_rageCollateralToken);
-
+        rageBaseToken = IERC20Metadata(_rageBaseToken);
         //Give rageClearingHouse full allowance of rageCollateralToken and usdc
     }
 
@@ -64,10 +68,10 @@ abstract contract BaseVault is IBaseVault, ERC4626, IBaseYeildStrategy, OwnableU
         if (netProfit > 0) {
             //If net profit > 0 withdraw USDC and convert USDC into LP tokens
             rageClearingHouse.updateProfit(rageAccountNo, -1 * netProfit);
-            depositUsdc(uint256(netProfit));
+            depositBase(uint256(netProfit));
         } else if (netProfit < 0) {
             //If net profit > 0 convert LP tokens into USDC and deposit USDC to cover loss
-            withdrawUsdc(uint256(-1 * netProfit));
+            withdrawBase(uint256(-1 * netProfit));
             rageClearingHouse.updateProfit(rageAccountNo, -1 * netProfit);
         }
 
@@ -173,15 +177,15 @@ abstract contract BaseVault is IBaseVault, ERC4626, IBaseYeildStrategy, OwnableU
 
     function harvestFees() external virtual;
 
-    function getPrice() external virtual;
+    function getPriceX128() public view virtual returns (uint256 price);
 
     function getMarketValue(uint256 balance) public view virtual returns (uint256 marketValue);
 
     //To convert yeild token into USDC to cover loss on rage trade
-    function withdrawUsdc(uint256 balance) internal virtual returns (uint256 marketValue);
+    function withdrawBase(uint256 balance) internal virtual;
 
     //To deposit the USDC profit made from rage trade into yeild protocol
-    function depositUsdc(uint256 balance) internal virtual returns (uint256 marketValue);
+    function depositBase(uint256 balance) internal virtual;
 
     //To rebalance multiple collateral token
     function rebalanceCollateral() internal virtual;

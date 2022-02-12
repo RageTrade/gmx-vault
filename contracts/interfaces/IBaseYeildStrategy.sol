@@ -14,5 +14,5 @@ interface IBaseYeildStrategy {
     function harvestFees() external;
 
     //Returns the price of yeild token
-    function getPrice() external;
+    function getPriceX128() external view returns (uint256 priceX128);
 }
