@@ -6,13 +6,82 @@ import { BaseVault } from '../base/BaseVault.sol';
 import { BaseRangeStrategyVault } from '../rangeStrategy/BaseRangeStrategyVault.sol';
 import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
 
+import { IUniswapV2Router02 } from '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
+import { IUniswapV2Pair } from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
+
+import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+
+import { Math } from '../libraries/Math.sol';
+
+import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
+import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
+
+import { Pricing } from '../libraries/Pricing.sol';
+
+struct SushiParams {
+    address sushiRouter;
+    address sushiPair;
+    address token0;
+    address token1;
+    address token0Oracle;
+    address token1Oracle;
+    uint256 maxOracleDelayTime;
+    address[] baseToToken0Route;
+    address[] baseToToken1Route;
+    address[] token0ToBaseRoute;
+    address[] token1ToBaseRoute;
+}
+
 contract BaseSushiVault is BaseRangeStrategyVault {
+    using Math for uint256;
+    using FullMath for uint256;
+
+    IUniswapV2Router02 public sushiRouter;
+    IUniswapV2Pair public sushiPair;
+
+    address public token0;
+    address public token1;
+    address public token0Oracle;
+    address public token1Oracle;
+    uint256 public maxOracleDelayTime;
+
+    address[] public baseToToken0Route;
+    address[] public baseToToken1Route;
+    address[] public token0ToBaseRoute;
+    address[] public token1ToBaseRoute;
+
     constructor(
         ERC20 _asset,
         string memory _name,
         string memory _symbol,
         address _vWethAddress
     ) BaseVault(_asset, _name, _symbol, _vWethAddress) {}
+
+    function __BaseSushiVault_init(SushiParams memory _sushiParams) internal onlyInitializing {
+        sushiRouter = IUniswapV2Router02(_sushiParams.sushiRouter);
+        sushiPair = IUniswapV2Pair(_sushiParams.sushiPair);
+        token0 = _sushiParams.token0;
+        token1 = _sushiParams.token1;
+        token0Oracle = _sushiParams.token0Oracle;
+        token1Oracle = _sushiParams.token1Oracle;
+        maxOracleDelayTime = _sushiParams.maxOracleDelayTime;
+
+        baseToToken0Route = _sushiParams.baseToToken0Route;
+        baseToToken1Route = _sushiParams.baseToToken1Route;
+        token0ToBaseRoute = _sushiParams.token0ToBaseRoute;
+        token1ToBaseRoute = _sushiParams.token1ToBaseRoute;
+    }
+
+    function initialize(
+        address _owner,
+        address _rageClearingHouse,
+        address _rageCollateralToken,
+        address _rageBaseToken,
+        SushiParams memory _sushiParams
+    ) external initializer {
+        __BaseVault_init(_owner, _rageClearingHouse, _rageCollateralToken, _rageBaseToken);
+        __BaseSushiVault_init(_sushiParams);
+    }
 
     /*
         YEILD STRATEGY
@@ -24,15 +93,62 @@ contract BaseSushiVault is BaseRangeStrategyVault {
 
     function harvestFees() external override {}
 
-    function getPrice() external override {}
+    function getToken0Price() internal view returns (uint256 price0) {}
 
-    function getMarketValue(uint256 balance) public view override returns (uint256 marketValue) {}
+    function getToken1Price() internal view returns (uint256 price1) {}
+
+    function getPriceX128() public view override returns (uint256 priceX128) {
+        //Get price of the LP token based on the price of token0 and token1
+        priceX128 = Pricing.getUniV2LPPriceX128(address(sushiPair), token0Oracle, token1Oracle, maxOracleDelayTime);
+    }
+
+    function getMarketValue(uint256 balance) public view override returns (uint256 marketValue) {
+        marketValue = balance.mulDiv(getPriceX128(), FixedPoint128.Q128);
+    }
 
     //To convert yeild token into USDC to cover loss on rage trade
-    function withdrawUsdc(uint256 balance) internal override returns (uint256 marketValue) {}
+    function withdrawBase(uint256 amount) internal override {
+        //Calculate amount of liquidity to withdraw for "amount" of base token
+        uint256 liquidity = amount.mulDiv(
+            10**(sushiPair.decimals() - rageBaseToken.decimals()) * FixedPoint128.Q128,
+            getPriceX128()
+        );
+
+        //Remove Liquidity
+        sushiRouter.removeLiquidity(token0, token1, liquidity, 0, 0, address(this), block.timestamp);
+
+        uint256 token0Bal = IERC20(token0).balanceOf(address(this));
+        uint256 token1Bal = IERC20(token1).balanceOf(address(this));
+
+        //Swap tokens into base token if they are not base token
+        if (token0 != address(rageBaseToken)) {
+            sushiRouter.swapExactTokensForTokens(token0Bal, 0, token0ToBaseRoute, address(this), block.timestamp);
+        }
+
+        if (token1 != address(rageBaseToken)) {
+            sushiRouter.swapExactTokensForTokens(token1Bal, 0, token1ToBaseRoute, address(this), block.timestamp);
+        }
+    }
 
     //To deposit the USDC profit made from rage trade into yeild protocol
-    function depositUsdc(uint256 balance) internal override returns (uint256 marketValue) {}
+    function depositBase(uint256 amount) internal override {
+        uint256 amountHalf = amount / 2;
+
+        //Swap half of base token into the set tokens if they are already not base tokens
+        if (token0 != address(rageBaseToken)) {
+            sushiRouter.swapExactTokensForTokens(amountHalf, 0, baseToToken0Route, address(this), block.timestamp);
+        }
+
+        if (token1 != address(rageBaseToken)) {
+            sushiRouter.swapExactTokensForTokens(amountHalf, 0, baseToToken1Route, address(this), block.timestamp);
+        }
+
+        uint256 token0Bal = IERC20(token0).balanceOf(address(this));
+        uint256 token1Bal = IERC20(token1).balanceOf(address(this));
+
+        //Add Liquidity based on the token balance available
+        sushiRouter.addLiquidity(token0, token1, token0Bal, token1Bal, 1, 1, address(this), block.timestamp);
+    }
 
     //To rebalance multiple collateral token
     function rebalanceCollateral() internal override {}
