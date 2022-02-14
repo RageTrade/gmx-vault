@@ -175,7 +175,9 @@ abstract contract BaseVault is IBaseVault, ERC4626, IBaseYeildStrategy, OwnableU
 
     function withdrawTokens() external virtual;
 
-    function harvestFees() external virtual;
+    function stake() internal virtual;
+
+    function harvestFees() internal virtual;
 
     function getPriceX128() public view virtual returns (uint256 priceX128);
 
