@@ -11,8 +11,6 @@ import { IUniswapV2Pair } from '@uniswap/v2-core/contracts/interfaces/IUniswapV2
 
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
-import { Math } from '../libraries/Math.sol';
-
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
 
@@ -33,7 +31,6 @@ struct SushiParams {
 }
 
 contract BaseSushiVault is BaseRangeStrategyVault {
-    using Math for uint256;
     using FullMath for uint256;
 
     IUniswapV2Router02 public sushiRouter;
@@ -91,11 +88,9 @@ contract BaseSushiVault is BaseRangeStrategyVault {
 
     function withdrawTokens() external override {}
 
-    function harvestFees() external override {}
+    function stake() internal override {}
 
-    function getToken0Price() internal view returns (uint256 price0) {}
-
-    function getToken1Price() internal view returns (uint256 price1) {}
+    function harvestFees() internal override {}
 
     function getPriceX128() public view override returns (uint256 priceX128) {
         //Get price of the LP token based on the price of token0 and token1
