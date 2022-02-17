@@ -65,6 +65,8 @@ let UINT256_MAX = '1157920892373161954235709850086879078532699846656405640394575
 
 const WETH_ADDRESS = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
 const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
+
+const SUSHI_ADDRESS = '0x6B3595068778DD592e39A122f4f5a5cF09C90fE2';
 const SUSHI_FACTORY_ADDRESS = '0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac';
 const SUSHI_ROUTER_ADDRESS = '0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F';
 
@@ -394,6 +396,7 @@ describe('Clearing House Scenario 1', () => {
         sushiRouter: sushiRouter.address,
         token0: USDC_ADDRESS,
         token1: WETH_ADDRESS,
+        rewardToken: SUSHI_ADDRESS,
         token0Oracle: usdcOracle.address,
         token1Oracle: wethOracle.address,
         maxOracleDelayTime: 10n ** 5n,
@@ -402,6 +405,8 @@ describe('Clearing House Scenario 1', () => {
         baseToToken1Route: [USDC_ADDRESS, WETH_ADDRESS],
         token0ToBaseRoute: [],
         token1ToBaseRoute: [WETH_ADDRESS, USDC_ADDRESS],
+        rewardToToken0Route: [],
+        rewardToToken1Route: [],
       };
       await baseVault.initialize(
         admin.address,
