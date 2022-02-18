@@ -15,11 +15,16 @@ import { CollateralToken } from '../CollateralToken.sol';
 import { RTokenLib } from '@ragetrade/contracts/contracts/libraries/RTokenLib.sol';
 import { SignedMath } from '@ragetrade/contracts/contracts/libraries/SignedMath.sol';
 
+import { SignedFullMath } from '@ragetrade/contracts/contracts/libraries/SignedFullMath.sol';
+
 import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadata.sol';
+
+import { console } from 'hardhat/console.sol';
 
 abstract contract BaseVault is IBaseVault, ERC4626, IBaseYeildStrategy, OwnableUpgradeable {
     using SafeCast for uint256;
     using SafeCast for int256;
+    using SignedFullMath for int256;
     using SignedMath for int256;
 
     //TODO: Make relevant things immutable
@@ -55,6 +60,15 @@ abstract contract BaseVault is IBaseVault, ERC4626, IBaseYeildStrategy, OwnableU
         //Give rageClearingHouse full allowance of rageCollateralToken and usdc
     }
 
+    function grantAllowances() external virtual {
+        _grantBaseAllowances();
+    }
+
+    function _grantBaseAllowances() internal {
+        rageCollateralToken.approve(address(rageClearingHouse), (1 << 256) - 1);
+        rageBaseToken.approve(address(rageClearingHouse), (1 << 256) - 1);
+    }
+
     function getVaultMarketValue() public view returns (int256 vaultMarketValue) {
         vaultMarketValue = rageClearingHouse.getAccountNetProfit(rageAccountNo);
         vaultMarketValue += (getMarketValue(asset.balanceOf(address(this)))).toInt256();
@@ -86,21 +100,27 @@ abstract contract BaseVault is IBaseVault, ERC4626, IBaseYeildStrategy, OwnableU
     }
 
     function settleCollateral(int256 vaultMarketValueDiff) internal {
-        uint256 vaultMarketValueDiffAbs = vaultMarketValueDiff.absUint();
-        if (vaultMarketValueDiff > 0) {
+        int256 normalizedVaultMarketValueDiff = vaultMarketValueDiff.mulDiv(
+            10**rageCollateralToken.decimals(),
+            10**rageBaseToken.decimals()
+        );
+        uint256 normalizedVaultMarketValueDiffAbs = normalizedVaultMarketValueDiff.absUint();
+
+        if (normalizedVaultMarketValueDiff > 0) {
             // Mint collateral coins and deposit into rage trade
-            assert(rageCollateralToken.balanceOf(address(this)) > vaultMarketValueDiffAbs);
+
+            assert(rageCollateralToken.balanceOf(address(this)) > normalizedVaultMarketValueDiffAbs);
             rageClearingHouse.addMargin(
                 rageAccountNo,
                 RTokenLib.truncate(address(rageCollateralToken)),
-                vaultMarketValueDiffAbs
+                normalizedVaultMarketValueDiffAbs
             );
-        } else if (vaultMarketValueDiff < 0) {
+        } else if (normalizedVaultMarketValueDiff < 0) {
             // Withdraw rage trade deposits
             rageClearingHouse.removeMargin(
                 rageAccountNo,
                 RTokenLib.truncate(address(rageCollateralToken)),
-                vaultMarketValueDiffAbs
+                normalizedVaultMarketValueDiffAbs
             );
         }
     }
@@ -134,6 +154,7 @@ abstract contract BaseVault is IBaseVault, ERC4626, IBaseYeildStrategy, OwnableU
         );
 
         for (uint8 i = 0; i < liquidityChangeParamList.length; i++) {
+            if (liquidityChangeParamList[i].liquidityDelta == 0) break;
             rageClearingHouse.updateRangeOrder(rageAccountNo, VWETH_TRUNCATED_ADDRESS, liquidityChangeParamList[i]);
         }
         //Step-5 Rebalance
@@ -187,7 +208,7 @@ abstract contract BaseVault is IBaseVault, ERC4626, IBaseYeildStrategy, OwnableU
     function withdrawBase(uint256 balance) internal virtual;
 
     //To deposit the USDC profit made from rage trade into yeild protocol
-    function depositBase(uint256 balance) internal virtual;
+    function depositBase(uint256 amount) internal virtual;
 
     //To rebalance multiple collateral token
     function rebalanceCollateral() internal virtual;
