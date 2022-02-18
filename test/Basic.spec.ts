@@ -28,6 +28,7 @@ import {
   CollateralToken,
   BaseSushiVault,
   IAggregatorV3Interface,
+  VaultTest,
 } from '../typechain-types';
 
 // import { ConstantsStruct } from '../typechain-types/ClearingHouse';
@@ -56,6 +57,7 @@ import {
 
 import { FakeContract, smock, SmockContractBase } from '@defi-wonderland/smock';
 import { ADDRESS_ZERO, priceToClosestTick } from '@uniswap/v3-sdk';
+import { LiquidityChangeParamsStructOutput, VTokenPositionViewStruct } from '../typechain-types/IClearingHouse';
 const whaleForBase = '0x47ac0Fb4F2D84898e4D9E7b4DaB3C24507a6D503';
 const whaleForWETH = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
 
@@ -70,6 +72,8 @@ const SUSHI_ADDRESS = '0x6B3595068778DD592e39A122f4f5a5cF09C90fE2';
 const SUSHI_FACTORY_ADDRESS = '0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac';
 const SUSHI_ROUTER_ADDRESS = '0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F';
 
+const SUSHI_CHEF_ADDRESS = '0xEF0881eC094552b2e128Cf945EF17a6752B4Ec5d';
+
 describe('Clearing House Scenario 1', () => {
   let vBaseAddress: string;
   let ownerAddress: string;
@@ -81,7 +85,8 @@ describe('Clearing House Scenario 1', () => {
   let sushiFactory: IUniswapV2Factory;
   let sushiRouter: IUniswapV2Router02;
   let wethUsdcSushiPair: IUniswapV2Pair;
-  let baseVault: BaseSushiVault;
+  let vaultTest: VaultTest;
+  let vaultAccountNo: BigNumber;
   let collateralToken: CollateralToken;
   let usdcOracle: FakeContract<IAggregatorV3Interface>;
   let wethOracle: FakeContract<IAggregatorV3Interface>;
@@ -102,6 +107,7 @@ describe('Clearing House Scenario 1', () => {
 
   let rBase: IERC20;
   let rBaseOracle: OracleMock;
+  let collateralTokenOracle: OracleMock;
 
   let vTokenAddress: string;
   let vTokenAddress1: string;
@@ -116,6 +122,20 @@ describe('Clearing House Scenario 1', () => {
 
   function X128ToDecimal(numX128: BigNumber, numDecimals: bigint) {
     return numX128.mul(10n ** numDecimals).div(1n << 128n);
+  }
+
+  function getNumChanges(
+    liquidityChangeParamList: [
+      LiquidityChangeParamsStructOutput,
+      LiquidityChangeParamsStructOutput,
+      LiquidityChangeParamsStructOutput,
+      LiquidityChangeParamsStructOutput,
+    ],
+  ) {
+    let num = 0;
+    while (liquidityChangeParamList[num].liquidityDelta.gt(0n)) num++;
+
+    return num;
   }
 
   async function initializePool(
@@ -263,17 +283,22 @@ describe('Clearing House Scenario 1', () => {
     sushiRouter = (await hre.ethers.getContractAt('IUniswapV2Router02', SUSHI_ROUTER_ADDRESS)) as IUniswapV2Router02;
     const wethUsdcPairAddress = await sushiFactory.getPair(USDC_ADDRESS, WETH_ADDRESS);
     wethUsdcSushiPair = await hre.ethers.getContractAt('IUniswapV2Pair', wethUsdcPairAddress);
-    console.log(wethUsdcPairAddress);
-    clearingHouse.addCollateralSupport(rBase.address, rBaseOracle.address, 300);
-
-    const baseVaultFactory = await hre.ethers.getContractFactory('BaseSushiVault');
-    baseVault = await baseVaultFactory.deploy(wethUsdcPairAddress, 'RageVault', 'RV', vTokenAddress);
 
     const collateralTokenFactory = await hre.ethers.getContractFactory('CollateralToken');
     collateralToken = await collateralTokenFactory.deploy();
+    await collateralToken.initialize('Vault Collateral', 'VC');
+    collateralTokenOracle = await (await hre.ethers.getContractFactory('OracleMock')).deploy();
+    clearingHouse.addCollateralSupport(rBase.address, rBaseOracle.address, 300);
+    clearingHouse.addCollateralSupport(collateralToken.address, collateralTokenOracle.address, 300);
+
+    const vaultTestFactory = await hre.ethers.getContractFactory('VaultTest');
+    vaultTest = await vaultTestFactory.deploy(wethUsdcPairAddress, 'RageVault', 'RV', vTokenAddress);
+    collateralToken.mint(vaultTest.address, tokenAmount(10n ** 6n, 18));
 
     usdcOracle = await smock.fake<IAggregatorV3Interface>('IAggregatorV3Interface');
+    usdcOracle.decimals.returns(8);
     wethOracle = await smock.fake<IAggregatorV3Interface>('IAggregatorV3Interface');
+    wethOracle.decimals.returns(8);
   });
 
   after(deactivateMainnetFork);
@@ -337,10 +362,11 @@ describe('Clearing House Scenario 1', () => {
     it('Add Base Deposit Support  - Pass', async () => {
       await clearingHouse.connect(admin).updateSupportedDeposits(rBase.address, true);
       expect(await clearingHouse.supportedDeposits(rBase.address)).to.be.true;
+      await clearingHouse.connect(admin).updateSupportedDeposits(collateralToken.address, true);
+      expect(await clearingHouse.supportedDeposits(collateralToken.address)).to.be.true;
     });
     it('Sushi Factory Check', async () => {
       const poolAddress = await sushiFactory.getPair(WETH_ADDRESS, USDC_ADDRESS);
-      console.log(poolAddress);
     });
     it('Sushi Router Max Approval', async () => {
       rBase.connect(user0).approve(sushiRouter.address, UINT256_MAX);
@@ -361,8 +387,6 @@ describe('Clearing House Scenario 1', () => {
 
       const wethBalance = await realToken.balanceOf(user0.address);
       const usdcBalanace = await rBase.balanceOf(user0.address);
-      console.log(wethBalance.toBigInt());
-      console.log(usdcBalanace.toBigInt());
     });
     it('Sushi Router Add Liquidity', async () => {
       const block = await hre.ethers.provider.getBlock('latest');
@@ -380,20 +404,17 @@ describe('Clearing House Scenario 1', () => {
       const wethBalanceFinal = await realToken.balanceOf(user0.address);
       const usdcBalanaceFinal = await rBase.balanceOf(user0.address);
       const lpTokenBalanceFinal = await wethUsdcSushiPair.balanceOf(user0.address);
-
-      console.log(wethBalanceFinal.toBigInt());
-      console.log(usdcBalanaceFinal.toBigInt());
-      console.log(lpTokenBalanceFinal.toBigInt());
     });
   });
 
   describe('#Base Vault', () => {
     it('Approve', async () => {
-      await wethUsdcSushiPair.connect(user0).approve(baseVault.address, UINT256_MAX);
+      await wethUsdcSushiPair.connect(user0).approve(vaultTest.address, UINT256_MAX);
     });
     it('Initialize', async () => {
       const sushiParams = {
         sushiRouter: sushiRouter.address,
+        sushiChef: SUSHI_CHEF_ADDRESS,
         token0: USDC_ADDRESS,
         token1: WETH_ADDRESS,
         rewardToken: SUSHI_ADDRESS,
@@ -408,32 +429,115 @@ describe('Clearing House Scenario 1', () => {
         rewardToToken0Route: [],
         rewardToToken1Route: [],
       };
-      await baseVault.initialize(
+      await vaultTest.initialize(
         admin.address,
         clearingHouse.address,
         collateralToken.address,
         USDC_ADDRESS,
         sushiParams,
       );
+      vaultAccountNo = await vaultTest.rageAccountNo();
+    });
+    it('Allowance', async () => {
+      await vaultTest.grantAllowances();
+      expect(await collateralToken.allowance(vaultTest.address, clearingHouse.address)).to.eq((1n << 256n) - 1n);
+      expect(await rBase.allowance(vaultTest.address, clearingHouse.address)).to.eq((1n << 256n) - 1n);
+      expect(await rBase.allowance(vaultTest.address, sushiRouter.address)).to.eq((1n << 256n) - 1n);
     });
     it('Deposit', async () => {
       const lpTokenBalanceFinal = await wethUsdcSushiPair.balanceOf(user0.address);
-      await baseVault.connect(user0).deposit(lpTokenBalanceFinal, user0.address);
+      await vaultTest.connect(user0).deposit(lpTokenBalanceFinal, user0.address);
 
-      const baseVaultBalance = await baseVault.balanceOf(user0.address);
-      console.log(baseVaultBalance.toBigInt());
+      expect(await wethUsdcSushiPair.balanceOf(vaultTest.address)).to.eq(lpTokenBalanceFinal);
+      expect(await wethUsdcSushiPair.balanceOf(user0.address)).to.eq(0);
+      expect(await vaultTest.balanceOf(user0.address)).to.eq(lpTokenBalanceFinal);
+    });
+    it('Withdraw', async () => {
+      const vaultBalance = await wethUsdcSushiPair.balanceOf(vaultTest.address);
+      await vaultTest.connect(user0).withdraw(100n, user0.address, user0.address);
+
+      expect(await wethUsdcSushiPair.balanceOf(vaultTest.address)).to.eq(vaultBalance.sub(100n));
+      expect(await wethUsdcSushiPair.balanceOf(user0.address)).to.eq(100n);
+      expect(await vaultTest.balanceOf(user0.address)).to.eq(vaultBalance.sub(100n));
+    });
+
+    it('Vault Market Value');
+
+    it('Unrealized Balance');
+
+    it('Total Assets');
+
+    it('Settle Collateral - Positive Diff', async () => {
+      await vaultTest.testSettleCollateral(tokenAmount(50000n, 6));
+      const accountView = await clearingHouse.getAccountView(vaultAccountNo);
+      const depositView = accountView.tokenDeposits;
+      expect(depositView[0].rTokenAddress).to.eq(collateralToken.address);
+      expect(depositView[0].balance).to.eq(tokenAmount(50000n, 18));
+    });
+
+    it('Settle Collateral - Negative Diff', async () => {
+      await vaultTest.testSettleCollateral(tokenAmount(-25000n, 6));
+      const accountView = await clearingHouse.getAccountView(vaultAccountNo);
+      const depositView = accountView.tokenDeposits;
+      expect(depositView[0].rTokenAddress).to.eq(collateralToken.address);
+      expect(depositView[0].balance).to.eq(tokenAmount(25000n, 18));
+    });
+
+    it('Rebalance Ranges');
+
+    it('Rebalance Profit and Collateral');
+  });
+
+  describe('#Range Strategy', () => {
+    describe('Liquidity Change Params', () => {
+      it('No previous range', async () => {
+        const vTokenPosition: VTokenPositionViewStruct = {
+          vTokenAddress: vTokenAddress,
+          balance: 0,
+          netTraderPosition: 0,
+          sumAX128Ckpt: 0,
+          liquidityPositions: [],
+        };
+        const accountMarketValue = tokenAmount(50000n, 6);
+        const liquidityChangeParams = await vaultTest.getLiquidityChangeParams(vTokenPosition, accountMarketValue);
+
+        expect(getNumChanges(liquidityChangeParams)).to.eq(1);
+        // expect(liquidityChangeParams[0].liquidityDelta).to.eq(0);
+
+        const { sqrtPriceX96 } = await vPool.slot0();
+        const price = await sqrtPriceX96ToPrice(sqrtPriceX96, vBase, vToken);
+        const priceLower = price * 0.6;
+        const priceUpper = price * 1.4;
+        let tickLower = await priceToTick(priceLower, vBase, vToken);
+        let tickUpper = await priceToTick(priceUpper, vBase, vToken);
+
+        tickLower += 10 - (tickLower % 10);
+        tickUpper -= tickUpper % 10;
+
+        expect(liquidityChangeParams[0].tickLower).to.eq(tickLower);
+        expect(liquidityChangeParams[0].tickUpper).to.eq(tickUpper);
+      });
     });
   });
 
-  describe('#Sushi Vault', () => {
+  describe('#Sushi Strategy', () => {
     it('Market Value', async () => {
       const block = await hre.ethers.provider.getBlock('latest');
       initialBlockTimestamp = block.timestamp;
       usdcOracle.latestRoundData.returns([0, 100000000, 0, block.timestamp, 0]);
       wethOracle.latestRoundData.returns([0, 300000000000, 0, block.timestamp, 0]);
 
-      const value = await baseVault.getMarketValue(1);
-      console.log(value.toBigInt());
+      const value = await vaultTest.getMarketValue(1);
     });
+    it('DepositBase');
+    // , async () => {
+    //   await vaultTest.testDepositBase(tokenAmount(5000n, 6));
+    // });
+    it('WithdrawBase');
+    // , async () => {
+    //   await vaultTest.testWithdrawBase(tokenAmount(5000n, 6));
+    // });
+    it('Stake');
+    it('Harvest');
   });
 });
