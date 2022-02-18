@@ -50,16 +50,11 @@ library Pricing {
     function tokenChainlinkPriceX128(address tokenOracle, uint256 maxDelayTime) internal view returns (uint256 price) {
         uint8 decimals = IAggregatorV3Interface(tokenOracle).decimals();
 
-        console.log('Token Decimals');
-        console.log(decimals);
-
         require(maxDelayTime != 0, 'max delay time not set');
 
         // 2. Check token-USD price ref
         if (tokenOracle != address(0)) {
             (, int256 answer, , uint256 updatedAt, ) = IAggregatorV3Interface(tokenOracle).latestRoundData();
-            console.log('Answer');
-            console.logInt(answer);
             require(updatedAt >= block.timestamp - maxDelayTime, 'delayed update time');
             return (uint256(answer) * (FixedPoint128.Q128)) / (10**decimals);
         }
