@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 import { IBaseVault } from '../interfaces/IBaseVault.sol';
 import { IBaseYeildStrategy } from '../interfaces/IBaseYeildStrategy.sol';
 
-import { ERC4626 } from '@rari-capital/solmate/src/mixins/ERC4626.sol';
+import { RageERC4626 } from './RageERC4626.sol';
 import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
 import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 
@@ -21,7 +21,7 @@ import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadat
 
 import { console } from 'hardhat/console.sol';
 
-abstract contract BaseVault is IBaseVault, ERC4626, IBaseYeildStrategy, OwnableUpgradeable {
+abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYeildStrategy, OwnableUpgradeable {
     using SafeCast for uint256;
     using SafeCast for int256;
     using SignedFullMath for int256;
@@ -40,7 +40,7 @@ abstract contract BaseVault is IBaseVault, ERC4626, IBaseYeildStrategy, OwnableU
         string memory _name,
         string memory _symbol,
         address _vWethAddress
-    ) ERC4626(_asset, _name, _symbol) {
+    ) RageERC4626(_asset, _name, _symbol) {
         VWETH_ADDRESS = _vWethAddress;
         VWETH_TRUNCATED_ADDRESS = RTokenLib.truncate(_vWethAddress);
     }
@@ -91,10 +91,15 @@ abstract contract BaseVault is IBaseVault, ERC4626, IBaseYeildStrategy, OwnableU
 
         // Settle net change in market value and deposit/withdraw collateral tokens
         // Vault market value is just the collateral value since profit has been settled
-
-        IClearingHouse.DepositTokenView memory stablecoinDeposit = deposits[0];
-        assert(stablecoinDeposit.rTokenAddress == address(rageCollateralToken));
-        int256 vaultMarketValueDiff = vaultMarketValue - stablecoinDeposit.balance.toInt256();
+        int256 vaultMarketValueDiff;
+        if (deposits.length > 0) {
+            assert(deposits.length == 1);
+            IClearingHouse.DepositTokenView memory stablecoinDeposit = deposits[0];
+            assert(stablecoinDeposit.rTokenAddress == address(rageCollateralToken));
+            vaultMarketValueDiff = vaultMarketValue - stablecoinDeposit.balance.toInt256();
+        } else {
+            vaultMarketValueDiff = vaultMarketValue;
+        }
         //Settlement basis market value difference
         settleCollateral(vaultMarketValueDiff);
     }
@@ -133,18 +138,23 @@ abstract contract BaseVault is IBaseVault, ERC4626, IBaseYeildStrategy, OwnableU
         //Step-0 Check if the rebalance can go through (time and threshold based checks)
         (, , deposits, vTokenPositions) = rageClearingHouse.getAccountView(rageAccountNo);
         // (, uint256 virtualPriceX128) = rageClearingHouse.getTwapSqrtPricesForSetDuration(IVToken(VWETH_ADDRESS));
-        IClearingHouse.RageTradePool memory rageTradePool = rageClearingHouse.pools(IVToken(VWETH_ADDRESS));
 
         //First token should be VWETH and there should be only one token used (hence next address should be 0)
         assert(vTokenPositions[0].vTokenAddress == VWETH_ADDRESS);
         assert(vTokenPositions[1].vTokenAddress == address(0));
 
         int256 vaultMarketValue = getMarketValue(asset.balanceOf(address(this))).toInt256();
-
+        //Harvest the rewards earned
+        harvestFees();
         //Step-1 Find current value of collateral and ranges -> Profit / Loss from the ranges
         //Step-2 Mint or burn dummy stablecoins
         //Step-3 Payback the due in USDC
         settleProfitAndCollateral(deposits, vaultMarketValue);
+
+        //stake the remaining LP tokens
+        stake();
+
+        IClearingHouse.RageTradePool memory rageTradePool = rageClearingHouse.pools(IVToken(VWETH_ADDRESS));
 
         //Step-4 Find the ranges and amount of liquidity to put in each
         IClearingHouse.LiquidityChangeParams[4] memory liquidityChangeParamList = getLiquidityChangeParams(
@@ -160,7 +170,7 @@ abstract contract BaseVault is IBaseVault, ERC4626, IBaseYeildStrategy, OwnableU
         //Step-5 Rebalance
     }
 
-    function rebalanceProfitAndCollateral() external {
+    function rebalanceProfitAndCollateral() public {
         //Rebalance collateral and dummy stable coins representing the collateral
         //Update protocol and management fee accumulated
         IClearingHouse.DepositTokenView[] memory deposits;
@@ -168,14 +178,22 @@ abstract contract BaseVault is IBaseVault, ERC4626, IBaseYeildStrategy, OwnableU
 
         //Step-0 Check if the rebalance can go through (time and threshold based checks)
         (, , deposits, vTokenPositions) = rageClearingHouse.getAccountView(rageAccountNo);
-        //First token should be VWETH and there should be only one token used (hence next address should be 0)
-        assert(vTokenPositions[0].vTokenAddress == VWETH_ADDRESS);
-        assert(vTokenPositions[1].vTokenAddress == address(0));
+        //#Token position = 0 or (1 and token should be VWETH)
+        assert(
+            vTokenPositions.length == 0 ||
+                (vTokenPositions.length == 1 && vTokenPositions[0].vTokenAddress == VWETH_ADDRESS)
+        );
 
         int256 vaultMarketValue = getMarketValue(asset.balanceOf(address(this))).toInt256();
 
+        //Harvest the rewards earned
+        // harvestFees();
+
         settleProfitAndCollateral(deposits, vaultMarketValue);
         rebalanceCollateral();
+
+        //stake the remaining LP tokens
+        // stake();
     }
 
     function unrealizedBalance() internal view returns (uint256) {
@@ -186,6 +204,10 @@ abstract contract BaseVault is IBaseVault, ERC4626, IBaseYeildStrategy, OwnableU
 
     function totalAssets() public view override returns (uint256) {
         return asset.balanceOf(address(this)) + unrealizedBalance();
+    }
+
+    function beforeShareTransfer() internal override {
+        rebalanceProfitAndCollateral();
     }
 
     /*
