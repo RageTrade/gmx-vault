@@ -181,6 +181,13 @@ describe('Clearing House Scenario 1', () => {
     return { vTokenAddress, realToken, oracle, vPool, vPoolWrapper };
   }
 
+  async function resetOracle() {
+    const block = await hre.ethers.provider.getBlock('latest');
+    initialBlockTimestamp = block.timestamp;
+    usdcOracle.latestRoundData.returns([0, 100000000, 0, block.timestamp, 0]);
+    wethOracle.latestRoundData.returns([0, 300000000000, 0, block.timestamp, 0]);
+  }
+
   before(async () => {
     await activateMainnetFork();
 
@@ -445,6 +452,7 @@ describe('Clearing House Scenario 1', () => {
       expect(await rBase.allowance(vaultTest.address, sushiRouter.address)).to.eq((1n << 256n) - 1n);
     });
     it('Deposit', async () => {
+      await resetOracle();
       const lpTokenBalanceFinal = await wethUsdcSushiPair.balanceOf(user0.address);
       await vaultTest.connect(user0).deposit(lpTokenBalanceFinal, user0.address);
 
@@ -453,6 +461,7 @@ describe('Clearing House Scenario 1', () => {
       expect(await vaultTest.balanceOf(user0.address)).to.eq(lpTokenBalanceFinal);
     });
     it('Withdraw', async () => {
+      await resetOracle();
       const vaultBalance = await wethUsdcSushiPair.balanceOf(vaultTest.address);
       await vaultTest.connect(user0).withdraw(100n, user0.address, user0.address);
 
@@ -522,11 +531,7 @@ describe('Clearing House Scenario 1', () => {
 
   describe('#Sushi Strategy', () => {
     it('Market Value', async () => {
-      const block = await hre.ethers.provider.getBlock('latest');
-      initialBlockTimestamp = block.timestamp;
-      usdcOracle.latestRoundData.returns([0, 100000000, 0, block.timestamp, 0]);
-      wethOracle.latestRoundData.returns([0, 300000000000, 0, block.timestamp, 0]);
-
+      await resetOracle();
       const value = await vaultTest.getMarketValue(1);
     });
     it('DepositBase');
