@@ -18,9 +18,12 @@ import { Pricing } from '../libraries/Pricing.sol';
 
 import { IMiniChefV2 } from '../interfaces/sushi/IMiniChefV2.sol';
 
+import { console } from 'hardhat/console.sol';
+
 struct SushiParams {
     address sushiRouter;
     address sushiPair;
+    address sushiChef;
     address token0;
     address token1;
     address rewardToken;
@@ -70,6 +73,7 @@ contract BaseSushiVault is BaseRangeStrategyVault {
     function __BaseSushiVault_init(SushiParams memory _sushiParams) internal onlyInitializing {
         sushiRouter = IUniswapV2Router02(_sushiParams.sushiRouter);
         sushiPair = IUniswapV2Pair(_sushiParams.sushiPair);
+        sushiChef = IMiniChefV2(_sushiParams.sushiChef);
         token0 = _sushiParams.token0;
         token1 = _sushiParams.token1;
         token0Oracle = _sushiParams.token0Oracle;
@@ -91,6 +95,17 @@ contract BaseSushiVault is BaseRangeStrategyVault {
     ) external initializer {
         __BaseVault_init(_owner, _rageClearingHouse, _rageCollateralToken, _rageBaseToken);
         __BaseSushiVault_init(_sushiParams);
+    }
+
+    function grantAllowances() external override {
+        _grantBaseAllowances();
+        _grantSushiAllowances();
+    }
+
+    function _grantSushiAllowances() internal {
+        rageBaseToken.approve(address(sushiRouter), (1 << 256) - 1);
+        IERC20(token0).approve(address(sushiRouter), (1 << 256) - 1);
+        IERC20(token1).approve(address(sushiRouter), (1 << 256) - 1);
     }
 
     /*
@@ -170,17 +185,30 @@ contract BaseSushiVault is BaseRangeStrategyVault {
     ) internal {
         uint256 amountHalf = amount / 2;
 
+        uint256 token0Bal;
+        uint256 token1Bal;
         //Swap half of base token into the set tokens if they are already not base tokens
         if (token0 != address(token)) {
-            sushiRouter.swapExactTokensForTokens(amountHalf, 0, token0Route, address(this), block.timestamp);
+            uint256[] memory amounts = sushiRouter.swapExactTokensForTokens(
+                amountHalf,
+                0,
+                token0Route,
+                address(this),
+                block.timestamp
+            );
+            token0Bal = amounts[amounts.length - 1];
         }
 
         if (token1 != address(token)) {
-            sushiRouter.swapExactTokensForTokens(amountHalf, 0, token1Route, address(this), block.timestamp);
+            uint256[] memory amounts = sushiRouter.swapExactTokensForTokens(
+                amountHalf,
+                0,
+                token1Route,
+                address(this),
+                block.timestamp
+            );
+            token1Bal = amounts[amounts.length - 1];
         }
-
-        uint256 token0Bal = IERC20(token0).balanceOf(address(this));
-        uint256 token1Bal = IERC20(token1).balanceOf(address(this));
 
         //Add Liquidity based on the token balance available
         sushiRouter.addLiquidity(token0, token1, token0Bal, token1Bal, 1, 1, address(this), block.timestamp);
