@@ -102,15 +102,23 @@ abstract contract BaseRangeStrategyVault is BaseVault {
             uint160 sqrtPriceLowerX96 = uint256(twapSqrtPriceX96).mulDiv(77459667, 1e8).toUint160(); //multiplication by sqrt(0.6)
             uint160 sqrtPriceUpperX96 = uint256(twapSqrtPriceX96).mulDiv(118321596, 1e8).toUint160(); //multiplication by sqrt(1.4)
 
-            liquidityChangeParamList[liqCount] = IClearingHouse.LiquidityChangeParams(
-                TickMath.getTickAtSqrtRatio(sqrtPriceLowerX96),
-                TickMath.getTickAtSqrtRatio(sqrtPriceUpperX96),
-                liquidityDelta,
-                0,
-                0,
-                false,
-                IClearingHouse.LimitOrderType.NONE
-            );
+            {
+                int24 tickLower = TickMath.getTickAtSqrtRatio(sqrtPriceLowerX96);
+                int24 tickUpper = TickMath.getTickAtSqrtRatio(sqrtPriceUpperX96);
+
+                tickLower += (10 - (tickLower % 10));
+                tickUpper -= tickUpper % 10;
+
+                liquidityChangeParamList[liqCount] = IClearingHouse.LiquidityChangeParams(
+                    tickLower,
+                    tickUpper,
+                    liquidityDelta,
+                    0,
+                    0,
+                    false,
+                    IClearingHouse.LimitOrderType.NONE
+                );
+            }
             liqCount++;
         }
         {
