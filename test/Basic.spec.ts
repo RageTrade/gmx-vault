@@ -181,11 +181,11 @@ describe('Clearing House Scenario 1', () => {
     return { vTokenAddress, realToken, oracle, vPool, vPoolWrapper };
   }
 
-  async function resetOracle() {
+  async function setOracle(usdcPrice: BigNumberish, wethPrice: BigNumberish) {
     const block = await hre.ethers.provider.getBlock('latest');
     initialBlockTimestamp = block.timestamp;
-    usdcOracle.latestRoundData.returns([0, 100000000, 0, block.timestamp, 0]);
-    wethOracle.latestRoundData.returns([0, 300000000000, 0, block.timestamp, 0]);
+    usdcOracle.latestRoundData.returns([0, usdcPrice, 0, block.timestamp, 0]);
+    wethOracle.latestRoundData.returns([0, wethPrice, 0, block.timestamp, 0]);
   }
 
   before(async () => {
@@ -451,31 +451,6 @@ describe('Clearing House Scenario 1', () => {
       expect(await rBase.allowance(vaultTest.address, clearingHouse.address)).to.eq((1n << 256n) - 1n);
       expect(await rBase.allowance(vaultTest.address, sushiRouter.address)).to.eq((1n << 256n) - 1n);
     });
-    it('Deposit', async () => {
-      await resetOracle();
-      const lpTokenBalanceFinal = await wethUsdcSushiPair.balanceOf(user0.address);
-      await vaultTest.connect(user0).deposit(lpTokenBalanceFinal, user0.address);
-
-      expect(await wethUsdcSushiPair.balanceOf(vaultTest.address)).to.eq(lpTokenBalanceFinal);
-      expect(await wethUsdcSushiPair.balanceOf(user0.address)).to.eq(0);
-      expect(await vaultTest.balanceOf(user0.address)).to.eq(lpTokenBalanceFinal);
-    });
-    it('Withdraw', async () => {
-      await resetOracle();
-      const vaultBalance = await wethUsdcSushiPair.balanceOf(vaultTest.address);
-      await vaultTest.connect(user0).withdraw(100n, user0.address, user0.address);
-
-      expect(await wethUsdcSushiPair.balanceOf(vaultTest.address)).to.eq(vaultBalance.sub(100n));
-      expect(await wethUsdcSushiPair.balanceOf(user0.address)).to.eq(100n);
-      expect(await vaultTest.balanceOf(user0.address)).to.eq(vaultBalance.sub(100n));
-    });
-
-    it('Vault Market Value');
-
-    it('Unrealized Balance');
-
-    it('Total Assets');
-
     it('Settle Collateral - Positive Diff', async () => {
       await vaultTest.testSettleCollateral(tokenAmount(50000n, 6));
       const accountView = await clearingHouse.getAccountView(vaultAccountNo);
@@ -491,6 +466,38 @@ describe('Clearing House Scenario 1', () => {
       expect(depositView[0].rTokenAddress).to.eq(collateralToken.address);
       expect(depositView[0].balance).to.eq(tokenAmount(25000n, 18));
     });
+
+    it('Settle Collateral - No Balance', async () => {
+      await vaultTest.testSettleCollateral(tokenAmount(-25000n, 6));
+      const accountView = await clearingHouse.getAccountView(vaultAccountNo);
+      const depositView = accountView.tokenDeposits;
+      expect(depositView.length).to.eq(0);
+    });
+
+    it('Deposit', async () => {
+      await setOracle(10n ** 8n, 3000n * 10n ** 8n);
+      const lpTokenBalanceFinal = await wethUsdcSushiPair.balanceOf(user0.address);
+      await vaultTest.connect(user0).deposit(lpTokenBalanceFinal, user0.address);
+
+      expect(await wethUsdcSushiPair.balanceOf(vaultTest.address)).to.eq(lpTokenBalanceFinal);
+      expect(await wethUsdcSushiPair.balanceOf(user0.address)).to.eq(0);
+      expect(await vaultTest.balanceOf(user0.address)).to.eq(lpTokenBalanceFinal);
+    });
+    it('Withdraw', async () => {
+      await setOracle(10n ** 8n, 3000n * 10n ** 8n);
+      const vaultBalance = await wethUsdcSushiPair.balanceOf(vaultTest.address);
+      await vaultTest.connect(user0).withdraw(100n, user0.address, user0.address);
+
+      expect(await wethUsdcSushiPair.balanceOf(vaultTest.address)).to.eq(vaultBalance.sub(100n));
+      expect(await wethUsdcSushiPair.balanceOf(user0.address)).to.eq(100n);
+      expect(await vaultTest.balanceOf(user0.address)).to.eq(vaultBalance.sub(100n));
+    });
+
+    it('Vault Market Value');
+
+    it('Unrealized Balance');
+
+    it('Total Assets');
 
     it('Rebalance Ranges');
 
@@ -531,8 +538,26 @@ describe('Clearing House Scenario 1', () => {
 
   describe('#Sushi Strategy', () => {
     it('Market Value', async () => {
-      await resetOracle();
-      const value = await vaultTest.getMarketValue(1);
+      const { reserve0, reserve1 } = await wethUsdcSushiPair.getReserves();
+
+      const price = reserve1.div(reserve0);
+      await setOracle(10n ** 8n, price.mul(10n ** 3n));
+
+      const totalSupply = await wethUsdcSushiPair.totalSupply();
+
+      const value = await vaultTest.getMarketValue(totalSupply);
+
+      const { answer: price0 } = await usdcOracle.latestRoundData();
+      const { answer: price1 } = await wethOracle.latestRoundData();
+
+      console.log(value.toBigInt());
+      console.log(
+        reserve0
+          .mul(price0)
+          .add(reserve1.mul(price1).div(10n ** 12n))
+          .div(10n ** 8n)
+          .toBigInt(),
+      );
     });
     it('DepositBase');
     // , async () => {
