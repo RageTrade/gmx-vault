@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 
 pragma solidity ^0.8.9;
-import { BaseSushiVault, SushiParams } from '../yeildStrategy/BaseSushiVault.sol';
+import { BaseSushiVault, SushiParams } from '../yieldStrategy/BaseSushiVault.sol';
 import { IClearingHouse, IVToken } from '@ragetrade/contracts/contracts/interfaces/IClearingHouse.sol';
 
 import { BaseRangeStrategyVault } from '../rangeStrategy/BaseRangeStrategyVault.sol';
