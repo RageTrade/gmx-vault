@@ -87,7 +87,6 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         token1ToBaseRoute = _sushiParams.token1ToBaseRoute;
         rewardToToken0Route = _sushiParams.rewardToToken0Route;
         rewardToToken1Route = _sushiParams.rewardToToken1Route;
-
     }
 
     function initialize(
@@ -113,7 +112,7 @@ contract BaseSushiVault is BaseRangeStrategyVault {
     }
 
     /*
-        YEILD STRATEGY
+        YIELD STRATEGY
     */
 
     function depositTokens() external override {}
@@ -135,7 +134,7 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         marketValue = balance.mulDiv(getPriceX128(), FixedPoint128.Q128);
     }
 
-    //To convert yeild token into USDC to cover loss on rage trade
+    //To convert yield token into USDC to cover loss on rage trade
     function withdrawBase(uint256 amount) internal override {
         //Calculate amount of liquidity to withdraw for "amount" of base token
         uint256 liquidity = amount.mulDiv(
@@ -159,7 +158,7 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         }
     }
 
-    //To deposit the USDC profit made from rage trade into yeild protocol
+    //To deposit the USDC profit made from rage trade into yield protocol
     function depositBase(uint256 amount) internal override {
         _depositToken(address(rageBaseToken), amount, baseToToken0Route, baseToToken1Route);
     }
@@ -224,6 +223,5 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         sushiRouter.addLiquidity(token0, token1, token0Bal, token1Bal, 1, 1, address(this), block.timestamp);
     }
 
-    function stakedAssetBalance() internal view override returns (uint256){}
-
+    function stakedAssetBalance() internal view override returns (uint256) {}
 }

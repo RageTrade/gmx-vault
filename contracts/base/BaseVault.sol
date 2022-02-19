@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 import { IBaseVault } from '../interfaces/IBaseVault.sol';
-import { IBaseYeildStrategy } from '../interfaces/IBaseYeildStrategy.sol';
+import { IBaseYieldStrategy } from '../interfaces/IBaseYieldStrategy.sol';
 
 import { RageERC4626 } from './RageERC4626.sol';
 import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
@@ -21,7 +21,7 @@ import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadat
 
 import { console } from 'hardhat/console.sol';
 
-abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYeildStrategy, OwnableUpgradeable {
+abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, OwnableUpgradeable {
     using SafeCast for uint256;
     using SafeCast for int256;
     using SignedFullMath for int256;
@@ -139,8 +139,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYeildStrategy, Owna
         // (, uint256 virtualPriceX128) = rageClearingHouse.getTwapSqrtPricesForSetDuration(IVToken(VWETH_ADDRESS));
         int256 vaultMarketValue = getMarketValue(asset.balanceOf(address(this))).toInt256();
 
-        _rebalanceProfitAndCollateral(deposits,vTokenPositions,vaultMarketValue);
-
+        _rebalanceProfitAndCollateral(deposits, vTokenPositions, vaultMarketValue);
 
         IClearingHouse.RageTradePool memory rageTradePool = rageClearingHouse.pools(IVToken(VWETH_ADDRESS));
 
@@ -169,12 +168,14 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYeildStrategy, Owna
         //#Token position = 0 or (1 and token should be VWETH)
         int256 vaultMarketValue = getMarketValue(asset.balanceOf(address(this))).toInt256();
 
-        _rebalanceProfitAndCollateral(deposits,vTokenPositions,vaultMarketValue);
-
+        _rebalanceProfitAndCollateral(deposits, vTokenPositions, vaultMarketValue);
     }
 
-    function _rebalanceProfitAndCollateral(IClearingHouse.DepositTokenView[] memory deposits,
-        IClearingHouse.VTokenPositionView[] memory vTokenPositions, int256 vaultMarketValue) internal {
+    function _rebalanceProfitAndCollateral(
+        IClearingHouse.DepositTokenView[] memory deposits,
+        IClearingHouse.VTokenPositionView[] memory vTokenPositions,
+        int256 vaultMarketValue
+    ) internal {
         assert(
             vTokenPositions.length == 0 ||
                 (vTokenPositions.length == 1 && vTokenPositions[0].vTokenAddress == VWETH_ADDRESS)
@@ -190,7 +191,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYeildStrategy, Owna
     }
 
     function unrealizedBalance() internal view returns (uint256) {
-        //Returns the unrealized pnl which includes pnl from ranges (FP+Fee+RangeIL) and Yeild from the yeild protocol
+        //Returns the unrealized pnl which includes pnl from ranges (FP+Fee+RangeIL) and Yield from the yield protocol
         //This is divided by the asset value to arrive at the number of unrealized asset tokens
         //This might be away from the actual value
     }
@@ -204,7 +205,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYeildStrategy, Owna
     }
 
     /*
-        YEILD STRATEGY
+        YIELD STRATEGY
     */
 
     function depositTokens() external virtual;
@@ -219,13 +220,13 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYeildStrategy, Owna
 
     function getMarketValue(uint256 balance) public view virtual returns (uint256 marketValue);
 
-    //To convert yeild token into USDC to cover loss on rage trade
+    //To convert yield token into USDC to cover loss on rage trade
     function withdrawBase(uint256 balance) internal virtual;
 
-    //To deposit the USDC profit made from rage trade into yeild protocol
+    //To deposit the USDC profit made from rage trade into yield protocol
     function depositBase(uint256 amount) internal virtual;
 
-    function stakedAssetBalance() internal virtual view returns (uint256);
+    function stakedAssetBalance() internal view virtual returns (uint256);
 
     /*
         RANGE STRATEGY
