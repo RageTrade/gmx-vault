@@ -68,6 +68,7 @@ library Pricing {
         address pair,
         address token0Oracle,
         address token1Oracle,
+        uint8 baseDecimals,
         uint256 maxDelayTime
     ) internal view returns (uint256) {
         address token0 = IUniswapV2Pair(pair).token0();
@@ -78,12 +79,11 @@ library Pricing {
         uint8 tokenDecimals = ChainlinkDetailedERC20(token0).decimals();
         tokenDecimals += ChainlinkDetailedERC20(token1).decimals();
 
-        uint8 pairDecimals = IUniswapV2Pair(pair).decimals();
-
         uint256 sqrtK = HomoraMath.sqrt(r0 * r1).mulDiv(
-            FixedPoint128.Q128 * 10**pairDecimals,
+            FixedPoint128.Q128 * 10**baseDecimals,
             totalSupply * HomoraMath.sqrt(10**tokenDecimals)
         ); // in 2**112
+
         uint256 px0 = tokenChainlinkPriceX128(token0Oracle, maxDelayTime); // in 2**112
         uint256 px1 = tokenChainlinkPriceX128(token1Oracle, maxDelayTime); // in 2**112
 

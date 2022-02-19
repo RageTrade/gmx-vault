@@ -76,6 +76,7 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         sushiChef = IMiniChefV2(_sushiParams.sushiChef);
         token0 = _sushiParams.token0;
         token1 = _sushiParams.token1;
+        rewardToken = _sushiParams.rewardToken;
         token0Oracle = _sushiParams.token0Oracle;
         token1Oracle = _sushiParams.token1Oracle;
         maxOracleDelayTime = _sushiParams.maxOracleDelayTime;
@@ -84,6 +85,9 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         baseToToken1Route = _sushiParams.baseToToken1Route;
         token0ToBaseRoute = _sushiParams.token0ToBaseRoute;
         token1ToBaseRoute = _sushiParams.token1ToBaseRoute;
+        rewardToToken0Route = _sushiParams.rewardToToken0Route;
+        rewardToToken1Route = _sushiParams.rewardToToken1Route;
+
     }
 
     function initialize(
@@ -118,7 +122,13 @@ contract BaseSushiVault is BaseRangeStrategyVault {
 
     function getPriceX128() public view override returns (uint256 priceX128) {
         //Get price of the LP token based on the price of token0 and token1
-        priceX128 = Pricing.getUniV2LPPriceX128(address(sushiPair), token0Oracle, token1Oracle, maxOracleDelayTime);
+        priceX128 = Pricing.getUniV2LPPriceX128(
+            address(sushiPair),
+            token0Oracle,
+            token1Oracle,
+            rageBaseToken.decimals(),
+            maxOracleDelayTime
+        );
     }
 
     function getMarketValue(uint256 balance) public view override returns (uint256 marketValue) {
@@ -214,6 +224,6 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         sushiRouter.addLiquidity(token0, token1, token0Bal, token1Bal, 1, 1, address(this), block.timestamp);
     }
 
-    //To rebalance multiple collateral token
-    function rebalanceCollateral() internal override {}
+    function stakedAssetBalance() internal view override returns (uint256){}
+
 }
