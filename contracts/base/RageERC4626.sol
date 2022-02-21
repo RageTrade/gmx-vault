@@ -24,28 +24,12 @@ abstract contract RageERC4626 is ERC4626 {
 
     function deposit(uint256 amount, address to) public virtual override returns (uint256 shares) {
         beforeShareTransfer();
-        // Check for rounding error since we round down in previewDeposit.
-        require((shares = previewDeposit(amount)) != 0, 'ZERO_SHARES');
-
-        _mint(to, shares);
-
-        emit Deposit(msg.sender, to, amount);
-
-        asset.safeTransferFrom(msg.sender, address(this), amount);
-
-        afterDeposit(amount);
+        shares = super.deposit(amount, to);
     }
 
     function mint(uint256 shares, address to) public virtual override returns (uint256 amount) {
         beforeShareTransfer();
-
-        _mint(to, amount = previewMint(shares)); // No need to check for rounding error, previewMint rounds up.
-
-        emit Deposit(msg.sender, to, amount);
-
-        asset.safeTransferFrom(msg.sender, address(this), amount);
-
-        afterDeposit(amount);
+        amount = super.mint(shares, to);
     }
 
     function withdraw(
@@ -54,20 +38,7 @@ abstract contract RageERC4626 is ERC4626 {
         address from
     ) public virtual override returns (uint256 shares) {
         beforeShareTransfer();
-
-        shares = previewWithdraw(amount); // No need to check for rounding error, previewWithdraw rounds up.
-
-        uint256 allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.
-
-        if (msg.sender != from && allowed != type(uint256).max) allowance[from][msg.sender] = allowed - shares;
-
-        _burn(from, shares);
-
-        emit Withdraw(from, to, amount);
-
-        beforeWithdraw(amount);
-
-        asset.safeTransfer(to, amount);
+        shares = super.withdraw(amount, to, from);
     }
 
     function redeem(
@@ -76,21 +47,7 @@ abstract contract RageERC4626 is ERC4626 {
         address from
     ) public virtual override returns (uint256 amount) {
         beforeShareTransfer();
-
-        uint256 allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.
-
-        if (msg.sender != from && allowed != type(uint256).max) allowance[from][msg.sender] = allowed - shares;
-
-        // Check for rounding error since we round down in previewRedeem.
-        require((amount = previewRedeem(shares)) != 0, 'ZERO_ASSETS');
-
-        _burn(from, shares);
-
-        emit Withdraw(from, to, amount);
-
-        beforeWithdraw(amount);
-
-        asset.safeTransfer(to, amount);
+        amount = super.redeem(shares, to, from);
     }
 
     function beforeShareTransfer() internal virtual;
