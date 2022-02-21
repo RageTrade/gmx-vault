@@ -2,7 +2,7 @@
 pragma solidity ^0.8.9;
 
 interface IBaseVault {
-    function rebalanceRanges() external;
+    function rebalance() external;
 
     function rebalanceProfitAndCollateral() external;
 }
