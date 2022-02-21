@@ -17,6 +17,8 @@ import { SignedMath } from '@ragetrade/contracts/contracts/libraries/SignedMath.
 
 import { TickMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/TickMath.sol';
 
+import { console } from 'hardhat/console.sol';
+
 abstract contract BaseRangeStrategyVault is BaseVault {
     using SafeCast for uint256;
     using SafeCast for uint128;
@@ -30,11 +32,45 @@ abstract contract BaseRangeStrategyVault is BaseVault {
         RANGE STRATEGY
     */
 
+    function afterDepositRanges(uint256 amount) internal override {
+        int256 depositMarketValue = getMarketValue(amount).toInt256();
+        settleCollateral(depositMarketValue);
+
+        // Add to base range based on the additional collateral
+        // updateRangesAfterDeposit();
+    }
+
+    function beforeWithdrawRanges(uint256 amount) internal override {
+        // Remove from base range based on the collateral removal
+        // updateRangesBeforeWithdraw();
+
+        // Settle collateral based on updated value
+        int256 depositMarketValue = getMarketValue(amount).toInt256();
+        settleCollateral(-depositMarketValue);
+    }
+
+    function rebalanceRanges(
+        IClearingHouse.VTokenPositionView memory vTokenPosition,
+        IClearingHouse.RageTradePool memory rageTradePool,
+        int256 vaultMarketValue
+    ) internal override {
+        IClearingHouse.LiquidityChangeParams[4] memory liquidityChangeParamList = getLiquidityChangeParams(
+            vTokenPosition,
+            rageTradePool,
+            vaultMarketValue
+        );
+
+        for (uint8 i = 0; i < liquidityChangeParamList.length; i++) {
+            if (liquidityChangeParamList[i].liquidityDelta == 0) break;
+            rageClearingHouse.updateRangeOrder(rageAccountNo, VWETH_TRUNCATED_ADDRESS, liquidityChangeParamList[i]);
+        }
+    }
+
     function getLiquidityChangeParams(
         IClearingHouse.VTokenPositionView memory vTokenPosition,
         IClearingHouse.RageTradePool memory rageTradePool,
         int256 vaultMarketValue
-    ) internal view override returns (IClearingHouse.LiquidityChangeParams[4] memory liquidityChangeParamList) {
+    ) internal view returns (IClearingHouse.LiquidityChangeParams[4] memory liquidityChangeParamList) {
         //Get net token position
         //Remove reabalance
         //Add new rebalance range

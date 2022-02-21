@@ -96,7 +96,12 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
             assert(deposits.length == 1);
             IClearingHouse.DepositTokenView memory stablecoinDeposit = deposits[0];
             assert(stablecoinDeposit.rTokenAddress == address(rageCollateralToken));
-            vaultMarketValueDiff = vaultMarketValue - stablecoinDeposit.balance.toInt256();
+            vaultMarketValueDiff =
+                vaultMarketValue -
+                stablecoinDeposit.balance.toInt256().mulDiv(
+                    10**rageBaseToken.decimals(),
+                    10**rageCollateralToken.decimals()
+                );
         } else {
             vaultMarketValueDiff = vaultMarketValue;
         }
@@ -129,7 +134,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         }
     }
 
-    function rebalanceRanges() external {
+    function rebalance() public {
         //Rebalance ranges based on the parameters passed
         //TODO: Use multicall instead of directly executing txns with rageClearingHouse
         IClearingHouse.DepositTokenView[] memory deposits;
@@ -144,16 +149,8 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         IClearingHouse.RageTradePool memory rageTradePool = rageClearingHouse.pools(IVToken(VWETH_ADDRESS));
 
         //Step-4 Find the ranges and amount of liquidity to put in each
-        IClearingHouse.LiquidityChangeParams[4] memory liquidityChangeParamList = getLiquidityChangeParams(
-            vTokenPositions[0],
-            rageTradePool,
-            vaultMarketValue
-        );
+        rebalanceRanges(vTokenPositions[0], rageTradePool, vaultMarketValue);
 
-        for (uint8 i = 0; i < liquidityChangeParamList.length; i++) {
-            if (liquidityChangeParamList[i].liquidityDelta == 0) break;
-            rageClearingHouse.updateRangeOrder(rageAccountNo, VWETH_TRUNCATED_ADDRESS, liquidityChangeParamList[i]);
-        }
         //Step-5 Rebalance
     }
 
@@ -204,6 +201,16 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         rebalanceProfitAndCollateral();
     }
 
+    function afterDeposit(uint256 amount) internal override {
+        afterDepositRanges(amount);
+        afterDepositYield(amount);
+    }
+
+    function beforeWithdraw(uint256 amount) internal override {
+        beforeWithdrawRanges(amount);
+        beforeWithdrawYield(amount);
+    }
+
     /*
         YIELD STRATEGY
     */
@@ -228,13 +235,21 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
     function stakedAssetBalance() internal view virtual returns (uint256);
 
+    function afterDepositYield(uint256 amount) internal virtual;
+
+    function beforeWithdrawYield(uint256 amount) internal virtual;
+
     /*
         RANGE STRATEGY
     */
 
-    function getLiquidityChangeParams(
+    function rebalanceRanges(
         IClearingHouse.VTokenPositionView memory vTokenPosition,
         IClearingHouse.RageTradePool memory rageTradePool,
         int256 vaultMarketValue
-    ) internal view virtual returns (IClearingHouse.LiquidityChangeParams[4] memory liquidityChangeParamList);
+    ) internal virtual;
+
+    function afterDepositRanges(uint256 amount) internal virtual;
+
+    function beforeWithdrawRanges(uint256 amount) internal virtual;
 }
