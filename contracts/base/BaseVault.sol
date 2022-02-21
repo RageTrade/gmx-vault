@@ -208,10 +208,6 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         YIELD STRATEGY
     */
 
-    function depositTokens() external virtual;
-
-    function withdrawTokens() external virtual;
-
     function stake() internal virtual;
 
     function harvestFees() internal virtual;
