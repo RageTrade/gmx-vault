@@ -57,7 +57,11 @@ import {
 
 import { FakeContract, smock, SmockContractBase } from '@defi-wonderland/smock';
 import { ADDRESS_ZERO, priceToClosestTick } from '@uniswap/v3-sdk';
-import { LiquidityChangeParamsStructOutput, VTokenPositionViewStruct } from '../typechain-types/IClearingHouse';
+import {
+  LiquidityChangeParamsStructOutput,
+  LiquidityPositionViewStruct,
+  VTokenPositionViewStruct,
+} from '../typechain-types/IClearingHouse';
 const whaleForBase = '0x47ac0Fb4F2D84898e4D9E7b4DaB3C24507a6D503';
 const whaleForWETH = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
 
@@ -74,7 +78,7 @@ const SUSHI_ROUTER_ADDRESS = '0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F';
 
 const SUSHI_CHEF_ADDRESS = '0xEF0881eC094552b2e128Cf945EF17a6752B4Ec5d';
 
-describe('Clearing House Scenario 1', () => {
+describe('Vaults', () => {
   let vBaseAddress: string;
   let ownerAddress: string;
   let testContractAddress: string;
@@ -482,6 +486,11 @@ describe('Clearing House Scenario 1', () => {
       expect(await wethUsdcSushiPair.balanceOf(vaultTest.address)).to.eq(lpTokenBalanceFinal);
       expect(await wethUsdcSushiPair.balanceOf(user0.address)).to.eq(0);
       expect(await vaultTest.balanceOf(user0.address)).to.eq(lpTokenBalanceFinal);
+
+      const accountView = await clearingHouse.getAccountView(vaultAccountNo);
+      const depositView = accountView.tokenDeposits;
+      const depositValue = await vaultTest.getMarketValue(lpTokenBalanceFinal);
+      expect(depositView[0].balance).to.eq(tokenAmount(depositValue, 12));
     });
     it('Withdraw', async () => {
       await setOracle(10n ** 8n, 3000n * 10n ** 8n);
@@ -491,6 +500,11 @@ describe('Clearing House Scenario 1', () => {
       expect(await wethUsdcSushiPair.balanceOf(vaultTest.address)).to.eq(vaultBalance.sub(100n));
       expect(await wethUsdcSushiPair.balanceOf(user0.address)).to.eq(100n);
       expect(await vaultTest.balanceOf(user0.address)).to.eq(vaultBalance.sub(100n));
+
+      const accountView = await clearingHouse.getAccountView(vaultAccountNo);
+      const depositView = accountView.tokenDeposits;
+      const depositValue = await vaultTest.getMarketValue(vaultBalance.sub(100n));
+      expect(depositView[0].balance).to.eq(tokenAmount(depositValue, 12));
     });
 
     it('Vault Market Value');
@@ -533,6 +547,55 @@ describe('Clearing House Scenario 1', () => {
         expect(liquidityChangeParams[0].tickLower).to.eq(tickLower);
         expect(liquidityChangeParams[0].tickUpper).to.eq(tickUpper);
       });
+
+      // it('Previous Ranges Present', async () => {
+      //   const liquidityPositions = [];
+      //   const liquidityPosition: LiquidityPositionViewStruct = {
+      //     limitOrderType: 0,
+      //     tickLower: 19000,
+      //     tickUpper: 21000,
+      //     liquidity: 100_000n,
+      //     vTokenAmountIn: 100n,
+      //     sumALastX128: 0n,
+      //     sumBInsideLastX128: 0n,
+      //     sumFpInsideLastX128: 0n,
+      //     sumFeeInsideLastX128: 0n
+      //   }
+
+      //   liquidityPositions.push(liquidityPosition)
+
+      //   const vTokenPosition: VTokenPositionViewStruct = {
+      //     vTokenAddress: vTokenAddress,
+      //     balance: 0,
+      //     netTraderPosition: 0,
+      //     sumAX128Ckpt: 0,
+      //     liquidityPositions: liquidityPositions,
+      //   };
+
+      //   const accountMarketValue = tokenAmount(50000n, 6);
+      //   const liquidityChangeParams = await vaultTest.getLiquidityChangeParams(vTokenPosition, accountMarketValue);
+
+      //   expect(getNumChanges(liquidityChangeParams)).to.eq(2);
+      //   // expect(liquidityChangeParams[0].liquidityDelta).to.eq(0);
+
+      //   const { sqrtPriceX96 } = await vPool.slot0();
+      //   const price = await sqrtPriceX96ToPrice(sqrtPriceX96, vBase, vToken);
+      //   const priceLower = price * 0.6;
+      //   const priceUpper = price * 1.4;
+      //   let tickLower = await priceToTick(priceLower, vBase, vToken);
+      //   let tickUpper = await priceToTick(priceUpper, vBase, vToken);
+
+      //   tickLower += 10 - (tickLower % 10);
+      //   tickUpper -= tickUpper % 10;
+
+      //   expect(liquidityChangeParams[0].tickLower).to.eq(tickLower);
+      //   expect(liquidityChangeParams[0].tickUpper).to.eq(tickUpper);
+
+      //   expect(liquidityChangeParams[1].tickLower).to.eq(liquidityPosition.tickLower);
+      //   expect(liquidityChangeParams[1].tickUpper).to.eq(liquidityPosition.tickUpper);
+      //   expect(liquidityChangeParams[1].liquidityDelta.mul(-1)).to.eq(liquidityPosition.liquidity);
+
+      // });
     });
   });
 
