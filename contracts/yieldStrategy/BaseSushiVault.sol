@@ -115,10 +115,6 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         YIELD STRATEGY
     */
 
-    function depositTokens() external override {}
-
-    function withdrawTokens() external override {}
-
     function getPriceX128() public view override returns (uint256 priceX128) {
         //Get price of the LP token based on the price of token0 and token1
         priceX128 = Pricing.getUniV2LPPriceX128(
