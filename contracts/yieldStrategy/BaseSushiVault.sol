@@ -220,4 +220,8 @@ contract BaseSushiVault is BaseRangeStrategyVault {
     }
 
     function stakedAssetBalance() internal view override returns (uint256) {}
+
+    function afterDepositYield(uint256 amount) internal override {}
+
+    function beforeWithdrawYield(uint256 amount) internal override {}
 }
