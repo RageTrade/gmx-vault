@@ -38,12 +38,18 @@ const pk = process.env.PRIVATE_KEY || ethers.utils.hexlify(ethers.utils.randomBy
 export default {
   networks: {
     hardhat: {
+      forking: {
+        url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_KEY}`,
+      },
       gasPrice: 0,
-      initialBaseFeePerGas: 0,
-      allowUnlimitedContractSize: true, // TODO: remove this
+      initialBaseFeePerGas: 0
     },
     rinkeby: {
       url: `https://eth-rinkeby.alchemyapi.io/v2/${ALCHEMY_KEY}`,
+      accounts: [pk],
+    },
+    mainnet: {
+      url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_KEY}`,
       accounts: [pk],
     },
     arbitrum: {
@@ -108,7 +114,6 @@ export default {
       'node_modules/@uniswap/v2-core/build/IUniswapV2Factory.json',
       'node_modules/@uniswap/v2-core/build/IUniswapV2Pair.json',
       'node_modules/@uniswap/v2-periphery/build/IUniswapV2Router02.json',
-      
     ],
   },
   etherscan: {

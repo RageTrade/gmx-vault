@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 
 pragma solidity ^0.8.9;
+
 import { BaseVault } from '../base/BaseVault.sol';
 
 import { BaseRangeStrategyVault } from '../rangeStrategy/BaseRangeStrategyVault.sol';
@@ -11,12 +12,12 @@ import { IUniswapV2Pair } from '@uniswap/v2-core/contracts/interfaces/IUniswapV2
 
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
+import { IMiniChefV2 } from '../interfaces/sushi/IMiniChefV2.sol';
+
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
 
 import { Pricing } from '../libraries/Pricing.sol';
-
-import { IMiniChefV2 } from '../interfaces/sushi/IMiniChefV2.sol';
 
 import { console } from 'hardhat/console.sol';
 
@@ -30,12 +31,6 @@ struct SushiParams {
     address token0Oracle;
     address token1Oracle;
     uint256 maxOracleDelayTime;
-    address[] baseToToken0Route;
-    address[] baseToToken1Route;
-    address[] token0ToBaseRoute;
-    address[] token1ToBaseRoute;
-    address[] rewardToToken0Route;
-    address[] rewardToToken1Route;
 }
 
 contract BaseSushiVault is BaseRangeStrategyVault {
@@ -53,15 +48,10 @@ contract BaseSushiVault is BaseRangeStrategyVault {
     address public token1Oracle;
 
     uint256 public sushiPoolId;
-    uint256 public maxOracleDelayTime;
-    uint256 public lastHarvestTime;
 
-    address[] public baseToToken0Route;
-    address[] public baseToToken1Route;
-    address[] public token0ToBaseRoute;
-    address[] public token1ToBaseRoute;
-    address[] public rewardToToken0Route;
-    address[] public rewardToToken1Route;
+    uint256 public maxOracleDelayTime;
+
+    uint256 public lastHarvestTime;
 
     constructor(
         ERC20 _asset,
@@ -74,19 +64,14 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         sushiRouter = IUniswapV2Router02(_sushiParams.sushiRouter);
         sushiPair = IUniswapV2Pair(_sushiParams.sushiPair);
         sushiChef = IMiniChefV2(_sushiParams.sushiChef);
+
         token0 = _sushiParams.token0;
         token1 = _sushiParams.token1;
         rewardToken = _sushiParams.rewardToken;
+
         token0Oracle = _sushiParams.token0Oracle;
         token1Oracle = _sushiParams.token1Oracle;
         maxOracleDelayTime = _sushiParams.maxOracleDelayTime;
-
-        baseToToken0Route = _sushiParams.baseToToken0Route;
-        baseToToken1Route = _sushiParams.baseToToken1Route;
-        token0ToBaseRoute = _sushiParams.token0ToBaseRoute;
-        token1ToBaseRoute = _sushiParams.token1ToBaseRoute;
-        rewardToToken0Route = _sushiParams.rewardToToken0Route;
-        rewardToToken1Route = _sushiParams.rewardToToken1Route;
     }
 
     function initialize(
@@ -116,7 +101,7 @@ contract BaseSushiVault is BaseRangeStrategyVault {
     */
 
     function getPriceX128() public view override returns (uint256 priceX128) {
-        //Get price of the LP token based on the price of token0 and token1
+        // Get price of the LP token based on the price of token0 and token1
         priceX128 = Pricing.getUniV2LPPriceX128(
             address(sushiPair),
             token0Oracle,
@@ -126,40 +111,44 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         );
     }
 
-    function getMarketValue(uint256 balance) public view override returns (uint256 marketValue) {
-        marketValue = balance.mulDiv(getPriceX128(), FixedPoint128.Q128);
+    function getMarketValue(uint256 amount) public view override returns (uint256 marketValue) {
+        marketValue = amount.mulDiv(getPriceX128(), FixedPoint128.Q128);
     }
 
-    //To convert yield token into USDC to cover loss on rage trade
-    function withdrawBase(uint256 amount) internal override {
-        //Calculate amount of liquidity to withdraw for "amount" of base token
+    // To convert yield token into USDC to cover loss on rage trade
+    function _withdrawBase(uint256 amount) internal override {
+        // Calculate amount of liquidity to withdraw for "amount" of base token
         uint256 liquidity = amount.mulDiv(
             (10**sushiPair.decimals()) * FixedPoint128.Q128,
             (10**rageBaseToken.decimals()) * getPriceX128()
         );
 
-        //Remove Liquidity
+        // Remove Liquidity
         sushiRouter.removeLiquidity(token0, token1, liquidity, 0, 0, address(this), block.timestamp);
 
         uint256 token0Bal = IERC20(token0).balanceOf(address(this));
         uint256 token1Bal = IERC20(token1).balanceOf(address(this));
 
-        //Swap tokens into base token if they are not base token
+        // Swap tokens into base token if they are not base token
+        address[] memory path;
+        path[0] = token0;
+        path[1] = token1;
+    
         if (token0 != address(rageBaseToken)) {
-            sushiRouter.swapExactTokensForTokens(token0Bal, 0, token0ToBaseRoute, address(this), block.timestamp);
+            sushiRouter.swapExactTokensForTokens(token0Bal, 0, path, address(this), block.timestamp);
         }
 
         if (token1 != address(rageBaseToken)) {
-            sushiRouter.swapExactTokensForTokens(token1Bal, 0, token1ToBaseRoute, address(this), block.timestamp);
+            sushiRouter.swapExactTokensForTokens(token1Bal, 0, path, address(this), block.timestamp);
         }
     }
 
-    //To deposit the USDC profit made from rage trade into yield protocol
-    function depositBase(uint256 amount) internal override {
-        _depositToken(address(rageBaseToken), amount, baseToToken0Route, baseToToken1Route);
+    // To deposit the USDC profit made from rage trade into yield protocol
+    function _depositBase(uint256 amount) internal override {
+        _depositToken(address(rageBaseToken), amount);
     }
 
-    function stake() internal override {
+    function _stake() internal override {
         uint256 assetBal = asset.balanceOf(address(this));
 
         if (assetBal > 0) {
@@ -167,37 +156,42 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         }
     }
 
-    function harvestFees() internal override {
-        //TODO:Need to add extra implementation for external rewards (Not needed for WETH-USDC pool)
+    // TODO: Need to add extra implementation for external rewards (Not needed for WETH-USDC pool)
+    function _harvestFees() internal override {
         IMiniChefV2(sushiChef).harvest(sushiPoolId, address(this));
         uint256 rewardBal = IERC20(rewardToken).balanceOf(address(this));
+
         if (rewardBal > 0) {
-            depositReward();
+            _depositReward();
             lastHarvestTime = block.timestamp;
         }
     }
 
-    function depositReward() internal {
+    function _depositReward() internal {
         uint256 rewardBal = IERC20(rewardToken).balanceOf(address(this));
-        _depositToken(rewardToken, rewardBal, rewardToToken0Route, rewardToToken1Route);
+        _depositToken(rewardToken, rewardBal);
     }
 
     function _depositToken(
         address token,
-        uint256 amount,
-        address[] storage token0Route,
-        address[] storage token1Route
+        uint256 amount
     ) internal {
         uint256 amountHalf = amount / 2;
 
         uint256 token0Bal;
         uint256 token1Bal;
-        //Swap half of base token into the set tokens if they are already not base tokens
+
+        address[] memory path;
+
+        // Swap half of base token into the set tokens if they are already not base tokens
         if (token0 != address(token)) {
+            path[0] = token;
+            path[1] = token0;
+
             uint256[] memory amounts = sushiRouter.swapExactTokensForTokens(
                 amountHalf,
                 0,
-                token0Route,
+                path,
                 address(this),
                 block.timestamp
             );
@@ -205,23 +199,38 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         }
 
         if (token1 != address(token)) {
+            path[0] = token;
+            path[1] = token1;
+    
             uint256[] memory amounts = sushiRouter.swapExactTokensForTokens(
                 amountHalf,
                 0,
-                token1Route,
+                path,
                 address(this),
                 block.timestamp
             );
             token1Bal = amounts[amounts.length - 1];
         }
 
-        //Add Liquidity based on the token balance available
+        // Add Liquidity based on the token balance available
+        // TODO: clean residue incase both full token0 & token1 were not deposited into LP
         sushiRouter.addLiquidity(token0, token1, token0Bal, token1Bal, 1, 1, address(this), block.timestamp);
     }
 
-    function stakedAssetBalance() internal view override returns (uint256) {}
+    function _stakedAssetBalance() internal view override returns (uint256) {
+        (uint256 amount, /** uint256 rewardDebt */) =  sushiChef.userInfo(sushiPoolId, address(this));
+        return amount;
+    }
 
-    function afterDepositYield(uint256 amount) internal override {}
+    function _afterDepositYield(uint256 /** amount */) internal override {
+        // stake outstanding SLP
+        _stake();
+    }
 
-    function beforeWithdrawYield(uint256 amount) internal override {}
+    function _beforeWithdrawYield(uint256 amount) internal override {
+        // unstake and return principal
+        sushiChef.withdraw(sushiPoolId, amount, msg.sender);
+        // harvest & send share of harvested fees to user
+        _harvestFees();
+    }
 }

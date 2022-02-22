@@ -32,24 +32,24 @@ abstract contract BaseRangeStrategyVault is BaseVault {
         RANGE STRATEGY
     */
 
-    function afterDepositRanges(uint256 amount) internal override {
+    function _afterDepositRanges(uint256 amount) internal override {
         int256 depositMarketValue = getMarketValue(amount).toInt256();
-        settleCollateral(depositMarketValue);
+        _settleCollateral(depositMarketValue);
 
         // Add to base range based on the additional collateral
         // updateRangesAfterDeposit();
     }
 
-    function beforeWithdrawRanges(uint256 amount) internal override {
+    function _beforeWithdrawRanges(uint256 amount) internal override {
         // Remove from base range based on the collateral removal
         // updateRangesBeforeWithdraw();
 
         // Settle collateral based on updated value
         int256 depositMarketValue = getMarketValue(amount).toInt256();
-        settleCollateral(-depositMarketValue);
+        _settleCollateral(-depositMarketValue);
     }
 
-    function rebalanceRanges(
+    function _rebalanceRanges(
         IClearingHouse.VTokenPositionView memory vTokenPosition,
         IClearingHouse.RageTradePool memory rageTradePool,
         int256 vaultMarketValue
@@ -71,16 +71,16 @@ abstract contract BaseRangeStrategyVault is BaseVault {
         IClearingHouse.RageTradePool memory rageTradePool,
         int256 vaultMarketValue
     ) internal view returns (IClearingHouse.LiquidityChangeParams[4] memory liquidityChangeParamList) {
-        //Get net token position
-        //Remove reabalance
-        //Add new rebalance range
-        //Update base range liquidity
+        // Get net token position
+        // Remove reabalance
+        // Add new rebalance range
+        // Update base range liquidity
         int256 netPosition = rageClearingHouse.getNetTokenPosition(rageAccountNo, VWETH_TRUNCATED_ADDRESS);
         uint160 twapSqrtPriceX96 = rageTradePool.vPool.twapSqrtPrice(rageTradePool.settings.twapDuration);
 
         uint8 liqCount = 0;
         if (netPosition != 0) {
-            //Rebalance Range
+            // Rebalance Range
             uint160 sqrtPriceLowerX96;
             uint160 sqrtPriceUpperX96;
             int128 liquidityDelta;
@@ -88,8 +88,8 @@ abstract contract BaseRangeStrategyVault is BaseVault {
                 sqrtPriceLowerX96 = twapSqrtPriceX96;
                 sqrtPriceUpperX96 = uint256(twapSqrtPriceX96).mulDiv(104880885, 1e8).toUint160(); //multiplication by sqrt(1.1)
 
-                //liquidityDelta = netTokenPositionAccrued * sqrtPCurrent * (sqrt(1+r) +1+r)/r
-                //for r=.1 -> (sqrt(1+r) +1+r)/r = 21.48808848
+                // liquidityDelta = netTokenPositionAccrued * sqrtPCurrent * (sqrt(1+r) +1+r)/r
+                // for r=.1 -> (sqrt(1+r) +1+r)/r = 21.48808848
                 liquidityDelta = netPosition
                     .mulDiv(int256(2148808848), 1e8)
                     .mulDiv(twapSqrtPriceX96, FixedPoint96.Q96)
@@ -98,8 +98,8 @@ abstract contract BaseRangeStrategyVault is BaseVault {
                 sqrtPriceLowerX96 = uint256(twapSqrtPriceX96).mulDiv(94868330, 1e8).toUint160(); //multiplication by sqrt(.9)
                 sqrtPriceUpperX96 = twapSqrtPriceX96;
 
-                //liquidityDelta = -netTokenPositionAccrued * sqrtPCurrent * (sqrt(1-r) +1-r)/r
-                //for r=.1 -> (sqrt(1-r) +1-r)/r = 18.48683298
+                // liquidityDelta = -netTokenPositionAccrued * sqrtPCurrent * (sqrt(1-r) +1-r)/r
+                // for r=.1 -> (sqrt(1-r) +1-r)/r = 18.48683298
                 liquidityDelta = netPosition
                     .mulDiv(int256(1848683298), 1e8)
                     .mulDiv(twapSqrtPriceX96, FixedPoint96.Q96)
@@ -119,10 +119,10 @@ abstract contract BaseRangeStrategyVault is BaseVault {
         }
 
         {
-            //Base Range
+            // Base Range
 
-            //LiquidityDelta = (vaultMarketValue / (sqrtPCurrent * MMargin) - abs(netTokenPositionAccrued)* sqrtPCurrent)* (sqrt(1-b) +1-b)/b
-            //for b=0.4 (sqrt(1-b) +1-b)/b=
+            // LiquidityDelta = (vaultMarketValue / (sqrtPCurrent * MMargin) - abs(netTokenPositionAccrued)* sqrtPCurrent)* (sqrt(1-b) +1-b)/b
+            // for b=0.4 (sqrt(1-b) +1-b)/b=
 
             int128 liquidityDelta;
             {
@@ -158,7 +158,7 @@ abstract contract BaseRangeStrategyVault is BaseVault {
             liqCount++;
         }
         {
-            //Remove previous ranges
+            // Remove previous ranges
             IClearingHouse.LiquidityPositionView[] memory liquidityPositions = vTokenPosition.liquidityPositions;
             for (uint8 i = 0; i < liquidityPositions.length; ++i) {
                 assert(liquidityPositions[i].tickLower != 0);
