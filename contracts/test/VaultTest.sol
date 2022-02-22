@@ -8,6 +8,7 @@ import { BaseRangeStrategyVault } from '../rangeStrategy/BaseRangeStrategyVault.
 import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
 
 import { IUniswapV2Router02 } from '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
+import { IUniswapV2Factory } from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 import { IUniswapV2Pair } from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
@@ -37,14 +38,14 @@ contract VaultTest is BaseSushiVault {
     }
 
     function testSettleCollateral(int256 vaultMarketValueDiff) external {
-        settleCollateral(vaultMarketValueDiff);
+        _settleCollateral(vaultMarketValueDiff);
     }
 
     function testDepositBase(uint256 amount) external {
-        depositBase(amount);
+        _depositBase(amount);
     }
 
     function testWithdrawBase(uint256 amount) external {
-        withdrawBase(amount);
+        _withdrawBase(amount);
     }
 }
