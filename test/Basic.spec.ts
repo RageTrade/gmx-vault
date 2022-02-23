@@ -25,7 +25,7 @@ import {
   IUniswapV2Router02,
   IUniswapV2Pair,
   BaseVault,
-  CollateralToken,
+  ERC20PresetMinterPauserUpgradeable as CollateralToken,
   BaseSushiVault,
   IAggregatorV3Interface,
   VaultTest,
@@ -295,7 +295,7 @@ describe('Vaults', () => {
     const wethUsdcPairAddress = await sushiFactory.getPair(USDC_ADDRESS, WETH_ADDRESS);
     wethUsdcSushiPair = await hre.ethers.getContractAt('IUniswapV2Pair', wethUsdcPairAddress);
 
-    const collateralTokenFactory = await hre.ethers.getContractFactory('CollateralToken');
+    const collateralTokenFactory = await hre.ethers.getContractFactory('ERC20PresetMinterPauserUpgradeable');
     collateralToken = await collateralTokenFactory.deploy();
     await collateralToken.initialize('Vault Collateral', 'VC');
     collateralTokenOracle = await (await hre.ethers.getContractFactory('OracleMock')).deploy();

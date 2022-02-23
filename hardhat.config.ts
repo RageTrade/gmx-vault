@@ -42,7 +42,8 @@ export default {
         url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_KEY}`,
       },
       gasPrice: 0,
-      initialBaseFeePerGas: 0
+      initialBaseFeePerGas: 0,
+      allowUnlimitedContractSize: true, // TODO: remove this
     },
     rinkeby: {
       url: `https://eth-rinkeby.alchemyapi.io/v2/${ALCHEMY_KEY}`,
