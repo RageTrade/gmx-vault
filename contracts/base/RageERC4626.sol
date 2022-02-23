@@ -6,6 +6,8 @@ import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
 import { SafeTransferLib } from '@rari-capital/solmate/src/utils/SafeTransferLib.sol';
 import { FixedPointMathLib } from '@rari-capital/solmate/src/utils/FixedPointMathLib.sol';
 
+import { console } from 'hardhat/console.sol';
+
 abstract contract RageERC4626 is ERC4626 {
 
     constructor(
@@ -15,7 +17,9 @@ abstract contract RageERC4626 is ERC4626 {
     ) ERC4626(_asset, _name, _symbol) {}
 
     function deposit(uint256 amount, address to) public virtual override returns (uint256 shares) {
+        console.log("entered deposit");
         _beforeShareTransfer();
+        console.log("before share transfer success");
         return super.deposit(amount, to);
     }
 

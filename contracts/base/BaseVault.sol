@@ -111,21 +111,25 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     }
 
     function _settleCollateral(int256 vaultMarketValueDiff) internal {
+        console.log('settle collateral');
         int256 normalizedVaultMarketValueDiff = vaultMarketValueDiff.mulDiv(
             10**rageCollateralToken.decimals(),
             10**rageBaseToken.decimals()
         );
         uint256 normalizedVaultMarketValueDiffAbs = normalizedVaultMarketValueDiff.absUint();
+        console.log('normalized diff abs: ', normalizedVaultMarketValueDiffAbs);
 
         if (normalizedVaultMarketValueDiff > 0) {
+            console.log('normalized diff', uint256(normalizedVaultMarketValueDiff));
             // Mint collateral coins and deposit into rage trade
-            assert(rageCollateralToken.balanceOf(address(this)) > normalizedVaultMarketValueDiffAbs);
+            assert(rageCollateralToken.balanceOf(address(this)) >= normalizedVaultMarketValueDiffAbs);
             rageClearingHouse.addMargin(
                 rageAccountNo,
                 RTokenLib.truncate(address(rageCollateralToken)),
                 normalizedVaultMarketValueDiffAbs
             );
         } else if (normalizedVaultMarketValueDiff < 0) {
+            console.log('normalized diff', normalizedVaultMarketValueDiff.absUint());
             // Withdraw rage trade deposits
             rageClearingHouse.removeMargin(
                 rageAccountNo,
@@ -199,12 +203,17 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     }
 
     function _beforeShareTransfer() internal override {
+        console.log("before share transfer");
         rebalanceProfitAndCollateral();
+        console.log("rebalance profit&collateral success");
     }
 
     function afterDeposit(uint256 amount) internal override {
-        _afterDepositRanges(amount);
+        console.log('base: reached after deposit');
         _afterDepositYield(amount);
+        console.log('after deposit yield success');
+        _afterDepositRanges(amount);
+        console.log('after deposit range success');
     }
 
     function beforeWithdraw(uint256 amount) internal override {

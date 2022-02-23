@@ -149,6 +149,7 @@ contract BaseSushiVault is BaseRangeStrategyVault {
     }
 
     function _stake() internal override {
+        asset.approve(address(sushiChef), type(uint256).max);
         uint256 assetBal = asset.balanceOf(address(this));
 
         if (assetBal > 0) {
@@ -224,7 +225,9 @@ contract BaseSushiVault is BaseRangeStrategyVault {
 
     function _afterDepositYield(uint256 /** amount */) internal override {
         // stake outstanding SLP
+        console.log('sushi: after deposit yield');
         _stake();
+        console.log('staked successful');
     }
 
     function _beforeWithdrawYield(uint256 amount) internal override {
