@@ -166,6 +166,14 @@ const deployAndSetupChainlinkOralces = async () => {
   return { usdcOracle, wethOracle }
 }
 
+const mineBlocks = async (blocks: number) => {
+  for (let i = 0; i < blocks; i++) {
+    await network.provider.send("evm_increaseTime", [3600])
+    await network.provider.send("evm_mine") // this one will have 02:00 PM as its timestamp
+  }
+
+}
+
 const initVaults = async (
   baseSushiVault: BaseSushiVault,
   vaultTest: VaultTest,
@@ -409,12 +417,22 @@ describe('# Main', () => {
 
   })
 
-  describe('# Allowances', () => { })
+  describe('# Allowances', () => {
+
+    it('- should have correct router allowances', async () => {
+
+      expect(await weth.allowance(baseSushiVault.address, uniV2Router.address)).gte(0);
+    })
+
+    it('- should have correct miniChef allowances', async () => {
+
+      expect(await usdc.allowance(baseSushiVault.address, sushiChef.address)).gte(0);
+    })
+  })
 
   describe('# Deposit', () => {
-    it('- should increase bal on transfer', async () => {
-      const pairDecimals = BigNumber.from(10).pow(await wethUsdc.decimals());
 
+    it('- should increase bal on transfer', async () => {
       const balBefore = await wethUsdc.balanceOf(alice.address);
 
       await hre.network.provider.request({
@@ -435,34 +453,95 @@ describe('# Main', () => {
 
       let vault = baseSushiVault.connect(alice)
       let token = wethUsdc.connect(alice);
-      token.approve(vault.address, '241502161737011795');
+      token.approve(vault.address, '200000000000000000');
 
-      const decimals = BigNumber.from(10).pow(await vault.decimals());
-      const balBefore = await vault.balanceOf(alice.address)
-      // console.log(balBefore)
+      let balBefore = await vault.balanceOf(alice.address);
 
-      await vault.deposit('241502161737011795', alice.address, {
-        from: alice.address
-      });
+      await vault.deposit('200000000000000000', alice.address);
 
-      const balAfter = await vault.balanceOf(alice.address);
-      // console.log(balAfter)
+      let balAfter = await vault.balanceOf(alice.address);
 
-      // expect(balAfter.sub(balBefore)).eq(decimals.mul(10_000));
+      expect(balAfter.sub(balBefore)).eq(await vault.balanceOf(alice.address));
+    })
+
+    it('- should have correct getters after deposit', async () => {
+
+      const pairDecimals = BigNumber.from(10).pow(await wethUsdc.decimals());
+
+      // 1:1 peg
+      expect(await baseSushiVault.assetsOf(alice.address)).eq(BigNumber.from(
+        await baseSushiVault.balanceOf(alice.address)
+      ));
+
+      expect(await baseSushiVault.assetsPerShare()).eq(BigNumber.from('1000000000000000000'));
+      expect(await baseSushiVault.totalAssets()).eq(BigNumber.from('200000000000000000'));
+      expect(await baseSushiVault.balanceOf(alice.address)).eq(BigNumber.from('200000000000000000'));
+
+      expect(await baseSushiVault.getPriceX128()).eq(BigNumber.from('45333963922260819845367647849350558'));
+
+      expect(await baseSushiVault.previewMint(pairDecimals.mul(2))).eq(BigNumber.from('2000000000000000000'));
+      expect(await baseSushiVault.previewDeposit(pairDecimals.mul(2))).eq(BigNumber.from('2000000000000000000'));
+
+      expect(await baseSushiVault.previewRedeem(pairDecimals.mul(2))).eq(BigNumber.from('2000000000000000000'));
+      expect(await baseSushiVault.previewWithdraw(pairDecimals.mul(2))).eq(BigNumber.from('2000000000000000000'));
+
+      expect(await baseSushiVault.getMarketValue(BigNumber.from('1000000000000000000'))).gt(BigNumber.from(0));
     })
 
   })
 
-  describe('# Withdraw', () => { })
+  describe('# Stake', () => {
 
-  describe('# Pricing', () => { })
+    let previous = BigNumber.from(0);
 
-  describe('# Stake', () => { })
+    it('- should auto stake SLP on deposit', async () => {
+      const chef = sushiChef.connect(alice)
 
-  describe('# Harvest', () => { })
+      const [amount, rewardDebt] = await chef.userInfo(0, baseSushiVault.address)
+      previous = rewardDebt;
 
-  describe('# Before hooks', () => { })
+      expect(amount).eq(await baseSushiVault.totalAssets())
+      expect(rewardDebt).gt(0);
+    })
 
-  describe('# After hooks', () => { })
+    it('- should increase rewards after few blocks', async () => {
+      await mineBlocks(1000)
+
+      const chef = sushiChef.connect(alice)
+
+      const [amount, rewardDebt] = await chef.userInfo(0, baseSushiVault.address)
+      expect(amount).eq(await baseSushiVault.totalAssets())
+      expect(rewardDebt).gte(previous);
+    })
+
+  })
+
+  describe('# Withdraw', () => {
+
+    it('- should withdraw previously deposited amount and burn shares', async () => {
+      // TODO: uncomment after range  stratergy dependency is fixed
+  
+      //   const vault = baseSushiVault.connect(alice)
+
+      //   const resp = await vault.withdraw(
+      //     BigNumber.from('100000000000000000'), // 50%
+      //     bob.address,
+      //     alice.address
+      //   )
+
+      //   console.log(resp)
+
+    })
+
+    it('- should auto harvest SUSHI on withdraw', async () => {
+      // TODO: uncomment after range  stratergy dependency is fixed
+
+      //   const chef = sushiChef.connect(alice)
+
+      //   const [_, rewardDebt] = await chef.userInfo(0, baseSushiVault.address)
+      //   expect(rewardDebt).eq(0);
+    })
+
+  })
 
 })

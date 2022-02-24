@@ -19,8 +19,6 @@ import { SignedFullMath } from '@ragetrade/contracts/contracts/libraries/SignedF
 
 import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadata.sol';
 
-import { console } from 'hardhat/console.sol';
-
 abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, OwnableUpgradeable {
     using SafeCast for int256;
     using SafeCast for uint256;
@@ -111,25 +109,21 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     }
 
     function _settleCollateral(int256 vaultMarketValueDiff) internal {
-        console.log('settle collateral');
         int256 normalizedVaultMarketValueDiff = vaultMarketValueDiff.mulDiv(
             10**rageCollateralToken.decimals(),
             10**rageBaseToken.decimals()
         );
         uint256 normalizedVaultMarketValueDiffAbs = normalizedVaultMarketValueDiff.absUint();
-        console.log('normalized diff abs: ', normalizedVaultMarketValueDiffAbs);
 
         if (normalizedVaultMarketValueDiff > 0) {
-            console.log('normalized diff', uint256(normalizedVaultMarketValueDiff));
             // Mint collateral coins and deposit into rage trade
-            assert(rageCollateralToken.balanceOf(address(this)) >= normalizedVaultMarketValueDiffAbs);
+            assert(rageCollateralToken.balanceOf(address(this)) > normalizedVaultMarketValueDiffAbs);
             rageClearingHouse.addMargin(
                 rageAccountNo,
                 RTokenLib.truncate(address(rageCollateralToken)),
                 normalizedVaultMarketValueDiffAbs
             );
         } else if (normalizedVaultMarketValueDiff < 0) {
-            console.log('normalized diff', normalizedVaultMarketValueDiff.absUint());
             // Withdraw rage trade deposits
             rageClearingHouse.removeMargin(
                 rageAccountNo,
@@ -184,12 +178,12 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
                 (vTokenPositions.length == 1 && vTokenPositions[0].vTokenAddress == VWETH_ADDRESS)
         );
         // Harvest the rewards earned (Should be harvested before calculating vault market value)
-        //  harvestFees();
+        _harvestFees();
 
         _settleProfitAndCollateral(deposits, vaultMarketValue);
 
         // stake the remaining LP tokens
-        // stake();
+        _stake();
     }
 
     function _unrealizedBalance() internal view returns (uint256) {
@@ -203,17 +197,12 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     }
 
     function _beforeShareTransfer() internal override {
-        console.log("before share transfer");
         rebalanceProfitAndCollateral();
-        console.log("rebalance profit&collateral success");
     }
 
     function afterDeposit(uint256 amount) internal override {
-        console.log('base: reached after deposit');
         _afterDepositYield(amount);
-        console.log('after deposit yield success');
-        _afterDepositRanges(amount);
-        console.log('after deposit range success');
+        // _afterDepositRanges(amount);
     }
 
     function beforeWithdraw(uint256 amount) internal override {
