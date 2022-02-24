@@ -19,8 +19,6 @@ import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/
 
 import { Pricing } from '../libraries/Pricing.sol';
 
-import { console } from 'hardhat/console.sol';
-
 struct SushiParams {
     address sushiRouter;
     address sushiPair;
@@ -48,10 +46,7 @@ contract BaseSushiVault is BaseRangeStrategyVault {
     address public token1Oracle;
 
     uint256 public sushiPoolId;
-
     uint256 public maxOracleDelayTime;
-
-    uint256 public lastHarvestTime;
 
     constructor(
         ERC20 _asset,
@@ -164,7 +159,6 @@ contract BaseSushiVault is BaseRangeStrategyVault {
 
         if (rewardBal > 0) {
             _depositReward();
-            lastHarvestTime = block.timestamp;
         }
     }
 
@@ -182,10 +176,9 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         uint256 token0Bal;
         uint256 token1Bal;
 
-        address[] memory path;
-
         // Swap half of base token into the set tokens if they are already not base tokens
         if (token0 != address(token)) {
+            address[] memory path;
             path[0] = token;
             path[1] = token0;
 
@@ -200,6 +193,7 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         }
 
         if (token1 != address(token)) {
+            address[] memory path;
             path[0] = token;
             path[1] = token1;
     
@@ -225,9 +219,7 @@ contract BaseSushiVault is BaseRangeStrategyVault {
 
     function _afterDepositYield(uint256 /** amount */) internal override {
         // stake outstanding SLP
-        console.log('sushi: after deposit yield');
         _stake();
-        console.log('staked successful');
     }
 
     function _beforeWithdrawYield(uint256 amount) internal override {
