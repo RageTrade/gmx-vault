@@ -52,8 +52,8 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         ERC20 _asset,
         string memory _name,
         string memory _symbol,
-        address _vWethAddress
-    ) BaseVault(_asset, _name, _symbol, _vWethAddress) {}
+        uint32 _ETH_poolId
+    ) BaseVault(_asset, _name, _symbol, _ETH_poolId) {}
 
     function __BaseSushiVault_init(SushiParams memory _sushiParams) internal onlyInitializing {
         sushiRouter = IUniswapV2Router02(_sushiParams.sushiRouter);

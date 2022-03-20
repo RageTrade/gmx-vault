@@ -2,46 +2,50 @@
 
 pragma solidity ^0.8.9;
 
+import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadata.sol';
+import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
+
+import { IClearingHouse } from '@ragetrade/core/contracts/interfaces/IClearingHouse.sol';
+import { IClearingHouseStructures } from '@ragetrade/core/contracts/interfaces/clearinghouse/IClearingHouseStructures.sol';
+import { IVToken } from '@ragetrade/core/contracts/interfaces/IVToken.sol';
+import { AddressHelper } from '@ragetrade/core/contracts/libraries/AddressHelper.sol';
+import { SignedMath } from '@ragetrade/core/contracts/libraries/SignedMath.sol';
+import { SignedFullMath } from '@ragetrade/core/contracts/libraries/SignedFullMath.sol';
+
+import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
+
 import { IBaseVault } from '../interfaces/IBaseVault.sol';
 import { IBaseYieldStrategy } from '../interfaces/IBaseYieldStrategy.sol';
 
-import { RageERC4626 } from './RageERC4626.sol';
-import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
-import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
-
-import { IClearingHouse, IVToken } from '@ragetrade/contracts/contracts/interfaces/IClearingHouse.sol';
-
 import { SafeCast } from '../libraries/SafeCast.sol';
-import { RTokenLib } from '@ragetrade/contracts/contracts/libraries/RTokenLib.sol';
-import { SignedMath } from '@ragetrade/contracts/contracts/libraries/SignedMath.sol';
 
-import { SignedFullMath } from '@ragetrade/contracts/contracts/libraries/SignedFullMath.sol';
-
-import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadata.sol';
+import { RageERC4626 } from './RageERC4626.sol';
 
 abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, OwnableUpgradeable {
+    using AddressHelper for address;
+    using AddressHelper for IVToken;
+    using SafeCast for uint256;
     using SafeCast for int256;
     using SafeCast for uint256;
     using SignedMath for int256;
     using SignedFullMath for int256;
 
+    // TODO: Make relevant things immutable
     IERC20Metadata public rageBaseToken;
     IClearingHouse public rageClearingHouse;
     IERC20Metadata public rageCollateralToken;
 
     uint256 public rageAccountNo;
-    uint32 public immutable VWETH_TRUNCATED_ADDRESS;
-
-    address public immutable VWETH_ADDRESS;
+    uint32 public immutable ETH_poolId;
 
     constructor(
         ERC20 _asset,
         string memory _name,
         string memory _symbol,
-        address _vWethAddress
+        uint32 _ETH_poolId
     ) RageERC4626(_asset, _name, _symbol) {
-        VWETH_ADDRESS = _vWethAddress;
-        VWETH_TRUNCATED_ADDRESS = RTokenLib.truncate(_vWethAddress);
+        ETH_poolId = _ETH_poolId;
     }
 
     function __BaseVault_init(
@@ -73,7 +77,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         vaultMarketValue += (getMarketValue(asset.balanceOf(address(this)))).toInt256();
     }
 
-    function _settleProfitAndCollateral(IClearingHouse.DepositTokenView[] memory deposits, int256 vaultMarketValue)
+    function _settleProfitAndCollateral(IClearingHouse.CollateralDepositView[] memory deposits, int256 vaultMarketValue)
         internal
     {
         // Settle net profit made from ranges and deposit/withdraw profits in USDC
@@ -93,8 +97,8 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         int256 vaultMarketValueDiff;
         if (deposits.length > 0) {
             assert(deposits.length == 1);
-            IClearingHouse.DepositTokenView memory stablecoinDeposit = deposits[0];
-            assert(stablecoinDeposit.rTokenAddress == address(rageCollateralToken));
+            IClearingHouse.CollateralDepositView memory stablecoinDeposit = deposits[0];
+            assert(address(stablecoinDeposit.collateral) == address(rageCollateralToken));
             vaultMarketValueDiff =
                 vaultMarketValue -
                 stablecoinDeposit.balance.toInt256().mulDiv(
@@ -120,32 +124,31 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
             assert(rageCollateralToken.balanceOf(address(this)) > normalizedVaultMarketValueDiffAbs);
             rageClearingHouse.addMargin(
                 rageAccountNo,
-                RTokenLib.truncate(address(rageCollateralToken)),
+                address(rageCollateralToken).truncate(),
                 normalizedVaultMarketValueDiffAbs
             );
         } else if (normalizedVaultMarketValueDiff < 0) {
             // Withdraw rage trade deposits
             rageClearingHouse.removeMargin(
                 rageAccountNo,
-                RTokenLib.truncate(address(rageCollateralToken)),
+                address(rageCollateralToken).truncate(),
                 normalizedVaultMarketValueDiffAbs
             );
         }
     }
 
-    // TODO: Use multicall instead of directly executing txns with rageClearingHouse
     function rebalance() public {
         // Rebalance ranges based on the parameters passed
-        IClearingHouse.DepositTokenView[] memory deposits;
+        IClearingHouse.CollateralDepositView[] memory deposits;
         IClearingHouse.VTokenPositionView[] memory vTokenPositions;
         // Step-0 Check if the rebalance can go through (time and threshold based checks)
-        (, , deposits, vTokenPositions) = rageClearingHouse.getAccountView(rageAccountNo);
+        (, , deposits, vTokenPositions) = rageClearingHouse.getAccountInfo(rageAccountNo);
         // (, uint256 virtualPriceX128) = rageClearingHouse.getTwapSqrtPricesForSetDuration(IVToken(VWETH_ADDRESS));
         int256 vaultMarketValue = getMarketValue(asset.balanceOf(address(this))).toInt256();
 
         _rebalanceProfitAndCollateral(deposits, vTokenPositions, vaultMarketValue);
 
-        IClearingHouse.RageTradePool memory rageTradePool = rageClearingHouse.pools(IVToken(VWETH_ADDRESS));
+        IClearingHouse.Pool memory rageTradePool = rageClearingHouse.getPoolInfo(ETH_poolId);
 
         // Step-4 Find the ranges and amount of liquidity to put in each
         _rebalanceRanges(vTokenPositions[0], rageTradePool, vaultMarketValue);
@@ -156,11 +159,11 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     function rebalanceProfitAndCollateral() public {
         // Rebalance collateral and dummy stable coins representing the collateral
         // Update protocol and management fee accumulated
-        IClearingHouse.DepositTokenView[] memory deposits;
+        IClearingHouse.CollateralDepositView[] memory deposits;
         IClearingHouse.VTokenPositionView[] memory vTokenPositions;
 
         // Step-0 Check if the rebalance can go through (time and threshold based checks)
-        (, , deposits, vTokenPositions) = rageClearingHouse.getAccountView(rageAccountNo);
+        (, , deposits, vTokenPositions) = rageClearingHouse.getAccountInfo(rageAccountNo);
         // #Token position = 0 or (1 and token should be VWETH)
         int256 vaultMarketValue = getMarketValue(asset.balanceOf(address(this))).toInt256();
 
@@ -169,13 +172,13 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
     // TODO: Uncomment stake and harvest fees
     function _rebalanceProfitAndCollateral(
-        IClearingHouse.DepositTokenView[] memory deposits,
+        IClearingHouse.CollateralDepositView[] memory deposits,
         IClearingHouse.VTokenPositionView[] memory vTokenPositions,
         int256 vaultMarketValue
     ) internal {
         assert(
             vTokenPositions.length == 0 ||
-                (vTokenPositions.length == 1 && vTokenPositions[0].vTokenAddress == VWETH_ADDRESS)
+                (vTokenPositions.length == 1 && vTokenPositions[0].vToken.truncate() == ETH_poolId)
         );
         // Harvest the rewards earned (Should be harvested before calculating vault market value)
         _harvestFees();
@@ -240,7 +243,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
     function _rebalanceRanges(
         IClearingHouse.VTokenPositionView memory vTokenPosition,
-        IClearingHouse.RageTradePool memory rageTradePool,
+        IClearingHouse.Pool memory rageTradePool,
         int256 vaultMarketValue
     ) internal virtual;
 

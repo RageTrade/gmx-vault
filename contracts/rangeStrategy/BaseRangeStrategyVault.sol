@@ -3,17 +3,23 @@
 pragma solidity ^0.8.9;
 import { BaseVault } from '../base/BaseVault.sol';
 
-import { IClearingHouse, IVToken, IUniswapV3Pool } from '@ragetrade/contracts/contracts/interfaces/IClearingHouse.sol';
-import { UniswapV3PoolHelper } from '@ragetrade/contracts/contracts/libraries/UniswapV3PoolHelper.sol';
+import { IClearingHouse } from '@ragetrade/core/contracts/interfaces/IClearingHouse.sol';
+import { IClearingHouseEnums } from '@ragetrade/core/contracts/interfaces/clearinghouse/IClearingHouseEnums.sol';
+import { IClearingHouseStructures } from '@ragetrade/core/contracts/interfaces/clearinghouse/IClearingHouseStructures.sol';
+import { IVToken } from '@ragetrade/core/contracts/interfaces/IVToken.sol';
 
-import { SignedFullMath } from '@ragetrade/contracts/contracts/libraries/SignedFullMath.sol';
+import { IUniswapV3Pool } from '@uniswap/v3-core-0.8-support/contracts/interfaces/IUniswapV3Pool.sol';
+
+import { UniswapV3PoolHelper } from '@ragetrade/core/contracts/libraries/UniswapV3PoolHelper.sol';
+
+import { SignedFullMath } from '@ragetrade/core/contracts/libraries/SignedFullMath.sol';
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 
 import { FixedPoint96 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint96.sol';
 
 import { SafeCast } from '../libraries/SafeCast.sol';
 
-import { SignedMath } from '@ragetrade/contracts/contracts/libraries/SignedMath.sol';
+import { SignedMath } from '@ragetrade/core/contracts/libraries/SignedMath.sol';
 
 import { TickMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/TickMath.sol';
 
@@ -51,7 +57,7 @@ abstract contract BaseRangeStrategyVault is BaseVault {
 
     function _rebalanceRanges(
         IClearingHouse.VTokenPositionView memory vTokenPosition,
-        IClearingHouse.RageTradePool memory rageTradePool,
+        IClearingHouse.Pool memory rageTradePool,
         int256 vaultMarketValue
     ) internal override {
         IClearingHouse.LiquidityChangeParams[4] memory liquidityChangeParamList = getLiquidityChangeParams(
@@ -62,20 +68,20 @@ abstract contract BaseRangeStrategyVault is BaseVault {
 
         for (uint8 i = 0; i < liquidityChangeParamList.length; i++) {
             if (liquidityChangeParamList[i].liquidityDelta == 0) break;
-            rageClearingHouse.updateRangeOrder(rageAccountNo, VWETH_TRUNCATED_ADDRESS, liquidityChangeParamList[i]);
+            rageClearingHouse.updateRangeOrder(rageAccountNo, ETH_poolId, liquidityChangeParamList[i]);
         }
     }
 
     function getLiquidityChangeParams(
         IClearingHouse.VTokenPositionView memory vTokenPosition,
-        IClearingHouse.RageTradePool memory rageTradePool,
+        IClearingHouse.Pool memory rageTradePool,
         int256 vaultMarketValue
-    ) internal view returns (IClearingHouse.LiquidityChangeParams[4] memory liquidityChangeParamList) {
+    ) internal view returns (IClearingHouseStructures.LiquidityChangeParams[4] memory liquidityChangeParamList) {
         // Get net token position
         // Remove reabalance
         // Add new rebalance range
         // Update base range liquidity
-        int256 netPosition = rageClearingHouse.getNetTokenPosition(rageAccountNo, VWETH_TRUNCATED_ADDRESS);
+        int256 netPosition = rageClearingHouse.getNetTokenPosition(rageAccountNo, ETH_poolId);
         uint160 twapSqrtPriceX96 = rageTradePool.vPool.twapSqrtPrice(rageTradePool.settings.twapDuration);
 
         uint8 liqCount = 0;
@@ -106,14 +112,14 @@ abstract contract BaseRangeStrategyVault is BaseVault {
                     .toInt128();
             }
 
-            liquidityChangeParamList[liqCount] = IClearingHouse.LiquidityChangeParams(
+            liquidityChangeParamList[liqCount] = IClearingHouseStructures.LiquidityChangeParams(
                 TickMath.getTickAtSqrtRatio(sqrtPriceLowerX96),
                 TickMath.getTickAtSqrtRatio(sqrtPriceUpperX96),
                 liquidityDelta,
                 0,
                 0,
                 false,
-                IClearingHouse.LimitOrderType.NONE
+                IClearingHouseEnums.LimitOrderType.NONE
             );
             liqCount++;
         }
@@ -145,14 +151,14 @@ abstract contract BaseRangeStrategyVault is BaseVault {
                 tickLower += (10 - (tickLower % 10));
                 tickUpper -= tickUpper % 10;
 
-                liquidityChangeParamList[liqCount] = IClearingHouse.LiquidityChangeParams(
+                liquidityChangeParamList[liqCount] = IClearingHouseStructures.LiquidityChangeParams(
                     tickLower,
                     tickUpper,
                     liquidityDelta,
                     0,
                     0,
                     false,
-                    IClearingHouse.LimitOrderType.NONE
+                    IClearingHouseEnums.LimitOrderType.NONE
                 );
             }
             liqCount++;
@@ -165,14 +171,14 @@ abstract contract BaseRangeStrategyVault is BaseVault {
                 assert(liquidityPositions[i].tickUpper != 0);
                 assert(liquidityPositions[i].liquidity != 0);
 
-                liquidityChangeParamList[liqCount] = IClearingHouse.LiquidityChangeParams(
+                liquidityChangeParamList[liqCount] = IClearingHouseStructures.LiquidityChangeParams(
                     liquidityPositions[i].tickLower,
                     liquidityPositions[i].tickUpper,
                     -(liquidityPositions[i].liquidity.toInt128()),
                     0,
                     0,
                     false,
-                    IClearingHouse.LimitOrderType.NONE
+                    IClearingHouseEnums.LimitOrderType.NONE
                 );
                 liqCount++;
             }
