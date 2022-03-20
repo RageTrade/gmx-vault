@@ -7,10 +7,12 @@ import { console } from 'hardhat/console.sol';
 import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 
+// TODO move to a separate file
 interface ChainlinkDetailedERC20 {
     function decimals() external view returns (uint8);
 }
 
+// TODO move to a separate file
 interface IAggregatorV3Interface {
     function decimals() external view returns (uint8);
 

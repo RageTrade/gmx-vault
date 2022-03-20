@@ -2,7 +2,8 @@
 
 pragma solidity ^0.8.9;
 import { BaseSushiVault, SushiParams } from '../yieldStrategy/BaseSushiVault.sol';
-import { IClearingHouse, IVToken } from '@ragetrade/contracts/contracts/interfaces/IClearingHouse.sol';
+import { IClearingHouse } from '@ragetrade/core/contracts/interfaces/IClearingHouse.sol';
+import {  IVToken } from '@ragetrade/core/contracts/interfaces/IVToken.sol';
 
 import { BaseRangeStrategyVault } from '../rangeStrategy/BaseRangeStrategyVault.sol';
 import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
@@ -25,15 +26,15 @@ contract VaultTest is BaseSushiVault {
         ERC20 _asset,
         string memory _name,
         string memory _symbol,
-        address _vWethAddress
-    ) BaseSushiVault(_asset, _name, _symbol, _vWethAddress) {}
+        uint32 _ETH_poolId
+    ) BaseSushiVault(_asset, _name, _symbol, _ETH_poolId) {}
 
     function getLiquidityChangeParams(IClearingHouse.VTokenPositionView memory vTokenPosition, int256 vaultMarketValue)
         external
         view
         returns (IClearingHouse.LiquidityChangeParams[4] memory liquidityChangeParamList)
     {
-        IClearingHouse.RageTradePool memory rageTradePool = rageClearingHouse.pools(IVToken(VWETH_ADDRESS));
+        IClearingHouse.Pool memory rageTradePool = rageClearingHouse.getPoolInfo(ETH_poolId);
         return getLiquidityChangeParams(vTokenPosition, rageTradePool, vaultMarketValue);
     }
 
