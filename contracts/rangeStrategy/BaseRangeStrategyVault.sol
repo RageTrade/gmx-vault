@@ -74,7 +74,7 @@ abstract contract BaseRangeStrategyVault is BaseVault {
         // Remove reabalance
         // Add new rebalance range
         // Update base range liquidity
-        int256 netPosition = rageClearingHouse.getNetTokenPosition(rageAccountNo, ETH_poolId);
+        int256 netPosition = rageClearingHouse.getAccountNetTokenPosition(rageAccountNo, ETH_poolId);
         uint160 twapSqrtPriceX96 = rageTradePool.vPool.twapSqrtPrice(rageTradePool.settings.twapDuration);
 
         uint8 liqCount = 0;
@@ -127,7 +127,7 @@ abstract contract BaseRangeStrategyVault is BaseVault {
             {
                 int256 liquidityDeltaTerm1 = vaultMarketValue.mulDiv(FixedPoint96.Q96, twapSqrtPriceX96).mulDiv(
                     1e4,
-                    rageTradePool.settings.maintainanceMarginRatio
+                    rageTradePool.settings.maintainanceMarginRatioBps
                 );
                 int256 liquidityDeltaTerm2 = netPosition.abs().mulDiv(twapSqrtPriceX96, FixedPoint96.Q96); //multiplication by (sqrt(1-b) +1-b)/b
 

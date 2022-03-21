@@ -123,17 +123,17 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         if (normalizedVaultMarketValueDiff > 0) {
             // Mint collateral coins and deposit into rage trade
             assert(rageCollateralToken.balanceOf(address(this)) > normalizedVaultMarketValueDiffAbs);
-            rageClearingHouse.addMargin(
+            rageClearingHouse.updateMargin(
                 rageAccountNo,
                 address(rageCollateralToken).truncate(),
-                normalizedVaultMarketValueDiffAbs
+                int256(normalizedVaultMarketValueDiffAbs)
             );
         } else if (normalizedVaultMarketValueDiff < 0) {
             // Withdraw rage trade deposits
-            rageClearingHouse.removeMargin(
+            rageClearingHouse.updateMargin(
                 rageAccountNo,
                 address(rageCollateralToken).truncate(),
-                normalizedVaultMarketValueDiffAbs
+                -int256(normalizedVaultMarketValueDiffAbs)
             );
         }
     }
@@ -177,10 +177,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         IClearingHouse.VTokenPositionView[] memory vTokenPositions,
         int256 vaultMarketValue
     ) internal {
-        assert(
-            vTokenPositions.length == 0 ||
-                (vTokenPositions.length == 1 && vTokenPositions[0].vToken.truncate() == ETH_poolId)
-        );
+        assert(vTokenPositions.length == 0 || (vTokenPositions.length == 1 && vTokenPositions[0].poolId == ETH_poolId));
         // Harvest the rewards earned (Should be harvested before calculating vault market value)
         _harvestFees();
 

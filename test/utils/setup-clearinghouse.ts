@@ -3,7 +3,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumberish, ethers } from 'ethers';
 import { parseUnits } from 'ethers/lib/utils';
 import hre from 'hardhat';
-import { ClearingHouse, ERC20, VBase, RageTradeFactory, RealTokenMock } from '../../typechain-types';
+import { ClearingHouse, ERC20, VQuote, RageTradeFactory, RealTokenMock } from '../../typechain-types';
 import { InitializePoolParamsStruct } from '../../typechain-types/RageTradeFactory';
 import { getCreateAddressFor } from './create-addresses';
 import { priceToSqrtPriceX96 } from './price-tick';
@@ -16,7 +16,7 @@ import {
 
 interface SetupClearingHouseArgs {
   signer?: SignerWithAddress;
-  vBaseDecimals?: number;
+  vQuoteDecimals?: number;
   uniswapFeeTierDefault?: number;
   rBaseAddress?: string;
 }
@@ -36,8 +36,8 @@ interface InitializePoolArgs {
   vTokenDecimals?: number;
 
   // rage trade pool settings
-  initialMarginRatio?: number;
-  maintainanceMarginRatio?: number;
+  initialMarginRatioBps: number;
+  maintainanceMarginRatioBps: number;
   twapDuration?: number;
   whitelisted?: boolean;
   // oracle: string;
@@ -51,11 +51,11 @@ interface InitializePoolArgs {
 // sets up clearing house with upgradable logic
 export async function setupClearingHouse({
   signer,
-  vBaseDecimals,
+  vQuoteDecimals,
   uniswapFeeTierDefault,
   rBaseAddress,
 }: SetupClearingHouseArgs) {
-  vBaseDecimals = vBaseDecimals ?? 6;
+  vQuoteDecimals = vQuoteDecimals ?? 6;
 
   uniswapFeeTierDefault = uniswapFeeTierDefault ?? +UNISWAP_V3_DEFAULT_FEE_TIER;
   signer = signer ?? (await hre.ethers.getSigners())[0];
@@ -103,17 +103,11 @@ export async function setupClearingHouse({
   // rage trade factory
   const rageTradeFactory = await (
     await hre.ethers.getContractFactory('RageTradeFactory')
-  ).deploy(
-    clearingHouseLogic.address,
-    vPoolWrapperLogic.address,
-    insuranceFundLogic.address,
-    rBase.address,
-    nativeOracle.address,
-  );
+  ).deploy(clearingHouseLogic.address, vPoolWrapperLogic.address, insuranceFundLogic.address, rBase.address);
 
   // virtual base
-  const vBase = await hre.ethers.getContractAt('VBase', await rageTradeFactory.vBase());
-  hre.tracer.nameTags[vBase.address] = 'vBase';
+  const vQuote = await hre.ethers.getContractAt('VQuote', await rageTradeFactory.vQuote());
+  hre.tracer.nameTags[vQuote.address] = 'vQuote';
 
   const clearingHouse = await hre.ethers.getContractAt('ClearingHouse', await rageTradeFactory.clearingHouse());
   hre.tracer.nameTags[clearingHouse.address] = 'clearingHouse';
@@ -127,7 +121,7 @@ export async function setupClearingHouse({
   return {
     signer,
     rBase,
-    vBase,
+    vQuote,
     clearingHouse,
     proxyAdmin,
     clearingHouseLogic,
@@ -152,8 +146,8 @@ export async function initializePool({
   vTokenDecimals,
 
   // rage trade pool settings
-  initialMarginRatio,
-  maintainanceMarginRatio,
+  initialMarginRatioBps,
+  maintainanceMarginRatioBps,
   twapDuration,
   whitelisted,
   // oracle: string;
@@ -169,15 +163,15 @@ export async function initializePool({
   vTokenSymbol = vTokenSymbol ?? 'vTokenSymbol';
   vTokenDecimals = vTokenDecimals ?? 18;
 
-  initialMarginRatio = initialMarginRatio ?? 20000;
-  maintainanceMarginRatio = maintainanceMarginRatio ?? 10000;
+  initialMarginRatioBps = initialMarginRatioBps ?? 20000;
+  maintainanceMarginRatioBps = maintainanceMarginRatioBps ?? 10000;
   twapDuration = twapDuration ?? 60;
   whitelisted = whitelisted ?? false;
 
   vPriceInitial = vPriceInitial ?? 1;
   rPriceInitial = rPriceInitial ?? 1;
 
-  const vBaseDecimalsDefault = 6;
+  const vQuoteDecimalsDefault = 6;
   vTokenDecimals = vTokenDecimals ?? 18;
 
   const realToken = await smock.fake<RealTokenMock>('RealTokenMock');
@@ -185,19 +179,21 @@ export async function initializePool({
 
   // oracle
   const oracle = await (await hre.ethers.getContractFactory('OracleMock')).deploy();
-  await oracle.setSqrtPrice(await priceToSqrtPriceX96(rPriceInitial, vBaseDecimalsDefault, vTokenDecimals));
+  await oracle.setSqrtPriceX96(await priceToSqrtPriceX96(rPriceInitial, vQuoteDecimalsDefault, vTokenDecimals));
 
   await rageTradeFactory.initializePool({
     deployVTokenParams: {
       vTokenName: 'vWETH',
       vTokenSymbol: 'vWETH',
-      rTokenDecimals: 18,
+      cTokenDecimals: 18,
     },
-    rageTradePoolInitialSettings: {
-      initialMarginRatio,
-      maintainanceMarginRatio,
+    poolInitialSettings: {
+      initialMarginRatioBps,
+      maintainanceMarginRatioBps,
+      maxVirtualPriceDeviationRatioBps: 10000,
       twapDuration,
-      whitelisted: false,
+      isAllowedForTrade: false,
+      isCrossMargined: true,
       oracle: oracle.address,
     },
     liquidityFeePips: 500,
@@ -205,7 +201,7 @@ export async function initializePool({
     slotsToInitialize: 100,
   });
 
-  const eventFilter = rageTradeFactory.filters.PoolInitlized();
+  const eventFilter = rageTradeFactory.filters.PoolInitialized();
   const events = await rageTradeFactory.queryFilter(eventFilter, 'latest');
   const vPool = await hre.ethers.getContractAt(
     '@uniswap/v3-core-0.8-support/contracts/interfaces/IUniswapV3Pool.sol:IUniswapV3Pool',
@@ -217,8 +213,8 @@ export async function initializePool({
 }
 
 export async function extractFromRageTradeFactory(rageTradeFactory: RageTradeFactory) {
-  const vBase = await hre.ethers.getContractAt('VBase', await rageTradeFactory.vBase());
+  const vQuote = await hre.ethers.getContractAt('VQuote', await rageTradeFactory.vQuote());
   const clearingHouse = await hre.ethers.getContractAt('ClearingHouse', await rageTradeFactory.clearingHouse());
   const proxyAdmin = await hre.ethers.getContractAt('ProxyAdmin', await rageTradeFactory.proxyAdmin());
-  return { vBase, clearingHouse, proxyAdmin };
+  return { vQuote, clearingHouse, proxyAdmin };
 }

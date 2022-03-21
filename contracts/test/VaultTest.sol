@@ -19,6 +19,18 @@ import { BaseRangeStrategyVault } from '../rangeStrategy/BaseRangeStrategyVault.
 import { IMiniChefV2 } from '../interfaces/sushi/IMiniChefV2.sol';
 import { Pricing } from '../libraries/Pricing.sol';
 
+import { ClearingHouse } from '@ragetrade/core/contracts/protocol/clearinghouse/ClearingHouse.sol';
+import { RageTradeFactory } from '@ragetrade/core/contracts/protocol/RageTradeFactory.sol';
+import { VPoolWrapper } from '@ragetrade/core/contracts/protocol/wrapper/VPoolWrapper.sol';
+import { InsuranceFund } from '@ragetrade/core/contracts/protocol/insurancefund/InsuranceFund.sol';
+
+import { OracleMock } from '@ragetrade/core/contracts/test/mocks/OracleMock.sol';
+import { RealTokenMock } from '@ragetrade/core/contracts/test/mocks/RealTokenMock.sol';
+
+import { IUniswapV2Router02 } from '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
+import { IUniswapV2Pair } from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
+import { IUniswapV2Factory } from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
+
 contract VaultTest is BaseSushiVault {
     constructor(
         ERC20 _asset,
