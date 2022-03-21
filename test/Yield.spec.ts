@@ -13,7 +13,7 @@ import { smock, FakeContract } from '@defi-wonderland/smock';
 import {
   IWETH,
   IERC20,
-  IVBase,
+  IVQuote,
   IVToken,
   IMiniChefV2,
   IUniswapV2Factory,
@@ -26,6 +26,7 @@ import {
   ClearingHouse,
   BaseSushiVault,
   VaultTest,
+  OracleMock,
 } from '../typechain-types';
 
 import { SushiParamsStruct } from '../typechain-types/VaultTest';
@@ -33,6 +34,7 @@ import { SushiParamsStruct } from '../typechain-types/VaultTest';
 import { tickToSqrtPriceX96 } from './utils/price-tick';
 
 import { stealFunds, tokenAmount } from './utils/stealFunds';
+import { truncate } from './utils/vToken';
 
 const createUsers = async () => {
   let signers = await hre.ethers.getSigners();
@@ -51,7 +53,7 @@ const deployAndSetupCore = async () => {
 
   const oracleFactory = await hre.ethers.getContractFactory('OracleMock');
   const oracle = await (await oracleFactory.deploy()).deployed();
-  await (await oracle.setSqrtPrice(tickToSqrtPriceX96(-199590))).wait();
+  await (await oracle.setSqrtPriceX96(tickToSqrtPriceX96(-199590))).wait();
 
   const accountLib = await (await hre.ethers.getContractFactory('Account')).deploy();
   await accountLib.deployed();
@@ -76,16 +78,10 @@ const deployAndSetupCore = async () => {
 
   const rageTradeFactory = await (
     await hre.ethers.getContractFactory('RageTradeFactory')
-  ).deploy(
-    clearingHouseLogic.address,
-    vPoolWrapperLogic.address,
-    insuranceFundLogic.address,
-    realBase.address,
-    nativeOracle.address,
-  );
+  ).deploy(clearingHouseLogic.address, vPoolWrapperLogic.address, insuranceFundLogic.address, realBase.address);
   await rageTradeFactory.deployed();
 
-  const vBase: IVBase = await hre.ethers.getContractAt('IVBase', await rageTradeFactory.vBase());
+  const vQuote: IVQuote = await hre.ethers.getContractAt('IVQuote', await rageTradeFactory.vQuote());
 
   const clearingHouse: ClearingHouse = await hre.ethers.getContractAt(
     'ClearingHouse',
@@ -97,13 +93,15 @@ const deployAndSetupCore = async () => {
       deployVTokenParams: {
         vTokenName: 'vWETH',
         vTokenSymbol: 'vWETH',
-        rTokenDecimals: 18,
+        cTokenDecimals: 18,
       },
-      rageTradePoolInitialSettings: {
-        initialMarginRatio: 20_000,
-        maintainanceMarginRatio: 10_000,
+      poolInitialSettings: {
+        initialMarginRatioBps: 2000,
+        maintainanceMarginRatioBps: 1000,
+        maxVirtualPriceDeviationRatioBps: 10000,
         twapDuration: 300,
-        whitelisted: false,
+        isAllowedForTrade: true,
+        isCrossMargined: true,
         oracle: oracle.address,
       },
       liquidityFeePips: 1000,
@@ -112,14 +110,14 @@ const deployAndSetupCore = async () => {
     })
   ).wait();
 
-  const eventFilter = rageTradeFactory.filters.PoolInitlized();
+  const eventFilter = rageTradeFactory.filters.PoolInitialized();
   const events = await rageTradeFactory.queryFilter(eventFilter, 'latest');
 
   const vPool: IUniswapV3Pool = await hre.ethers.getContractAt('IUniswapV3Pool', events[0].args[0]);
   const vToken: IVToken = await hre.ethers.getContractAt('IVToken', events[0].args[1]);
   const vPoolWrapper: IVPoolWrapper = await hre.ethers.getContractAt('IVPoolWrapper', events[0].args[2]);
 
-  return { vBase, vToken, realBase, realToken, clearingHouse, oracle, vPool, vPoolWrapper };
+  return { vQuote, vToken, realBase, realToken, clearingHouse, oracle, vPool, vPoolWrapper };
 };
 
 const deployAndSetupHelpers = async () => {
@@ -147,7 +145,7 @@ const deployAndSetupVault = async (vWETH: string) => {
     arbConstants.WETH_USDC_PAIR, // _asset
     arbConstants.VAULT_NAME, // _name
     arbConstants.VAULT_SYMBOL, // _symbol
-    vWETH, // _vWethAddress
+    truncate(vWETH), // _vWethAddress
   );
   await baseSushiVault.deployed();
 
@@ -156,7 +154,7 @@ const deployAndSetupVault = async (vWETH: string) => {
     arbConstants.WETH_USDC_PAIR, // _asset
     arbConstants.VAULT_NAME, // _name
     arbConstants.VAULT_SYMBOL, // _symbol
-    vWETH, // _vWethAddress
+    truncate(vWETH), // _vWethAddress
   );
 
   return { baseSushiVault, vaultTest };
@@ -194,24 +192,13 @@ const initVaults = async (
   ).wait();
 };
 
-before(async () => {
-  await activateMainnetFork({
-    blockNumber: arbConstants.BLOCK,
-    network: 'arbitrum-mainnet',
-  });
-});
-
-after(async () => {
-  await deactivateMainnetFork();
-});
-
 describe('# Main', () => {
-  let vBase: IVBase;
+  let vQuote: IVQuote;
   let vToken: IVToken;
   let realBase: IERC20;
   let realToken: IWETH;
   let clearingHouse: ClearingHouse;
-  let oracle: IOracle;
+  let oracle: OracleMock;
   let vPool: IUniswapV3Pool;
   let vPoolWrapper: IVPoolWrapper;
 
@@ -234,9 +221,26 @@ describe('# Main', () => {
   let bob: SignerWithAddress;
   let carol: SignerWithAddress;
 
+  before(async () => {
+    await activateMainnetFork({
+      blockNumber: arbConstants.BLOCK,
+      network: 'arbitrum-mainnet',
+    });
+  });
+
+  after(async () => {
+    await deactivateMainnetFork();
+  });
+
   describe('# Setup & Deployments', () => {
     it('- deploying and creating accounts...', async () => {
-      ({ vBase, vToken, realBase, realToken, clearingHouse, oracle, vPool, vPoolWrapper } = await deployAndSetupCore());
+      await activateMainnetFork({
+        blockNumber: arbConstants.BLOCK,
+        network: 'arbitrum-mainnet',
+      });
+
+      ({ vQuote, vToken, realBase, realToken, clearingHouse, oracle, vPool, vPoolWrapper } =
+        await deployAndSetupCore());
 
       ({ uniV2Factory, uniV2Router, sushiChef, weth, usdc, wethUsdc, sushiToken } = await deployAndSetupHelpers());
 
@@ -248,7 +252,7 @@ describe('# Main', () => {
     });
 
     it('- should deploy without reverts', async () => {
-      assert(vBase.address !== '0x0000000000000000000000000000000000000000', 'vBase');
+      assert(vQuote.address !== '0x0000000000000000000000000000000000000000', 'vQuote');
       assert(vToken.address !== '0x0000000000000000000000000000000000000000', 'vToken');
       assert(realBase.address !== '0x0000000000000000000000000000000000000000', 'realBase');
       assert(realToken.address !== '0x0000000000000000000000000000000000000000', 'realToken');
@@ -272,7 +276,11 @@ describe('# Main', () => {
       // increases cardinality for twap
       await vPool.increaseObservationCardinalityNext(100);
 
-      clearingHouse.addCollateralSupport(realBase.address, usdcOracle.address, 300);
+      clearingHouse.updateCollateralSettings(realBase.address, {
+        oracle: usdcOracle.address,
+        twapDuration: 300,
+        isAllowedForDeposit: true,
+      });
 
       const block = await hre.ethers.provider.getBlock('latest');
 
@@ -283,16 +291,21 @@ describe('# Main', () => {
       wethOracle.decimals.returns(8);
 
       const liquidationParams = {
-        liquidationFeeFraction: 1500,
-        tokenLiquidationPriceDeltaBps: 3000,
+        rangeLiquidationFeeFraction: 1500,
+        tokenLiquidationFeeFraction: 3000,
         insuranceFundFeeShareBps: 5000,
+        maxRangeLiquidationFees: 100000000,
+        closeFactorMMThresholdBps: 7500,
+        partialLiquidationCloseFactorBps: 5000,
+        liquidationSlippageSqrtToleranceBps: 150,
+        minNotionalLiquidatable: 100000000,
       };
 
       const minRequiredMargin = tokenAmount(20, 6);
       const removeLimitOrderFee = tokenAmount(10, 6);
       const minimumOrderNotional = tokenAmount(1, 6).div(100);
 
-      await clearingHouse.setPlatformParameters(
+      await clearingHouse.updateProtocolSettings(
         liquidationParams,
         removeLimitOrderFee,
         minimumOrderNotional,
@@ -302,14 +315,22 @@ describe('# Main', () => {
       const curPaused = await clearingHouse.paused();
 
       expect(protocol.minRequiredMargin).eq(minRequiredMargin);
-      expect(protocol.liquidationParams.liquidationFeeFraction).eq(liquidationParams.liquidationFeeFraction);
-      expect(protocol.liquidationParams.tokenLiquidationPriceDeltaBps).eq(
-        liquidationParams.tokenLiquidationPriceDeltaBps,
-      );
+      expect(protocol.liquidationParams.rangeLiquidationFeeFraction).eq(liquidationParams.rangeLiquidationFeeFraction);
+      expect(protocol.liquidationParams.tokenLiquidationFeeFraction).eq(liquidationParams.tokenLiquidationFeeFraction);
       expect(protocol.liquidationParams.insuranceFundFeeShareBps).eq(liquidationParams.insuranceFundFeeShareBps);
+      expect(protocol.liquidationParams.maxRangeLiquidationFees).eq(liquidationParams.maxRangeLiquidationFees);
+      expect(protocol.liquidationParams.closeFactorMMThresholdBps).eq(liquidationParams.closeFactorMMThresholdBps);
+      expect(protocol.liquidationParams.partialLiquidationCloseFactorBps).eq(
+        liquidationParams.partialLiquidationCloseFactorBps,
+      );
+      expect(protocol.liquidationParams.liquidationSlippageSqrtToleranceBps).eq(
+        liquidationParams.liquidationSlippageSqrtToleranceBps,
+      );
+      expect(protocol.liquidationParams.minNotionalLiquidatable).eq(liquidationParams.minNotionalLiquidatable);
 
       expect(protocol.removeLimitOrderFee).eq(removeLimitOrderFee);
       expect(protocol.minimumOrderNotional).eq(minimumOrderNotional);
+      expect(protocol.minRequiredMargin).eq(minRequiredMargin);
       expect(curPaused).to.be.false;
     });
 

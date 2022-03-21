@@ -1,6 +1,6 @@
 import hre, { ethers } from 'hardhat';
 import { FakeContract, smock } from '@defi-wonderland/smock';
-import { ClearingHouse, ERC20, VBase, RageTradeFactory } from '../../typechain-types';
+import { ClearingHouse, ERC20, VQuote, RageTradeFactory } from '../../typechain-types';
 import {
   UNISWAP_V3_FACTORY_ADDRESS,
   UNISWAP_V3_DEFAULT_FEE_TIER,
@@ -13,14 +13,14 @@ import { getCreateAddressFor } from './create-addresses';
 
 export async function testSetup({
   signer,
-  initialMarginRatio,
-  maintainanceMarginRatio,
+  initialMarginRatioBps,
+  maintainanceMarginRatioBps,
   twapDuration,
   whitelisted,
 }: {
   signer?: SignerWithAddress;
-  initialMarginRatio: number;
-  maintainanceMarginRatio: number;
+  initialMarginRatioBps: number;
+  maintainanceMarginRatioBps: number;
   twapDuration: number;
   whitelisted: boolean;
 }) {
@@ -47,20 +47,14 @@ export async function testSetup({
 
   const rageTradeFactory = await (
     await hre.ethers.getContractFactory('RageTradeFactory')
-  ).deploy(
-    clearingHouseLogic.address,
-    vPoolWrapperLogic.address,
-    insuranceFundLogic.address,
-    realBase.address,
-    nativeOracle.address,
-  );
+  ).deploy(clearingHouseLogic.address, vPoolWrapperLogic.address, insuranceFundLogic.address, realBase.address);
 
   const clearingHouse = await hre.ethers.getContractAt('ClearingHouse', await rageTradeFactory.clearingHouse());
 
   const insuranceFund = await hre.ethers.getContractAt('InsuranceFund', await clearingHouse.insuranceFund());
 
-  //VBase
-  const vBase = await hre.ethers.getContractAt('VBase', await rageTradeFactory.vBase());
+  //VQuote
+  const vQuote = await hre.ethers.getContractAt('VQuote', await rageTradeFactory.vQuote());
 
   //Oracle
   const oracle = await (await hre.ethers.getContractFactory('OracleMock')).deploy();
@@ -76,7 +70,7 @@ export async function testSetup({
   // const vPoolFactory = await (
   //   await hre.ethers.getContractFactory('VPoolFactory')
   // ).deploy(
-  //   vBase.address,
+  //   vQuote.address,
   //   clearingHouse.address,
   //   vPoolWrapperDeployer.address,
   //   UNISWAP_FACTORY_ADDRESS,
@@ -86,15 +80,17 @@ export async function testSetup({
 
   await rageTradeFactory.initializePool({
     deployVTokenParams: {
-      vTokenName: 'vTest',
-      vTokenSymbol: 'vTest',
-      rTokenDecimals: 18,
+      vTokenName: 'vWETH',
+      vTokenSymbol: 'vWETH',
+      cTokenDecimals: 18,
     },
-    rageTradePoolInitialSettings: {
-      initialMarginRatio,
-      maintainanceMarginRatio,
+    poolInitialSettings: {
+      initialMarginRatioBps,
+      maintainanceMarginRatioBps,
+      maxVirtualPriceDeviationRatioBps: 10000,
       twapDuration,
-      whitelisted: false,
+      isAllowedForTrade: false,
+      isCrossMargined: true,
       oracle: oracle.address,
     },
     liquidityFeePips: 500,
@@ -102,7 +98,7 @@ export async function testSetup({
     slotsToInitialize: 100,
   });
 
-  const eventFilter = rageTradeFactory.filters.PoolInitlized();
+  const eventFilter = rageTradeFactory.filters.PoolInitialized();
   const events = await rageTradeFactory.queryFilter(eventFilter, 'latest');
   const vPoolAddress = events[0].args[0];
   const vTokenAddress = events[0].args[1];
@@ -111,7 +107,7 @@ export async function testSetup({
 
   return {
     realBase,
-    vBase,
+    vQuote,
     oracle,
     clearingHouse,
     clearingHouseLogic,
@@ -131,9 +127,9 @@ export async function testSetupBase(signer?: SignerWithAddress) {
   const realBase = await smock.fake<ERC20>('ERC20');
   realBase.decimals.returns(6);
 
-  //VBase
-  // const vBase = await smock.fake<VBase>('VBase', { address: '0x8FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF' });
-  // vBase.decimals.returns(6);
+  //VQuote
+  // const vQuote = await smock.fake<VQuote>('VQuote', { address: '0x8FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF' });
+  // vQuote.decimals.returns(6);
 
   const futureVPoolFactoryAddress = await getCreateAddressFor(signer, 3);
   const futureInsurnaceFundAddress = await getCreateAddressFor(signer, 4);
@@ -159,25 +155,19 @@ export async function testSetupBase(signer?: SignerWithAddress) {
 
   const rageTradeFactory = await (
     await hre.ethers.getContractFactory('RageTradeFactory')
-  ).deploy(
-    clearingHouseLogic.address,
-    vPoolWrapperLogic.address,
-    insuranceFundLogic.address,
-    realBase.address,
-    nativeOracle.address,
-  );
+  ).deploy(clearingHouseLogic.address, vPoolWrapperLogic.address, insuranceFundLogic.address, realBase.address);
 
   const oracle = await (await hre.ethers.getContractFactory('OracleMock')).deploy();
   const clearingHouse = await hre.ethers.getContractAt('ClearingHouse', await rageTradeFactory.clearingHouse());
 
   const insuranceFund = await hre.ethers.getContractAt('InsuranceFund', await clearingHouse.insuranceFund());
 
-  const vBase = await hre.ethers.getContractAt('VBase', await rageTradeFactory.vBase());
+  const vQuote = await hre.ethers.getContractAt('VQuote', await rageTradeFactory.vQuote());
   // const constants = (await clearingHouse.protocolInfo()).constants;
 
   return {
     realBase,
-    vBase,
+    vQuote,
     clearingHouse,
     rageTradeFactory,
     insuranceFund,
@@ -188,16 +178,16 @@ export async function testSetupBase(signer?: SignerWithAddress) {
 export async function testSetupToken({
   signer,
   decimals,
-  initialMarginRatio,
-  maintainanceMarginRatio,
+  initialMarginRatioBps,
+  maintainanceMarginRatioBps,
   twapDuration,
   whitelisted,
   rageTradeFactory,
 }: {
   signer?: SignerWithAddress;
   decimals: number;
-  initialMarginRatio: number;
-  maintainanceMarginRatio: number;
+  initialMarginRatioBps: number;
+  maintainanceMarginRatioBps: number;
   twapDuration: number;
   whitelisted: boolean;
   rageTradeFactory: RageTradeFactory;
@@ -215,20 +205,22 @@ export async function testSetupToken({
     deployVTokenParams: {
       vTokenName: 'vTest',
       vTokenSymbol: 'vTest',
-      rTokenDecimals: 18,
+      cTokenDecimals: 18,
     },
-    rageTradePoolInitialSettings: {
-      initialMarginRatio,
-      maintainanceMarginRatio,
+    poolInitialSettings: {
+      initialMarginRatioBps,
+      maintainanceMarginRatioBps,
+      maxVirtualPriceDeviationRatioBps: 10000,
       twapDuration,
-      whitelisted: false,
+      isAllowedForTrade: false,
+      isCrossMargined: true,
       oracle: oracle.address,
     },
     liquidityFeePips: 500,
     protocolFeePips: 500,
     slotsToInitialize: 100,
   });
-  const eventFilter = rageTradeFactory.filters.PoolInitlized();
+  const eventFilter = rageTradeFactory.filters.PoolInitialized();
   const events = await rageTradeFactory.queryFilter(eventFilter, 'latest');
   const vPoolAddress = events[0].args[0];
   const vTokenAddress = events[0].args[1];

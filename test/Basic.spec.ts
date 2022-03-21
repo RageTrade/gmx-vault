@@ -17,7 +17,7 @@ import {
   IERC20,
   IUniswapV3Pool,
   VToken,
-  VBase,
+  VQuote,
   Account__factory,
   IWETH,
   IUniswapV2Factory,
@@ -57,11 +57,9 @@ import {
 
 import { FakeContract, smock, SmockContractBase } from '@defi-wonderland/smock';
 import { ADDRESS_ZERO, priceToClosestTick } from '@uniswap/v3-sdk';
-import {
-  LiquidityChangeParamsStructOutput,
-  LiquidityPositionViewStruct,
-  VTokenPositionViewStruct,
-} from '../typechain-types/IClearingHouse';
+import { LiquidityChangeParamsStructOutput, LiquidityPositionViewStruct } from '../typechain-types/IClearingHouse';
+import { VTokenPositionViewStruct } from '../typechain-types/VaultTest';
+import { truncate } from './utils/vToken';
 const whaleForBase = '0x47ac0Fb4F2D84898e4D9E7b4DaB3C24507a6D503';
 const whaleForWETH = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
 
@@ -79,7 +77,7 @@ const SUSHI_ROUTER_ADDRESS = '0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F';
 const SUSHI_CHEF_ADDRESS = '0xEF0881eC094552b2e128Cf945EF17a6752B4Ec5d';
 
 describe('Vaults', () => {
-  let vBaseAddress: string;
+  let vQuoteAddress: string;
   let ownerAddress: string;
   let testContractAddress: string;
   let oracleAddress: string;
@@ -98,7 +96,7 @@ describe('Vaults', () => {
   let miniChef: IMiniChefV2;
   let vPool: IUniswapV3Pool;
   let vToken: VToken;
-  let vBase: VBase;
+  let vQuote: VQuote;
 
   let signers: SignerWithAddress[];
   let admin: SignerWithAddress;
@@ -144,8 +142,8 @@ describe('Vaults', () => {
 
   async function initializePool(
     rageTradeFactory: RageTradeFactory,
-    initialMarginRatio: BigNumberish,
-    maintainanceMarginRatio: BigNumberish,
+    initialMarginRatioBps: number,
+    maintainanceMarginRatioBps: BigNumberish,
     twapDuration: BigNumberish,
     initialPrice: BigNumberish,
     lpFee: BigNumberish,
@@ -156,19 +154,21 @@ describe('Vaults', () => {
 
     const oracleFactory = await hre.ethers.getContractFactory('OracleMock');
     const oracle = await oracleFactory.deploy();
-    await oracle.setSqrtPrice(initialPrice);
+    await oracle.setSqrtPriceX96(initialPrice);
 
     await rageTradeFactory.initializePool({
       deployVTokenParams: {
         vTokenName: 'vWETH',
         vTokenSymbol: 'vWETH',
-        rTokenDecimals: 18,
+        cTokenDecimals: 18,
       },
-      rageTradePoolInitialSettings: {
-        initialMarginRatio,
-        maintainanceMarginRatio,
+      poolInitialSettings: {
+        initialMarginRatioBps,
+        maintainanceMarginRatioBps,
+        maxVirtualPriceDeviationRatioBps: 10000,
         twapDuration,
-        whitelisted: false,
+        isAllowedForTrade: false,
+        isCrossMargined: true,
         oracle: oracle.address,
       },
       liquidityFeePips: lpFee,
@@ -176,7 +176,7 @@ describe('Vaults', () => {
       slotsToInitialize: 100,
     });
 
-    const eventFilter = rageTradeFactory.filters.PoolInitlized();
+    const eventFilter = rageTradeFactory.filters.PoolInitialized();
     const events = await rageTradeFactory.queryFilter(eventFilter, 'latest');
     const vPool = events[0].args[0];
     const vTokenAddress = events[0].args[1];
@@ -199,9 +199,9 @@ describe('Vaults', () => {
 
     dummyTokenAddress = ethers.utils.hexZeroPad(BigNumber.from(148392483294).toHexString(), 20);
 
-    const vBaseFactory = await hre.ethers.getContractFactory('VBase');
-    // vBase = await vBaseFactory.deploy(REAL_BASE);
-    // vBaseAddress = vBase.address;
+    const vQuoteFactory = await hre.ethers.getContractFactory('VQuote');
+    // vQuote = await vQuoteFactory.deploy(REAL_BASE);
+    // vQuoteAddress = vQuote.address;
 
     signers = await hre.ethers.getSigners();
 
@@ -241,22 +241,16 @@ describe('Vaults', () => {
 
     const rageTradeFactory = await (
       await hre.ethers.getContractFactory('RageTradeFactory')
-    ).deploy(
-      clearingHouseLogic.address,
-      vPoolWrapperLogic.address,
-      insuranceFundLogic.address,
-      rBase.address,
-      nativeOracle.address,
-    );
+    ).deploy(clearingHouseLogic.address, vPoolWrapperLogic.address, insuranceFundLogic.address, rBase.address);
 
-    vBase = await hre.ethers.getContractAt('VBase', await rageTradeFactory.vBase());
-    vBaseAddress = vBase.address;
+    vQuote = await hre.ethers.getContractAt('VQuote', await rageTradeFactory.vQuote());
+    vQuoteAddress = vQuote.address;
 
     clearingHouse = await hre.ethers.getContractAt('ClearingHouse', await rageTradeFactory.clearingHouse());
 
     const insuranceFund = await hre.ethers.getContractAt('InsuranceFund', await clearingHouse.insuranceFund());
 
-    // await vBase.transferOwnership(VPoolFactory.address);
+    // await vQuote.transferOwnership(VPoolFactory.address);
     // const realTokenFactory = await hre.ethers.getContractFactory('RealTokenMock');
     // realToken = await realTokenFactory.deploy();
 
@@ -299,11 +293,19 @@ describe('Vaults', () => {
     collateralToken = await collateralTokenFactory.deploy();
     await collateralToken.initialize('Vault Collateral', 'VC');
     collateralTokenOracle = await (await hre.ethers.getContractFactory('OracleMock')).deploy();
-    clearingHouse.addCollateralSupport(rBase.address, rBaseOracle.address, 300);
-    clearingHouse.addCollateralSupport(collateralToken.address, collateralTokenOracle.address, 300);
+    await clearingHouse.updateCollateralSettings(rBase.address, {
+      oracle: rBaseOracle.address,
+      twapDuration: 300,
+      isAllowedForDeposit: true,
+    });
+    await clearingHouse.updateCollateralSettings(collateralToken.address, {
+      oracle: collateralTokenOracle.address,
+      twapDuration: 300,
+      isAllowedForDeposit: true,
+    });
 
     const vaultTestFactory = await hre.ethers.getContractFactory('VaultTest');
-    vaultTest = await vaultTestFactory.deploy(wethUsdcPairAddress, 'RageVault', 'RV', vTokenAddress);
+    vaultTest = await vaultTestFactory.deploy(wethUsdcPairAddress, 'RageVault', 'RV', truncate(vTokenAddress));
     collateralToken.mint(vaultTest.address, tokenAmount(10n ** 6n, 18));
 
     usdcOracle = await smock.fake<IAggregatorV3Interface>('IAggregatorV3Interface');
@@ -317,15 +319,20 @@ describe('Vaults', () => {
   describe('#Init Params', () => {
     it('Set Params', async () => {
       const liquidationParams = {
-        liquidationFeeFraction: 1500,
-        tokenLiquidationPriceDeltaBps: 3000,
+        rangeLiquidationFeeFraction: 1500,
+        tokenLiquidationFeeFraction: 3000,
         insuranceFundFeeShareBps: 5000,
+        maxRangeLiquidationFees: 100000000,
+        closeFactorMMThresholdBps: 7500,
+        partialLiquidationCloseFactorBps: 5000,
+        liquidationSlippageSqrtToleranceBps: 150,
+        minNotionalLiquidatable: 100000000,
       };
       const removeLimitOrderFee = tokenAmount(10, 6);
       const minimumOrderNotional = tokenAmount(1, 6).div(100);
       const minRequiredMargin = tokenAmount(20, 6);
 
-      await clearingHouse.setPlatformParameters(
+      await clearingHouse.updateProtocolSettings(
         liquidationParams,
         removeLimitOrderFee,
         minimumOrderNotional,
@@ -335,14 +342,22 @@ describe('Vaults', () => {
       const curPaused = await clearingHouse.paused();
 
       expect(protocol.minRequiredMargin).eq(minRequiredMargin);
-      expect(protocol.liquidationParams.liquidationFeeFraction).eq(liquidationParams.liquidationFeeFraction);
-      expect(protocol.liquidationParams.tokenLiquidationPriceDeltaBps).eq(
-        liquidationParams.tokenLiquidationPriceDeltaBps,
-      );
+      expect(protocol.liquidationParams.rangeLiquidationFeeFraction).eq(liquidationParams.rangeLiquidationFeeFraction);
+      expect(protocol.liquidationParams.tokenLiquidationFeeFraction).eq(liquidationParams.tokenLiquidationFeeFraction);
       expect(protocol.liquidationParams.insuranceFundFeeShareBps).eq(liquidationParams.insuranceFundFeeShareBps);
+      expect(protocol.liquidationParams.maxRangeLiquidationFees).eq(liquidationParams.maxRangeLiquidationFees);
+      expect(protocol.liquidationParams.closeFactorMMThresholdBps).eq(liquidationParams.closeFactorMMThresholdBps);
+      expect(protocol.liquidationParams.partialLiquidationCloseFactorBps).eq(
+        liquidationParams.partialLiquidationCloseFactorBps,
+      );
+      expect(protocol.liquidationParams.liquidationSlippageSqrtToleranceBps).eq(
+        liquidationParams.liquidationSlippageSqrtToleranceBps,
+      );
+      expect(protocol.liquidationParams.minNotionalLiquidatable).eq(liquidationParams.minNotionalLiquidatable);
 
       expect(protocol.removeLimitOrderFee).eq(removeLimitOrderFee);
       expect(protocol.minimumOrderNotional).eq(minimumOrderNotional);
+      expect(protocol.minRequiredMargin).eq(minRequiredMargin);
       expect(curPaused).to.be.false;
     });
   });
@@ -366,16 +381,16 @@ describe('Vaults', () => {
       user2AccountNo = 2;
     });
 
-    it('Add Token Position Support - Pass', async () => {
-      await clearingHouse.connect(admin).updateSupportedVTokens(vTokenAddress, true);
-      expect(await clearingHouse.supportedVTokens(vTokenAddress)).to.be.true;
-    });
-    it('Add Base Deposit Support  - Pass', async () => {
-      await clearingHouse.connect(admin).updateSupportedDeposits(rBase.address, true);
-      expect(await clearingHouse.supportedDeposits(rBase.address)).to.be.true;
-      await clearingHouse.connect(admin).updateSupportedDeposits(collateralToken.address, true);
-      expect(await clearingHouse.supportedDeposits(collateralToken.address)).to.be.true;
-    });
+    // it('Add Token Position Support - Pass', async () => {
+    //   await clearingHouse.connect(admin).updateSupportedVTokens(vTokenAddress, true);
+    //   expect(await clearingHouse.supportedVTokens(vTokenAddress)).to.be.true;
+    // });
+    // it('Add Base Deposit Support  - Pass', async () => {
+    //   await clearingHouse.connect(admin).updateSupportedDeposits(rBase.address, true);
+    //   expect(await clearingHouse.supportedDeposits(rBase.address)).to.be.true;
+    //   await clearingHouse.connect(admin).updateSupportedDeposits(collateralToken.address, true);
+    //   expect(await clearingHouse.supportedDeposits(collateralToken.address)).to.be.true;
+    // });
     it('Sushi Factory Check', async () => {
       const poolAddress = await sushiFactory.getPair(WETH_ADDRESS, USDC_ADDRESS);
     });
@@ -457,24 +472,24 @@ describe('Vaults', () => {
     });
     it('Settle Collateral - Positive Diff', async () => {
       await vaultTest.testSettleCollateral(tokenAmount(50000n, 6));
-      const accountView = await clearingHouse.getAccountView(vaultAccountNo);
-      const depositView = accountView.tokenDeposits;
-      expect(depositView[0].rTokenAddress).to.eq(collateralToken.address);
+      const accountView = await clearingHouse.getAccountInfo(vaultAccountNo);
+      const depositView = accountView.collateralDeposits;
+      expect(depositView[0].collateral).to.eq(collateralToken.address);
       expect(depositView[0].balance).to.eq(tokenAmount(50000n, 18));
     });
 
     it('Settle Collateral - Negative Diff', async () => {
       await vaultTest.testSettleCollateral(tokenAmount(-25000n, 6));
-      const accountView = await clearingHouse.getAccountView(vaultAccountNo);
-      const depositView = accountView.tokenDeposits;
-      expect(depositView[0].rTokenAddress).to.eq(collateralToken.address);
+      const accountView = await clearingHouse.getAccountInfo(vaultAccountNo);
+      const depositView = accountView.collateralDeposits;
+      expect(depositView[0].collateral).to.eq(collateralToken.address);
       expect(depositView[0].balance).to.eq(tokenAmount(25000n, 18));
     });
 
     it('Settle Collateral - No Balance', async () => {
       await vaultTest.testSettleCollateral(tokenAmount(-25000n, 6));
-      const accountView = await clearingHouse.getAccountView(vaultAccountNo);
-      const depositView = accountView.tokenDeposits;
+      const accountView = await clearingHouse.getAccountInfo(vaultAccountNo);
+      const depositView = accountView.collateralDeposits;
       expect(depositView.length).to.eq(0);
     });
 
@@ -487,8 +502,8 @@ describe('Vaults', () => {
       expect(await wethUsdcSushiPair.balanceOf(user0.address)).to.eq(0);
       expect(await vaultTest.balanceOf(user0.address)).to.eq(lpTokenBalanceFinal);
 
-      const accountView = await clearingHouse.getAccountView(vaultAccountNo);
-      const depositView = accountView.tokenDeposits;
+      const accountView = await clearingHouse.getAccountInfo(vaultAccountNo);
+      const depositView = accountView.collateralDeposits;
       const depositValue = await vaultTest.getMarketValue(lpTokenBalanceFinal);
       expect(depositView[0].balance).to.eq(tokenAmount(depositValue, 12));
     });
@@ -501,8 +516,8 @@ describe('Vaults', () => {
       expect(await wethUsdcSushiPair.balanceOf(user0.address)).to.eq(100n);
       expect(await vaultTest.balanceOf(user0.address)).to.eq(vaultBalance.sub(100n));
 
-      const accountView = await clearingHouse.getAccountView(vaultAccountNo);
-      const depositView = accountView.tokenDeposits;
+      const accountView = await clearingHouse.getAccountInfo(vaultAccountNo);
+      const depositView = accountView.collateralDeposits;
       const depositValue = await vaultTest.getMarketValue(vaultBalance.sub(100n));
       expect(depositView[0].balance).to.eq(tokenAmount(depositValue, 12));
     });
@@ -522,10 +537,10 @@ describe('Vaults', () => {
     describe('Liquidity Change Params', () => {
       it('No previous range', async () => {
         const vTokenPosition: VTokenPositionViewStruct = {
-          vTokenAddress: vTokenAddress,
+          poolId: truncate(vTokenAddress),
           balance: 0,
           netTraderPosition: 0,
-          sumAX128Ckpt: 0,
+          sumALastX128: 0,
           liquidityPositions: [],
         };
         const accountMarketValue = tokenAmount(50000n, 6);
@@ -535,11 +550,11 @@ describe('Vaults', () => {
         // expect(liquidityChangeParams[0].liquidityDelta).to.eq(0);
 
         const { sqrtPriceX96 } = await vPool.slot0();
-        const price = await sqrtPriceX96ToPrice(sqrtPriceX96, vBase, vToken);
+        const price = await sqrtPriceX96ToPrice(sqrtPriceX96, vQuote, vToken);
         const priceLower = price * 0.6;
         const priceUpper = price * 1.4;
-        let tickLower = await priceToTick(priceLower, vBase, vToken);
-        let tickUpper = await priceToTick(priceUpper, vBase, vToken);
+        let tickLower = await priceToTick(priceLower, vQuote, vToken);
+        let tickUpper = await priceToTick(priceUpper, vQuote, vToken);
 
         tickLower += 10 - (tickLower % 10);
         tickUpper -= tickUpper % 10;
@@ -579,11 +594,11 @@ describe('Vaults', () => {
       //   // expect(liquidityChangeParams[0].liquidityDelta).to.eq(0);
 
       //   const { sqrtPriceX96 } = await vPool.slot0();
-      //   const price = await sqrtPriceX96ToPrice(sqrtPriceX96, vBase, vToken);
+      //   const price = await sqrtPriceX96ToPrice(sqrtPriceX96, vQuote, vToken);
       //   const priceLower = price * 0.6;
       //   const priceUpper = price * 1.4;
-      //   let tickLower = await priceToTick(priceLower, vBase, vToken);
-      //   let tickUpper = await priceToTick(priceUpper, vBase, vToken);
+      //   let tickLower = await priceToTick(priceLower, vQuote, vToken);
+      //   let tickUpper = await priceToTick(priceUpper, vQuote, vToken);
 
       //   tickLower += 10 - (tickLower % 10);
       //   tickUpper -= tickUpper % 10;
