@@ -493,7 +493,7 @@ describe('Vaults', () => {
       expect(depositView.length).to.eq(0);
     });
 
-    it('Deposit', async () => {
+    it.skip('Deposit', async () => {
       await setOracle(10n ** 8n, 3000n * 10n ** 8n);
       const lpTokenBalanceFinal = await wethUsdcSushiPair.balanceOf(user0.address);
       await vaultTest.connect(user0).deposit(lpTokenBalanceFinal, user0.address);
@@ -507,7 +507,7 @@ describe('Vaults', () => {
       const depositValue = await vaultTest.getMarketValue(lpTokenBalanceFinal);
       expect(depositView[0].balance).to.eq(tokenAmount(depositValue, 12));
     });
-    it('Withdraw', async () => {
+    it.skip('Withdraw', async () => {
       await setOracle(10n ** 8n, 3000n * 10n ** 8n);
       const vaultBalance = await wethUsdcSushiPair.balanceOf(vaultTest.address);
       await vaultTest.connect(user0).withdraw(100n, user0.address, user0.address);
