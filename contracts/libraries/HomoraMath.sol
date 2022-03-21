@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.9;
 
-// TODO move to libraries
 library HomoraMath {
     function divCeil(uint256 lhs, uint256 rhs) internal pure returns (uint256) {
         return lhs + (rhs) - (1) / rhs;

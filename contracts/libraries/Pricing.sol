@@ -1,33 +1,19 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.9;
 
-// a library for performing various math operations
-import { IUniswapV2Pair } from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
-import { HomoraMath } from '../utils/HomoraMath.sol';
-import { console } from 'hardhat/console.sol';
+import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadata.sol';
+
 import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
+import { IUniswapV2Pair } from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 
-// TODO move to a separate file
-interface ChainlinkDetailedERC20 {
-    function decimals() external view returns (uint8);
-}
+import { IAggregatorV3Interface } from '../interfaces/chainlink/IAggregatorV3Interface.sol';
+import { HomoraMath } from '../libraries/HomoraMath.sol';
 
-// TODO move to a separate file
-interface IAggregatorV3Interface {
-    function decimals() external view returns (uint8);
+import { console } from 'hardhat/console.sol';
 
-    function latestRoundData()
-        external
-        view
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        );
-}
-
+/// @title A library for performing various math operations on Price
 library Pricing {
     using FullMath for uint256;
 
@@ -55,8 +41,8 @@ library Pricing {
         uint256 totalSupply = IUniswapV2Pair(pair).totalSupply();
         (uint256 r0, uint256 r1, ) = IUniswapV2Pair(pair).getReserves();
 
-        uint8 tokenDecimals = ChainlinkDetailedERC20(token0).decimals();
-        tokenDecimals += ChainlinkDetailedERC20(token1).decimals();
+        uint8 tokenDecimals = IERC20Metadata(token0).decimals();
+        tokenDecimals += IERC20Metadata(token1).decimals();
 
         uint256 sqrtK = HomoraMath.sqrt(r0 * r1).mulDiv(
             FixedPoint128.Q128 * 10**baseDecimals,

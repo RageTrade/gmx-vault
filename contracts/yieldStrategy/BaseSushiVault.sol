@@ -2,22 +2,21 @@
 
 pragma solidity ^0.8.9;
 
-import { BaseVault } from '../base/BaseVault.sol';
+import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
-import { BaseRangeStrategyVault } from '../rangeStrategy/BaseRangeStrategyVault.sol';
 import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
 
+import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
+import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 import { IUniswapV2Router02 } from '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
 import { IUniswapV2Pair } from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 
-import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-
+import { BaseRangeStrategyVault } from '../rangeStrategy/BaseRangeStrategyVault.sol';
+import { BaseVault } from '../base/BaseVault.sol';
 import { IMiniChefV2 } from '../interfaces/sushi/IMiniChefV2.sol';
-
-import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
-import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
-
 import { Pricing } from '../libraries/Pricing.sol';
+
+import { console } from 'hardhat/console.sol';
 
 struct SushiParams {
     address sushiRouter;
@@ -128,7 +127,7 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         address[] memory path;
         path[0] = token0;
         path[1] = token1;
-    
+
         if (token0 != address(rageBaseToken)) {
             sushiRouter.swapExactTokensForTokens(token0Bal, 0, path, address(this), block.timestamp);
         }
@@ -167,10 +166,7 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         _depositToken(rewardToken, rewardBal);
     }
 
-    function _depositToken(
-        address token,
-        uint256 amount
-    ) internal {
+    function _depositToken(address token, uint256 amount) internal {
         uint256 amountHalf = amount / 2;
 
         uint256 token0Bal;
@@ -196,7 +192,7 @@ contract BaseSushiVault is BaseRangeStrategyVault {
             address[] memory path;
             path[0] = token;
             path[1] = token1;
-    
+
             uint256[] memory amounts = sushiRouter.swapExactTokensForTokens(
                 amountHalf,
                 0,
@@ -213,11 +209,16 @@ contract BaseSushiVault is BaseRangeStrategyVault {
     }
 
     function _stakedAssetBalance() internal view override returns (uint256) {
-        (uint256 amount, /** uint256 rewardDebt */) =  sushiChef.userInfo(sushiPoolId, address(this));
+        (
+            uint256 amount, /** uint256 rewardDebt */
+
+        ) = sushiChef.userInfo(sushiPoolId, address(this));
         return amount;
     }
 
-    function _afterDepositYield(uint256 /** amount */) internal override {
+    function _afterDepositYield(
+        uint256 /** amount */
+    ) internal override {
         // stake outstanding SLP
         _stake();
     }
