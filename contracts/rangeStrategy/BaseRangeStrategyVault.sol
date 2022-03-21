@@ -1,29 +1,22 @@
 // SPDX-License-Identifier: Unlicense
 
 pragma solidity ^0.8.9;
-import { BaseVault } from '../base/BaseVault.sol';
 
 import { IClearingHouse } from '@ragetrade/core/contracts/interfaces/IClearingHouse.sol';
 import { IClearingHouseEnums } from '@ragetrade/core/contracts/interfaces/clearinghouse/IClearingHouseEnums.sol';
 import { IClearingHouseStructures } from '@ragetrade/core/contracts/interfaces/clearinghouse/IClearingHouseStructures.sol';
 import { IVToken } from '@ragetrade/core/contracts/interfaces/IVToken.sol';
-
-import { IUniswapV3Pool } from '@uniswap/v3-core-0.8-support/contracts/interfaces/IUniswapV3Pool.sol';
-
+import { SignedFullMath } from '@ragetrade/core/contracts/libraries/SignedFullMath.sol';
+import { SignedMath } from '@ragetrade/core/contracts/libraries/SignedMath.sol';
 import { UniswapV3PoolHelper } from '@ragetrade/core/contracts/libraries/UniswapV3PoolHelper.sol';
 
-import { SignedFullMath } from '@ragetrade/core/contracts/libraries/SignedFullMath.sol';
-import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
-
 import { FixedPoint96 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint96.sol';
-
-import { SafeCast } from '../libraries/SafeCast.sol';
-
-import { SignedMath } from '@ragetrade/core/contracts/libraries/SignedMath.sol';
-
+import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 import { TickMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/TickMath.sol';
+import { IUniswapV3Pool } from '@uniswap/v3-core-0.8-support/contracts/interfaces/IUniswapV3Pool.sol';
 
-import { console } from 'hardhat/console.sol';
+import { BaseVault } from '../base/BaseVault.sol';
+import { SafeCast } from '../libraries/SafeCast.sol';
 
 abstract contract BaseRangeStrategyVault is BaseVault {
     using SafeCast for uint256;
