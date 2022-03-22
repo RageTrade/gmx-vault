@@ -30,21 +30,30 @@ abstract contract BaseRangeStrategyVault is BaseVault {
     /*
         RANGE STRATEGY
     */
-
-    function _afterDepositRanges(uint256 amount) internal override {
-        int256 depositMarketValue = getMarketValue(amount).toInt256();
+    function _afterDepositRanges(uint256, uint256 amountDeposited) internal override {
+        int256 depositMarketValue = getMarketValue(amountDeposited).toInt256();
         _settleCollateral(depositMarketValue);
 
         // Add to base range based on the additional collateral
-        // updateRangesAfterDeposit();
+        // IClearingHouse.LiquidityChangeParams memory liquidityChangeParam = _getLiquidityChangeParamsAfterDeposit(amountAfterDeposit, amountDeposited);
+        
+        // assert(liquidityChangeParam.liquidityDelta>0);
+        
+        // rageClearingHouse.updateRangeOrder(rageAccountNo, VWETH_TRUNCATED_ADDRESS, liquidityChangeParam);
+        // baseLiquidity += uint128(liquidityChangeParam.liquidityDelta);
+
+
     }
 
-    function _beforeWithdrawRanges(uint256 amount) internal override {
+    function _beforeWithdrawRanges(uint256, uint256 amountWithdrawn) internal override {
         // Remove from base range based on the collateral removal
-        // updateRangesBeforeWithdraw();
-
+        // IClearingHouse.LiquidityChangeParams memory liquidityChangeParam =  _getLiquidityChangeParamsBeforeWithdraw(amountBeforeWithdraw, amountWithdrawn);
+        // assert(liquidityChangeParam.liquidityDelta<0);
+    
+        // baseLiquidity -= uint128(-liquidityChangeParam.liquidityDelta);
+        // rageClearingHouse.updateRangeOrder(rageAccountNo, VWETH_TRUNCATED_ADDRESS, liquidityChangeParam);
         // Settle collateral based on updated value
-        int256 depositMarketValue = getMarketValue(amount).toInt256();
+        int256 depositMarketValue = getMarketValue(amountWithdrawn).toInt256();
         _settleCollateral(-depositMarketValue);
     }
 
