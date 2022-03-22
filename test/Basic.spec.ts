@@ -535,7 +535,7 @@ describe('Vaults', () => {
 
   describe('#Range Strategy', () => {
     describe('Liquidity Change Params', () => {
-      it('No previous range', async () => {
+      it.skip('No previous range', async () => {
         const vTokenPosition: VTokenPositionViewStruct = {
           poolId: truncate(vTokenAddress),
           balance: 0,
