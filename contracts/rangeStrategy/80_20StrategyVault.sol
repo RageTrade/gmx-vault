@@ -31,26 +31,38 @@ abstract contract Strategy_80_20_Vault is BaseVault {
     int24 public baseTickLower;
     int24 public baseTickUpper;
     uint128 public baseLiquidity;
+    bool public isReset;
+    uint16 public closePositionSlippageSqrtToleranceBps;
     uint64 public constant PRICE_FACTOR_PIPS = 640000; // scaled by 1e6 
 
     /*
         RANGE STRATEGY
     */
 
-    function _afterDepositRanges(uint256 amount) internal override {
-        int256 depositMarketValue = getMarketValue(amount).toInt256();
+    function _afterDepositRanges(uint256 amountAfterDeposit, uint256 amountDeposited) internal override {
+        int256 depositMarketValue = getMarketValue(amountDeposited).toInt256();
         _settleCollateral(depositMarketValue);
 
         // Add to base range based on the additional collateral
-        // updateRangesAfterDeposit();
+        IClearingHouse.LiquidityChangeParams memory liquidityChangeParam = _getLiquidityChangeParamsAfterDeposit(amountAfterDeposit, amountDeposited);
+        
+        assert(liquidityChangeParam.liquidityDelta>0);
+        
+        rageClearingHouse.updateRangeOrder(rageAccountNo, VWETH_TRUNCATED_ADDRESS, liquidityChangeParam);
+        baseLiquidity += uint128(liquidityChangeParam.liquidityDelta);
+
+
     }
 
-    function _beforeWithdrawRanges(uint256 amount) internal override {
+    function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal override {
         // Remove from base range based on the collateral removal
-        // updateRangesBeforeWithdraw();
-
+        IClearingHouse.LiquidityChangeParams memory liquidityChangeParam =  _getLiquidityChangeParamsBeforeWithdraw(amountBeforeWithdraw, amountWithdrawn);
+        assert(liquidityChangeParam.liquidityDelta<0);
+    
+        baseLiquidity -= uint128(-liquidityChangeParam.liquidityDelta);
+        rageClearingHouse.updateRangeOrder(rageAccountNo, VWETH_TRUNCATED_ADDRESS, liquidityChangeParam);
         // Settle collateral based on updated value
-        int256 depositMarketValue = getMarketValue(amount).toInt256();
+        int256 depositMarketValue = getMarketValue(amountWithdrawn).toInt256();
         _settleCollateral(-depositMarketValue);
     }
 
@@ -59,8 +71,7 @@ abstract contract Strategy_80_20_Vault is BaseVault {
         IClearingHouse.RageTradePool memory rageTradePool,
         int256 vaultMarketValue
     ) internal override {
-        IClearingHouse.LiquidityChangeParams[4] memory liquidityChangeParamList = getLiquidityChangeParams(
-            vTokenPosition,
+        IClearingHouse.LiquidityChangeParams[2] memory liquidityChangeParamList = _getLiquidityChangeParamsOnRebalance(
             rageTradePool,
             vaultMarketValue
         );
@@ -69,19 +80,42 @@ abstract contract Strategy_80_20_Vault is BaseVault {
             if (liquidityChangeParamList[i].liquidityDelta == 0) break;
             rageClearingHouse.updateRangeOrder(rageAccountNo, VWETH_TRUNCATED_ADDRESS, liquidityChangeParamList[i]);
         }
+
+        if(isReset) _closeTokenPosition(vTokenPosition,rageTradePool);
+
+
     }
 
-    function getLiquidityChangeParams(
-        IClearingHouse.VTokenPositionView memory vTokenPosition,
+    function _closeTokenPosition(IClearingHouse.VTokenPositionView memory vTokenPosition, IClearingHouse.RageTradePool memory rageTradePool) internal {
+        int256 tokensToTrade = -vTokenPosition.netTraderPosition;
+        uint256 sqrtTwapPrice = uint256(rageTradePool.vPool.twapSqrtPrice(rageTradePool.settings.twapDuration));
+        uint160 sqrtPriceLimit;
+
+        if (tokensToTrade > 0) {
+            sqrtPriceLimit = sqrtTwapPrice
+            .mulDiv(1e4 + closePositionSlippageSqrtToleranceBps, 1e4)
+            .toUint160();
+        } else {
+            sqrtPriceLimit = sqrtTwapPrice
+            .mulDiv(1e4 - closePositionSlippageSqrtToleranceBps, 1e4)
+            .toUint160();
+        }
+        IClearingHouse.SwapParams memory swapParams = IClearingHouse.SwapParams(tokensToTrade,sqrtPriceLimit,false,true);
+        (int256 vTokenAmountOut,) = rageClearingHouse.swapToken(rageAccountNo, VWETH_TRUNCATED_ADDRESS, swapParams);
+
+        if(tokensToTrade==vTokenAmountOut) isReset = false;
+    }
+
+    function _getLiquidityChangeParamsOnRebalance(
         IClearingHouse.RageTradePool memory rageTradePool,
         int256 vaultMarketValue
-    ) internal returns (IClearingHouse.LiquidityChangeParams[4] memory liquidityChangeParamList) {
+    ) internal returns (IClearingHouse.LiquidityChangeParams[2] memory liquidityChangeParamList) {
         // Get net token position
         // Remove reabalance
         // Add new rebalance range
         // Update base range liquidity
 
-
+        //TODO: should we take netPosition from outside
         int256 netPosition = rageClearingHouse.getNetTokenPosition(rageAccountNo, VWETH_TRUNCATED_ADDRESS);
         uint256 twapSqrtPriceX96 = uint256(rageTradePool.vPool.twapSqrtPrice(rageTradePool.settings.twapDuration));
 
@@ -91,6 +125,7 @@ abstract contract Strategy_80_20_Vault is BaseVault {
         uint160 sqrtPriceUpperX96 = twapSqrtPriceX96.mulDiv(1e6,PRICE_FACTOR_PIPS).toUint160();
         baseTickLower = TickMath.getTickAtSqrtRatio(sqrtPriceLowerX96);
         baseTickUpper = TickMath.getTickAtSqrtRatio(sqrtPriceUpperX96);
+        isReset = netPositionNotional*5>vaultMarketValue;
         uint8 liqCount = 0;
 
         if(baseLiquidity>0) {
@@ -106,7 +141,7 @@ abstract contract Strategy_80_20_Vault is BaseVault {
             liqCount++;
         }
         // If (there are no ranges) || (netPositionNotional > 20% of vault market value) then update base liquidity
-        if(baseLiquidity==0 || netPositionNotional*5>vaultMarketValue) {
+        if(baseLiquidity==0 || isReset) {
 
             //TODO: change vaultMarketValue from int256 to uint256 and update type cast to a safe typecast function for uint128
             baseLiquidity = uint128(uint256(vaultMarketValue).mulDiv(FixedPoint96.Q96/10,(twapSqrtPriceX96 - sqrtPriceLowerX96)));
@@ -129,6 +164,19 @@ abstract contract Strategy_80_20_Vault is BaseVault {
             baseLiquidity.toInt128()
         );
         liqCount++;
+    }
+
+
+
+    function _getLiquidityChangeParamsAfterDeposit(uint256 amountAfterDeposit, uint256 amountDeposited) internal view returns (IClearingHouse.LiquidityChangeParams memory liquidityChangeParam){
+        uint256 amountBeforeDeposit = amountAfterDeposit - amountDeposited;
+        int128 liquidityDelta = baseLiquidity.toInt256().mulDiv(amountDeposited,amountBeforeDeposit).toInt128();
+        liquidityChangeParam = _getLiquidityChangeParams(baseTickLower, baseTickUpper, liquidityDelta);
+    }
+
+    function _getLiquidityChangeParamsBeforeWithdraw(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal view returns (IClearingHouse.LiquidityChangeParams memory liquidityChangeParam) {
+        int128 liquidityDelta = -baseLiquidity.toInt256().mulDiv(amountWithdrawn,amountBeforeWithdraw).toInt128();
+        liquidityChangeParam = _getLiquidityChangeParams(baseTickLower, baseTickUpper, liquidityDelta);
     }
 
     function _getLiquidityChangeParams(int24 tickLower, int24 tickUpper, int128 liquidityDelta) internal pure returns(IClearingHouse.LiquidityChangeParams memory liquidityChangeParam){
