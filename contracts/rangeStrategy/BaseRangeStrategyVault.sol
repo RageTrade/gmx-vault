@@ -36,22 +36,20 @@ abstract contract BaseRangeStrategyVault is BaseVault {
 
         // Add to base range based on the additional collateral
         // IClearingHouse.LiquidityChangeParams memory liquidityChangeParam = _getLiquidityChangeParamsAfterDeposit(amountAfterDeposit, amountDeposited);
-        
+
         // assert(liquidityChangeParam.liquidityDelta>0);
-        
-        // rageClearingHouse.updateRangeOrder(rageAccountNo, VWETH_TRUNCATED_ADDRESS, liquidityChangeParam);
+
+        // rageClearingHouse.updateRangeOrder(rageAccountNo, ETH_poolId, liquidityChangeParam);
         // baseLiquidity += uint128(liquidityChangeParam.liquidityDelta);
-
-
     }
 
     function _beforeWithdrawRanges(uint256, uint256 amountWithdrawn) internal override {
         // Remove from base range based on the collateral removal
         // IClearingHouse.LiquidityChangeParams memory liquidityChangeParam =  _getLiquidityChangeParamsBeforeWithdraw(amountBeforeWithdraw, amountWithdrawn);
         // assert(liquidityChangeParam.liquidityDelta<0);
-    
+
         // baseLiquidity -= uint128(-liquidityChangeParam.liquidityDelta);
-        // rageClearingHouse.updateRangeOrder(rageAccountNo, VWETH_TRUNCATED_ADDRESS, liquidityChangeParam);
+        // rageClearingHouse.updateRangeOrder(rageAccountNo, ETH_poolId, liquidityChangeParam);
         // Settle collateral based on updated value
         int256 depositMarketValue = getMarketValue(amountWithdrawn).toInt256();
         _settleCollateral(-depositMarketValue);
@@ -72,6 +70,13 @@ abstract contract BaseRangeStrategyVault is BaseVault {
             if (liquidityChangeParamList[i].liquidityDelta == 0) break;
             rageClearingHouse.updateRangeOrder(rageAccountNo, ETH_poolId, liquidityChangeParamList[i]);
         }
+    }
+
+    function _closeTokenPosition(
+        IClearingHouse.VTokenPositionView memory vTokenPosition,
+        IClearingHouse.Pool memory rageTradePool
+    ) internal override {
+        //Do Nothing
     }
 
     function getLiquidityChangeParams(
@@ -185,5 +190,9 @@ abstract contract BaseRangeStrategyVault is BaseVault {
                 liqCount++;
             }
         }
+    }
+
+    function _isValidRebalanceRange(IClearingHouse.Pool memory) internal pure override returns (bool isValid) {
+        isValid = true;
     }
 }

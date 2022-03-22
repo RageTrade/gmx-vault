@@ -18,9 +18,9 @@ import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
 
 import { IBaseVault } from '../interfaces/IBaseVault.sol';
 import { IBaseYieldStrategy } from '../interfaces/IBaseYieldStrategy.sol';
+import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 
 import { SafeCast } from '../libraries/SafeCast.sol';
-
 import { RageERC4626 } from './RageERC4626.sol';
 
 abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, OwnableUpgradeable {
@@ -32,6 +32,8 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     using SignedMath for int256;
     using SignedFullMath for int256;
 
+    error BV_InvalidRebalance();
+
     // TODO: Make relevant things immutable
     IERC20Metadata public rageBaseToken;
     IClearingHouse public rageClearingHouse;
@@ -39,6 +41,8 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
     uint256 public rageAccountNo;
     uint32 public immutable ETH_poolId;
+    uint64 public lastRebalanceTS;
+    uint16 public rebalancePriceThresholdBps;
 
     constructor(
         ERC20 _asset,
@@ -139,6 +143,11 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     }
 
     function rebalance() public {
+        IClearingHouse.Pool memory rageTradePool = rageClearingHouse.getPoolInfo(ETH_poolId);
+
+        if (!_isValidRebalance(rageTradePool)) {
+            revert BV_InvalidRebalance();
+        }
         // Rebalance ranges based on the parameters passed
         IClearingHouse.CollateralDepositView[] memory deposits;
         IClearingHouse.VTokenPositionView[] memory vTokenPositions;
@@ -149,15 +158,26 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
         _rebalanceProfitAndCollateral(deposits, vTokenPositions, vaultMarketValue);
 
-        IClearingHouse.Pool memory rageTradePool = rageClearingHouse.getPoolInfo(ETH_poolId);
-
         // Step-4 Find the ranges and amount of liquidity to put in each
         _rebalanceRanges(vTokenPositions[0], rageTradePool, vaultMarketValue);
 
         // Step-5 Rebalance
     }
 
-    function rebalanceProfitAndCollateral() public {
+    function closeTokenPosition() public {
+        IClearingHouse.VTokenPositionView[] memory vTokenPositions;
+        // Step-0 Check if the rebalance can go through (time and threshold based checks)
+        (, , , vTokenPositions) = rageClearingHouse.getAccountInfo(rageAccountNo);
+        IClearingHouse.Pool memory rageTradePool = rageClearingHouse.getPoolInfo(ETH_poolId);
+
+        _closeTokenPosition(vTokenPositions[0], rageTradePool);
+    }
+
+    function _isValidRebalance(IClearingHouse.Pool memory rageTradePool) internal returns (bool isValid) {
+        if (block.timestamp - lastRebalanceTS > 1 days || _isValidRebalanceRange(rageTradePool)) isValid = true;
+    }
+
+    function _rebalanceProfitAndCollateral() internal {
         // Rebalance collateral and dummy stable coins representing the collateral
         // Update protocol and management fee accumulated
         IClearingHouse.CollateralDepositView[] memory deposits;
@@ -198,16 +218,16 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     }
 
     function _beforeShareTransfer() internal override {
-        rebalanceProfitAndCollateral();
+        _rebalanceProfitAndCollateral();
     }
 
     function afterDeposit(uint256 amount) internal override {
         _afterDepositYield(amount);
-        _afterDepositRanges(totalAssets(),amount);
+        _afterDepositRanges(totalAssets(), amount);
     }
 
     function beforeWithdraw(uint256 amount) internal override {
-        _beforeWithdrawRanges(totalAssets(),amount);
+        _beforeWithdrawRanges(totalAssets(), amount);
         _beforeWithdrawYield(amount);
     }
 
@@ -245,7 +265,18 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         int256 vaultMarketValue
     ) internal virtual;
 
+    function _closeTokenPosition(
+        IClearingHouse.VTokenPositionView memory vTokenPosition,
+        IClearingHouse.Pool memory rageTradePool
+    ) internal virtual;
+
     function _afterDepositRanges(uint256 amountAfterDeposit, uint256 amountDeposited) internal virtual;
 
     function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal virtual;
+
+    function _isValidRebalanceRange(IClearingHouse.Pool memory rageTradePool)
+        internal
+        view
+        virtual
+        returns (bool isValid);
 }
