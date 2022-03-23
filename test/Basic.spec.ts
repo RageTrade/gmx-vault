@@ -5,8 +5,8 @@ import { ContractReceipt, ContractTransaction, ethers, providers } from 'ethers'
 
 import { BigNumber, BigNumberish } from '@ethersproject/bignumber';
 
-import { activateMainnetFork, deactivateMainnetFork } from './utils/mainnet-fork';
-import { getCreateAddressFor } from './utils/create-addresses';
+import { activateMainnetFork, deactivateMainnetFork } from '@ragetrade/core/test/utils/mainnet-fork';
+import { getCreateAddressFor } from '@ragetrade/core/test/utils/create-addresses';
 import {
   RageTradeFactory,
   ClearingHouse,
@@ -36,13 +36,13 @@ import {
   UNISWAP_V3_FACTORY_ADDRESS,
   UNISWAP_V3_DEFAULT_FEE_TIER,
   UNISWAP_V3_POOL_BYTE_CODE_HASH,
-  REAL_BASE,
-} from './utils/realConstants';
+  SETTLEMENT_TOKEN,
+} from '@ragetrade/core/test/utils/realConstants';
 
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 import { config } from 'dotenv';
-import { stealFunds, tokenAmount } from './utils/stealFunds';
+import { stealFunds, parseTokenAmount } from '@ragetrade/core/test/utils/stealFunds';
 import {
   sqrtPriceX96ToTick,
   priceToSqrtPriceX96WithoutContract,
@@ -53,13 +53,13 @@ import {
   priceToSqrtPriceX96,
   sqrtPriceX96ToPriceX128,
   priceX128ToPrice,
-} from './utils/price-tick';
+} from '@ragetrade/core/test/utils/price-tick';
 
 import { FakeContract, smock, SmockContractBase } from '@defi-wonderland/smock';
 import { ADDRESS_ZERO, priceToClosestTick } from '@uniswap/v3-sdk';
 import { LiquidityChangeParamsStructOutput, LiquidityPositionViewStruct } from '../typechain-types/IClearingHouse';
 import { VTokenPositionViewStruct } from '../typechain-types/VaultTest';
-import { truncate } from './utils/vToken';
+import { truncate } from '@ragetrade/core/test/utils/vToken';
 const whaleForBase = '0x47ac0Fb4F2D84898e4D9E7b4DaB3C24507a6D503';
 const whaleForWETH = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
 
@@ -76,7 +76,7 @@ const SUSHI_ROUTER_ADDRESS = '0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F';
 
 const SUSHI_CHEF_ADDRESS = '0xEF0881eC094552b2e128Cf945EF17a6752B4Ec5d';
 
-describe('Vaults', () => {
+describe('Basic', () => {
   let vQuoteAddress: string;
   let ownerAddress: string;
   let testContractAddress: string;
@@ -195,7 +195,7 @@ describe('Vaults', () => {
   before(async () => {
     await activateMainnetFork();
 
-    rBase = await hre.ethers.getContractAt('IERC20', REAL_BASE);
+    rBase = await hre.ethers.getContractAt('IERC20', SETTLEMENT_TOKEN);
 
     dummyTokenAddress = ethers.utils.hexZeroPad(BigNumber.from(148392483294).toHexString(), 20);
 
@@ -306,7 +306,7 @@ describe('Vaults', () => {
 
     const vaultTestFactory = await hre.ethers.getContractFactory('VaultTest');
     vaultTest = await vaultTestFactory.deploy(wethUsdcPairAddress, 'RageVault', 'RV', truncate(vTokenAddress));
-    collateralToken.mint(vaultTest.address, tokenAmount(10n ** 6n, 18));
+    collateralToken.mint(vaultTest.address, parseTokenAmount(10n ** 6n, 18));
 
     usdcOracle = await smock.fake<IAggregatorV3Interface>('IAggregatorV3Interface');
     usdcOracle.decimals.returns(8);
@@ -328,9 +328,9 @@ describe('Vaults', () => {
         liquidationSlippageSqrtToleranceBps: 150,
         minNotionalLiquidatable: 100000000,
       };
-      const removeLimitOrderFee = tokenAmount(10, 6);
-      const minimumOrderNotional = tokenAmount(1, 6).div(100);
-      const minRequiredMargin = tokenAmount(20, 6);
+      const removeLimitOrderFee = parseTokenAmount(10, 6);
+      const minimumOrderNotional = parseTokenAmount(1, 6).div(100);
+      const minRequiredMargin = parseTokenAmount(20, 6);
 
       await clearingHouse.updateProtocolSettings(
         liquidationParams,
@@ -364,13 +364,13 @@ describe('Vaults', () => {
 
   describe('#Initialize', () => {
     it('Steal Funds', async () => {
-      await stealFunds(REAL_BASE, 6, user0.address, '1000000', whaleForBase);
-      await stealFunds(REAL_BASE, 6, user1.address, '1000000', whaleForBase);
-      await stealFunds(REAL_BASE, 6, user2.address, '1000000', whaleForBase);
+      await stealFunds(SETTLEMENT_TOKEN, 6, user0.address, '1000000', whaleForBase);
+      await stealFunds(SETTLEMENT_TOKEN, 6, user1.address, '1000000', whaleForBase);
+      await stealFunds(SETTLEMENT_TOKEN, 6, user2.address, '1000000', whaleForBase);
 
-      expect(await rBase.balanceOf(user0.address)).to.eq(tokenAmount('1000000', 6));
-      expect(await rBase.balanceOf(user1.address)).to.eq(tokenAmount('1000000', 6));
-      expect(await rBase.balanceOf(user2.address)).to.eq(tokenAmount('1000000', 6));
+      expect(await rBase.balanceOf(user0.address)).to.eq(parseTokenAmount('1000000', 6));
+      expect(await rBase.balanceOf(user1.address)).to.eq(parseTokenAmount('1000000', 6));
+      expect(await rBase.balanceOf(user2.address)).to.eq(parseTokenAmount('1000000', 6));
     });
     it('Create Accounts', async () => {
       await clearingHouse.connect(user0).createAccount();
@@ -401,7 +401,7 @@ describe('Vaults', () => {
   });
   describe('#Sushi Router', () => {
     it('Sushi Router Swap', async () => {
-      const tokenAmountIn = tokenAmount('100000', 6);
+      const tokenAmountIn = parseTokenAmount('100000', 6);
       const tokenAmountOutMin = 0;
       const path = [USDC_ADDRESS, WETH_ADDRESS];
       const block = await hre.ethers.provider.getBlock('latest');
@@ -471,23 +471,23 @@ describe('Vaults', () => {
       expect(await rBase.allowance(vaultTest.address, sushiRouter.address)).to.eq((1n << 256n) - 1n);
     });
     it('Settle Collateral - Positive Diff', async () => {
-      await vaultTest.testSettleCollateral(tokenAmount(50000n, 6));
+      await vaultTest.testSettleCollateral(parseTokenAmount(50000n, 6));
       const accountView = await clearingHouse.getAccountInfo(vaultAccountNo);
       const depositView = accountView.collateralDeposits;
       expect(depositView[0].collateral).to.eq(collateralToken.address);
-      expect(depositView[0].balance).to.eq(tokenAmount(50000n, 18));
+      expect(depositView[0].balance).to.eq(parseTokenAmount(50000n, 18));
     });
 
     it('Settle Collateral - Negative Diff', async () => {
-      await vaultTest.testSettleCollateral(tokenAmount(-25000n, 6));
+      await vaultTest.testSettleCollateral(parseTokenAmount(-25000n, 6));
       const accountView = await clearingHouse.getAccountInfo(vaultAccountNo);
       const depositView = accountView.collateralDeposits;
       expect(depositView[0].collateral).to.eq(collateralToken.address);
-      expect(depositView[0].balance).to.eq(tokenAmount(25000n, 18));
+      expect(depositView[0].balance).to.eq(parseTokenAmount(25000n, 18));
     });
 
     it('Settle Collateral - No Balance', async () => {
-      await vaultTest.testSettleCollateral(tokenAmount(-25000n, 6));
+      await vaultTest.testSettleCollateral(parseTokenAmount(-25000n, 6));
       const accountView = await clearingHouse.getAccountInfo(vaultAccountNo);
       const depositView = accountView.collateralDeposits;
       expect(depositView.length).to.eq(0);
@@ -505,7 +505,7 @@ describe('Vaults', () => {
       const accountView = await clearingHouse.getAccountInfo(vaultAccountNo);
       const depositView = accountView.collateralDeposits;
       const depositValue = await vaultTest.getMarketValue(lpTokenBalanceFinal);
-      expect(depositView[0].balance).to.eq(tokenAmount(depositValue, 12));
+      expect(depositView[0].balance).to.eq(parseTokenAmount(depositValue, 12));
     });
     it.skip('Withdraw', async () => {
       await setOracle(10n ** 8n, 3000n * 10n ** 8n);
@@ -519,7 +519,7 @@ describe('Vaults', () => {
       const accountView = await clearingHouse.getAccountInfo(vaultAccountNo);
       const depositView = accountView.collateralDeposits;
       const depositValue = await vaultTest.getMarketValue(vaultBalance.sub(100n));
-      expect(depositView[0].balance).to.eq(tokenAmount(depositValue, 12));
+      expect(depositView[0].balance).to.eq(parseTokenAmount(depositValue, 12));
     });
 
     it('Vault Market Value');
@@ -543,7 +543,7 @@ describe('Vaults', () => {
           sumALastX128: 0,
           liquidityPositions: [],
         };
-        const accountMarketValue = tokenAmount(50000n, 6);
+        const accountMarketValue = parseTokenAmount(50000n, 6);
         const liquidityChangeParams = await vaultTest.getLiquidityChangeParams(vTokenPosition, accountMarketValue);
 
         expect(getNumChanges(liquidityChangeParams)).to.eq(1);
@@ -587,7 +587,7 @@ describe('Vaults', () => {
       //     liquidityPositions: liquidityPositions,
       //   };
 
-      //   const accountMarketValue = tokenAmount(50000n, 6);
+      //   const accountMarketValue = parseTokenAmount(50000n, 6);
       //   const liquidityChangeParams = await vaultTest.getLiquidityChangeParams(vTokenPosition, accountMarketValue);
 
       //   expect(getNumChanges(liquidityChangeParams)).to.eq(2);

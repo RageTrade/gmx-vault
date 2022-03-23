@@ -8,6 +8,7 @@ import 'hardhat-contract-sizer';
 import 'hardhat-deploy';
 import 'solidity-coverage';
 import '@nomiclabs/hardhat-etherscan';
+import '@protodev-rage/hardhat-tenderly';
 import { ethers } from 'ethers';
 
 config();
@@ -41,6 +42,7 @@ export default {
       forking: {
         url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_KEY}`,
       },
+      blockGasLimit: 0x1fffffffffff,
       gasPrice: 0,
       initialBaseFeePerGas: 0,
       allowUnlimitedContractSize: true, // TODO: remove this
@@ -69,7 +71,7 @@ export default {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1,
+            runs: 800,
           },
           metadata: {
             // do not include the metadata hash, since this is machine dependent
@@ -89,7 +91,7 @@ export default {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1,
+            runs: 800,
           },
           metadata: {
             // do not include the metadata hash, since this is machine dependent
@@ -122,7 +124,7 @@ export default {
     apiKey: process.env.ETHERSCAN_KEY,
   },
   mocha: {
-    timeout: 100000,
+    timeout: 200000,
   },
   gasReporter: {
     currency: 'USD',
@@ -137,5 +139,9 @@ export default {
     deployer: {
       default: 0,
     },
+  },
+  tenderly: {
+    project: process.env.TENDERLY_PROJECT,
+    username: process.env.TENDERLY_USERNAME,
   },
 };

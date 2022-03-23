@@ -6,7 +6,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 import arbConstants from './utils/arb-constants';
 
-import { activateMainnetFork, deactivateMainnetFork } from './utils/mainnet-fork';
+import { activateMainnetFork, deactivateMainnetFork } from '@ragetrade/core/test/utils/mainnet-fork';
 
 import { smock, FakeContract } from '@defi-wonderland/smock';
 
@@ -31,10 +31,10 @@ import {
 
 import { SushiParamsStruct } from '../typechain-types/VaultTest';
 
-import { tickToSqrtPriceX96 } from './utils/price-tick';
+import { tickToSqrtPriceX96 } from '@ragetrade/core/test/utils/price-tick';
 
-import { stealFunds, tokenAmount } from './utils/stealFunds';
-import { truncate } from './utils/vToken';
+import { stealFunds, parseTokenAmount } from '@ragetrade/core/test/utils/stealFunds';
+import { truncate } from '@ragetrade/core/test/utils/vToken';
 
 const createUsers = async () => {
   let signers = await hre.ethers.getSigners();
@@ -192,7 +192,7 @@ const initVaults = async (
   ).wait();
 };
 
-describe.skip('# Main', () => {
+describe.skip('# Yield', () => {
   let vQuote: IVQuote;
   let vToken: IVToken;
   let realBase: IERC20;
@@ -301,9 +301,9 @@ describe.skip('# Main', () => {
         minNotionalLiquidatable: 100000000,
       };
 
-      const minRequiredMargin = tokenAmount(20, 6);
-      const removeLimitOrderFee = tokenAmount(10, 6);
-      const minimumOrderNotional = tokenAmount(1, 6).div(100);
+      const minRequiredMargin = parseTokenAmount(20, 6);
+      const removeLimitOrderFee = parseTokenAmount(10, 6);
+      const minimumOrderNotional = parseTokenAmount(1, 6).div(100);
 
       await clearingHouse.updateProtocolSettings(
         liquidationParams,
