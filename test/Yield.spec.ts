@@ -192,7 +192,7 @@ const initVaults = async (
   ).wait();
 };
 
-describe('# Main', () => {
+describe.skip('# Main', () => {
   let vQuote: IVQuote;
   let vToken: IVToken;
   let realBase: IERC20;
