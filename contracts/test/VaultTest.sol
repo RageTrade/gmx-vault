@@ -36,15 +36,17 @@ contract VaultTest is BaseSushiVault {
         ERC20 _asset,
         string memory _name,
         string memory _symbol,
-        uint32 _ETH_poolId
-    ) BaseSushiVault(_asset, _name, _symbol, _ETH_poolId) {}
+        uint32 _ethPoolId
+    ) BaseSushiVault(_asset, _name, _symbol, _ethPoolId) {
+        // solhint-disable-previous-line no-empty-blocks
+    }
 
     function getLiquidityChangeParams(IClearingHouse.VTokenPositionView memory vTokenPosition, int256 vaultMarketValue)
         external
         view
         returns (IClearingHouse.LiquidityChangeParams[4] memory liquidityChangeParamList)
     {
-        IClearingHouse.Pool memory rageTradePool = rageClearingHouse.getPoolInfo(ETH_poolId);
+        IClearingHouse.Pool memory rageTradePool = rageClearingHouse.getPoolInfo(ethPoolId);
         return getLiquidityChangeParams(vTokenPosition, rageTradePool, vaultMarketValue);
     }
 

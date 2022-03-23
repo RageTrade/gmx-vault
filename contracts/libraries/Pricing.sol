@@ -23,6 +23,7 @@ library Pricing {
         require(maxDelay != 0, 'NULL_DELAY');
 
         (, int256 answer, , uint256 updatedAt, ) = IAggregatorV3Interface(tokenOracle).latestRoundData();
+        // solhint-disable-next-line not-rely-on-time
         require(updatedAt >= block.timestamp - maxDelay, 'DELAYED');
         return (uint256(answer) * (FixedPoint128.Q128)) / (10**decimals);
     }

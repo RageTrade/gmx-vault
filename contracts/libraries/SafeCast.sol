@@ -10,7 +10,7 @@ library SafeCast {
     /// @return z The downcasted integer, now type uint160
     function toUint160(uint256 y) internal pure returns (uint160 z) {
         unchecked {
-            require((z = uint160(y)) == y);
+            require((z = uint160(y)) == y, 'Overflow');
         }
     }
 
@@ -28,7 +28,7 @@ library SafeCast {
     /// @return z The casted integer, now type int256
     function toInt128(uint128 y) internal pure returns (int128 z) {
         unchecked {
-            require(y < 2**127);
+            require(y < 2**127, 'Overflow');
             z = int128(y);
         }
     }
@@ -38,7 +38,7 @@ library SafeCast {
     /// @return z The downcasted integer, now type int128
     function toInt128(int256 y) internal pure returns (int128 z) {
         unchecked {
-            require((z = int128(y)) == y);
+            require((z = int128(y)) == y, 'Overflow');
         }
     }
 
@@ -47,7 +47,7 @@ library SafeCast {
     /// @return z The casted integer, now type int256
     function toInt256(uint256 y) internal pure returns (int256 z) {
         unchecked {
-            require(y < 2**255);
+            require(y < 2**255, 'Overflow');
             z = int256(y);
         }
     }

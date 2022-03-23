@@ -40,7 +40,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     IERC20Metadata public rageCollateralToken;
 
     uint256 public rageAccountNo;
-    uint32 public immutable ETH_poolId;
+    uint32 public immutable ethPoolId;
     uint64 public lastRebalanceTS;
     uint16 public rebalancePriceThresholdBps;
 
@@ -48,11 +48,12 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         ERC20 _asset,
         string memory _name,
         string memory _symbol,
-        uint32 _ETH_poolId
+        uint32 _ethPoolId
     ) RageERC4626(_asset, _name, _symbol) {
-        ETH_poolId = _ETH_poolId;
+        ethPoolId = _ethPoolId;
     }
 
+    // solhint-disable-next-line func-name-mixedcase
     function __BaseVault_init(
         address _owner,
         address _rageClearingHouse,
@@ -143,7 +144,8 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     }
 
     function rebalance() public {
-        IClearingHouse.Pool memory rageTradePool = rageClearingHouse.getPoolInfo(ETH_poolId);
+        // TODO getPoolInfo CALL can be optimised using extsload
+        IClearingHouse.Pool memory rageTradePool = rageClearingHouse.getPoolInfo(ethPoolId);
 
         if (!_isValidRebalance(rageTradePool)) {
             revert BV_InvalidRebalance();
@@ -152,6 +154,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         IClearingHouse.CollateralDepositView[] memory deposits;
         IClearingHouse.VTokenPositionView[] memory vTokenPositions;
         // Step-0 Check if the rebalance can go through (time and threshold based checks)
+        // TODO getAccountInfo CALL may be optimised using extsload
         (, , deposits, vTokenPositions) = rageClearingHouse.getAccountInfo(rageAccountNo);
         // (, uint256 virtualPriceX128) = rageClearingHouse.getTwapSqrtPricesForSetDuration(IVToken(VWETH_ADDRESS));
         int256 vaultMarketValue = getMarketValue(asset.balanceOf(address(this))).toInt256();
@@ -169,12 +172,13 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         IClearingHouse.VTokenPositionView[] memory vTokenPositions;
         // Step-0 Check if the rebalance can go through (time and threshold based checks)
         (, , , vTokenPositions) = rageClearingHouse.getAccountInfo(rageAccountNo);
-        IClearingHouse.Pool memory rageTradePool = rageClearingHouse.getPoolInfo(ETH_poolId);
+        IClearingHouse.Pool memory rageTradePool = rageClearingHouse.getPoolInfo(ethPoolId);
 
         _closeTokenPosition(vTokenPositions[0], rageTradePool);
     }
 
     function _isValidRebalance(IClearingHouse.Pool memory rageTradePool) internal view returns (bool isValid) {
+        // solhint-disable-next-line not-rely-on-time
         if (block.timestamp - lastRebalanceTS > 1 days || _isValidRebalanceRange(rageTradePool)) isValid = true;
     }
 
@@ -198,7 +202,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         IClearingHouse.VTokenPositionView[] memory vTokenPositions,
         int256 vaultMarketValue
     ) internal {
-        assert(vTokenPositions.length == 0 || (vTokenPositions.length == 1 && vTokenPositions[0].poolId == ETH_poolId));
+        assert(vTokenPositions.length == 0 || (vTokenPositions.length == 1 && vTokenPositions[0].poolId == ethPoolId));
         // Harvest the rewards earned (Should be harvested before calculating vault market value)
         _harvestFees();
 
@@ -208,10 +212,11 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         _stake();
     }
 
-    function _unrealizedBalance() internal view returns (uint256) {
+    function _unrealizedBalance() internal pure returns (uint256) {
         // Returns the unrealized pnl which includes pnl from ranges (FP+Fee+RangeIL) and Yield from the yield protocol
         // This is divided by the asset value to arrive at the number of unrealized asset tokens
         // This might be away from the actual value
+        return 0;
     }
 
     function totalAssets() public view override returns (uint256) {
