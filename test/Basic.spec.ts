@@ -613,39 +613,4 @@ describe('Vaults', () => {
       // });
     });
   });
-
-  describe('#Sushi Strategy', () => {
-    it('Market Value', async () => {
-      const { reserve0, reserve1 } = await wethUsdcSushiPair.getReserves();
-
-      const price = reserve1.div(reserve0);
-      await setOracle(10n ** 8n, price.mul(10n ** 3n));
-
-      const totalSupply = await wethUsdcSushiPair.totalSupply();
-
-      const value = await vaultTest.getMarketValue(totalSupply);
-
-      const { answer: price0 } = await usdcOracle.latestRoundData();
-      const { answer: price1 } = await wethOracle.latestRoundData();
-
-      console.log(value.toBigInt());
-      console.log(
-        reserve0
-          .mul(price0)
-          .add(reserve1.mul(price1).div(10n ** 12n))
-          .div(10n ** 8n)
-          .toBigInt(),
-      );
-    });
-    it('DepositBase');
-    // , async () => {
-    //   await vaultTest.testDepositBase(tokenAmount(5000n, 6));
-    // });
-    it('WithdrawBase');
-    // , async () => {
-    //   await vaultTest.testWithdrawBase(tokenAmount(5000n, 6));
-    // });
-    it('Stake');
-    it('Harvest');
-  });
 });
