@@ -23,9 +23,9 @@ import { ClearingHouse } from '@ragetrade/core/contracts/protocol/clearinghouse/
 import { RageTradeFactory } from '@ragetrade/core/contracts/protocol/RageTradeFactory.sol';
 import { VPoolWrapper } from '@ragetrade/core/contracts/protocol/wrapper/VPoolWrapper.sol';
 import { InsuranceFund } from '@ragetrade/core/contracts/protocol/insurancefund/InsuranceFund.sol';
-
 import { OracleMock } from '@ragetrade/core/contracts/test/mocks/OracleMock.sol';
-import { RealTokenMock } from '@ragetrade/core/contracts/test/mocks/RealTokenMock.sol';
+import { SettlementTokenMock } from '@ragetrade/core/contracts/test/mocks/SettlementTokenMock.sol';
+import { VPoolWrapperMockRealistic } from '@ragetrade/core/contracts/test/mocks/VPoolWrapperMockRealistic.sol';
 
 import { IUniswapV2Router02 } from '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
 import { IUniswapV2Pair } from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
