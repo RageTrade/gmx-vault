@@ -165,6 +165,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     }
 
     function closeTokenPosition() public {
+        //TODO: Check if isReset check needs to be added
         IClearingHouse.VTokenPositionView[] memory vTokenPositions;
         // Step-0 Check if the rebalance can go through (time and threshold based checks)
         (, , , vTokenPositions) = rageClearingHouse.getAccountInfo(rageAccountNo);
@@ -173,7 +174,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         _closeTokenPosition(vTokenPositions[0], rageTradePool);
     }
 
-    function _isValidRebalance(IClearingHouse.Pool memory rageTradePool) internal returns (bool isValid) {
+    function _isValidRebalance(IClearingHouse.Pool memory rageTradePool) internal view returns (bool isValid) {
         if (block.timestamp - lastRebalanceTS > 1 days || _isValidRebalanceRange(rageTradePool)) isValid = true;
     }
 

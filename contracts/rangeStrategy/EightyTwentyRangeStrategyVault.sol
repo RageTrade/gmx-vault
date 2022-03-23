@@ -37,6 +37,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     uint128 public baseLiquidity;
     bool public isReset;
     uint16 public closePositionSlippageSqrtToleranceBps;
+    uint16 public resetPositionThresholdBps;
     uint64 public constant PRICE_FACTOR_PIPS = 640000; // scaled by 1e6
 
     /*
@@ -73,6 +74,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
 
     function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal override {
         // Remove from base range based on the collateral removal
+        //TODO: check if the relevant token positions needs to be closed or not
         IClearingHouseStructures.LiquidityChangeParams
             memory liquidityChangeParam = _getLiquidityChangeParamsBeforeWithdraw(
                 amountBeforeWithdraw,
@@ -164,16 +166,13 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
             FixedPoint96.Q96
         );
         //To Reset if netPositionNotional > 20% of vaultMarketValue
-        isReset = netPositionNotional * 5 > vaultMarketValue;
+        isReset = netPositionNotional > vaultMarketValue.mulDiv(resetPositionThresholdBps, 1e4);
 
         // If (there are no ranges) || (netPositionNotional > 20% of vault market value) then update base liquidity
         if (baseLiquidity == 0 || isReset) {
-            //TODO: change vaultMarketValue from int256 to uint256 and update type cast to a safe typecast function for uint128
-            baseLiquidity = uint128(
+            baseLiquidity = (
                 uint256(vaultMarketValue).mulDiv(FixedPoint96.Q96 / 10, (twapSqrtPriceX96 - sqrtPriceLowerX96))
-            );
-
-            //TODO: Check if there is a breach of threshold before rebalancing
+            ).toUint128();
         } else {
             liquidityChangeParamList[liqCount] = _getLiquidityChangeParams(
                 baseTickLower,
