@@ -14,7 +14,9 @@ abstract contract RageERC4626 is ERC4626 {
         ERC20 _asset,
         string memory _name,
         string memory _symbol
-    ) ERC4626(_asset, _name, _symbol) {}
+    ) ERC4626(_asset, _name, _symbol) {
+        // solhint-disable-previous-line no-empty-blocks
+    }
 
     function deposit(uint256 amount, address to) public virtual override returns (uint256 shares) {
         _beforeShareTransfer();

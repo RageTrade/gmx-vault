@@ -51,9 +51,12 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         ERC20 _asset,
         string memory _name,
         string memory _symbol,
-        uint32 _ETH_poolId
-    ) BaseVault(_asset, _name, _symbol, _ETH_poolId) {}
+        uint32 _ethPoolId
+    ) BaseVault(_asset, _name, _symbol, _ethPoolId) {
+        // solhint-disable-previous-line no-empty-blocks
+    }
 
+    // solhint-disable-next-line func-name-mixedcase
     function __BaseSushiVault_init(SushiParams memory _sushiParams) internal onlyInitializing {
         sushiRouter = IUniswapV2Router02(_sushiParams.sushiRouter);
         sushiPair = IUniswapV2Pair(_sushiParams.sushiPair);
@@ -118,7 +121,7 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         );
 
         // Remove Liquidity
-        sushiRouter.removeLiquidity(token0, token1, liquidity, 0, 0, address(this), block.timestamp);
+        sushiRouter.removeLiquidity(token0, token1, liquidity, 0, 0, address(this), _blockTimestamp());
 
         uint256 token0Bal = IERC20(token0).balanceOf(address(this));
         uint256 token1Bal = IERC20(token1).balanceOf(address(this));
@@ -129,11 +132,11 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         path[1] = token1;
 
         if (token0 != address(rageBaseToken)) {
-            sushiRouter.swapExactTokensForTokens(token0Bal, 0, path, address(this), block.timestamp);
+            sushiRouter.swapExactTokensForTokens(token0Bal, 0, path, address(this), _blockTimestamp());
         }
 
         if (token1 != address(rageBaseToken)) {
-            sushiRouter.swapExactTokensForTokens(token1Bal, 0, path, address(this), block.timestamp);
+            sushiRouter.swapExactTokensForTokens(token1Bal, 0, path, address(this), _blockTimestamp());
         }
     }
 
@@ -183,7 +186,7 @@ contract BaseSushiVault is BaseRangeStrategyVault {
                 0,
                 path,
                 address(this),
-                block.timestamp
+                _blockTimestamp()
             );
             token0Bal = amounts[amounts.length - 1];
         }
@@ -198,14 +201,14 @@ contract BaseSushiVault is BaseRangeStrategyVault {
                 0,
                 path,
                 address(this),
-                block.timestamp
+                _blockTimestamp()
             );
             token1Bal = amounts[amounts.length - 1];
         }
 
         // Add Liquidity based on the token balance available
         // TODO: clean residue incase both full token0 & token1 were not deposited into LP
-        sushiRouter.addLiquidity(token0, token1, token0Bal, token1Bal, 1, 1, address(this), block.timestamp);
+        sushiRouter.addLiquidity(token0, token1, token0Bal, token1Bal, 1, 1, address(this), _blockTimestamp());
     }
 
     function _stakedAssetBalance() internal view override returns (uint256) {
@@ -228,5 +231,10 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         sushiChef.withdraw(sushiPoolId, amount, msg.sender);
         // harvest & send share of harvested fees to user
         _harvestFees();
+    }
+
+    function _blockTimestamp() internal view returns (uint256) {
+        // solhint-disable-next-line not-rely-on-time
+        return block.timestamp;
     }
 }

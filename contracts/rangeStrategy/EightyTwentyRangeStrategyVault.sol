@@ -68,7 +68,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
 
         assert(liquidityChangeParam.liquidityDelta > 0);
 
-        rageClearingHouse.updateRangeOrder(rageAccountNo, ETH_poolId, liquidityChangeParam);
+        rageClearingHouse.updateRangeOrder(rageAccountNo, ethPoolId, liquidityChangeParam);
         baseLiquidity += uint128(liquidityChangeParam.liquidityDelta);
     }
 
@@ -83,7 +83,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         assert(liquidityChangeParam.liquidityDelta < 0);
 
         baseLiquidity -= uint128(-liquidityChangeParam.liquidityDelta);
-        rageClearingHouse.updateRangeOrder(rageAccountNo, ETH_poolId, liquidityChangeParam);
+        rageClearingHouse.updateRangeOrder(rageAccountNo, ethPoolId, liquidityChangeParam);
         // Settle collateral based on updated value
         int256 depositMarketValue = getMarketValue(amountWithdrawn).toInt256();
         _settleCollateral(-depositMarketValue);
@@ -99,7 +99,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
 
         for (uint8 i = 0; i < liquidityChangeParamList.length; i++) {
             if (liquidityChangeParamList[i].liquidityDelta == 0) break;
-            rageClearingHouse.updateRangeOrder(rageAccountNo, ETH_poolId, liquidityChangeParamList[i]);
+            rageClearingHouse.updateRangeOrder(rageAccountNo, ethPoolId, liquidityChangeParamList[i]);
         }
 
         if (isReset) _closeTokenPosition(vTokenPosition, rageTradePool);
@@ -124,7 +124,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
             false,
             true
         );
-        (int256 vTokenAmountOut, ) = rageClearingHouse.swapToken(rageAccountNo, ETH_poolId, swapParams);
+        (int256 vTokenAmountOut, ) = rageClearingHouse.swapToken(rageAccountNo, ethPoolId, swapParams);
 
         if (tokensToTrade == vTokenAmountOut) isReset = false;
     }
@@ -159,7 +159,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         baseTickLower = _sqrtPriceX96ToValidTick(sqrtPriceLowerX96, false);
         baseTickUpper = _sqrtPriceX96ToValidTick(sqrtPriceUpperX96, true);
 
-        int256 netPosition = rageClearingHouse.getAccountNetTokenPosition(rageAccountNo, ETH_poolId);
+        int256 netPosition = rageClearingHouse.getAccountNetTokenPosition(rageAccountNo, ethPoolId);
 
         int256 netPositionNotional = netPosition.mulDiv(twapSqrtPriceX96, FixedPoint96.Q96).mulDiv(
             twapSqrtPriceX96,
@@ -225,6 +225,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         );
     }
 
+    // TODO can be moved to library
     function _sqrtPriceX96ToValidTick(uint160 sqrtPriceX96, bool roundUp) internal pure returns (int24 roundedTick) {
         int24 tick = TickMath.getTickAtSqrtRatio(sqrtPriceX96);
         if (roundUp) {

@@ -39,7 +39,7 @@ abstract contract BaseRangeStrategyVault is BaseVault {
 
         // assert(liquidityChangeParam.liquidityDelta>0);
 
-        // rageClearingHouse.updateRangeOrder(rageAccountNo, ETH_poolId, liquidityChangeParam);
+        // rageClearingHouse.updateRangeOrder(rageAccountNo, ethPoolId, liquidityChangeParam);
         // baseLiquidity += uint128(liquidityChangeParam.liquidityDelta);
     }
 
@@ -49,7 +49,7 @@ abstract contract BaseRangeStrategyVault is BaseVault {
         // assert(liquidityChangeParam.liquidityDelta<0);
 
         // baseLiquidity -= uint128(-liquidityChangeParam.liquidityDelta);
-        // rageClearingHouse.updateRangeOrder(rageAccountNo, ETH_poolId, liquidityChangeParam);
+        // rageClearingHouse.updateRangeOrder(rageAccountNo, ethPoolId, liquidityChangeParam);
         // Settle collateral based on updated value
         int256 depositMarketValue = getMarketValue(amountWithdrawn).toInt256();
         _settleCollateral(-depositMarketValue);
@@ -68,7 +68,7 @@ abstract contract BaseRangeStrategyVault is BaseVault {
 
         for (uint8 i = 0; i < liquidityChangeParamList.length; i++) {
             if (liquidityChangeParamList[i].liquidityDelta == 0) break;
-            rageClearingHouse.updateRangeOrder(rageAccountNo, ETH_poolId, liquidityChangeParamList[i]);
+            rageClearingHouse.updateRangeOrder(rageAccountNo, ethPoolId, liquidityChangeParamList[i]);
         }
     }
 
@@ -76,6 +76,7 @@ abstract contract BaseRangeStrategyVault is BaseVault {
         IClearingHouse.VTokenPositionView memory vTokenPosition,
         IClearingHouse.Pool memory rageTradePool
     ) internal override {
+        // solhint-disable-previous-line no-empty-blocks
         //Do Nothing
     }
 
@@ -88,7 +89,7 @@ abstract contract BaseRangeStrategyVault is BaseVault {
         // Remove reabalance
         // Add new rebalance range
         // Update base range liquidity
-        int256 netPosition = rageClearingHouse.getAccountNetTokenPosition(rageAccountNo, ETH_poolId);
+        int256 netPosition = rageClearingHouse.getAccountNetTokenPosition(rageAccountNo, ethPoolId);
         uint160 twapSqrtPriceX96 = rageTradePool.vPool.twapSqrtPrice(rageTradePool.settings.twapDuration);
 
         uint8 liqCount = 0;
