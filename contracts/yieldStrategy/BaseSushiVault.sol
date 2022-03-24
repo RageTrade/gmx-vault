@@ -145,7 +145,7 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         _depositToken(address(rageBaseToken), amount);
     }
 
-    function _stake() internal override {
+    function _stake(uint256 /** amount */) internal override {
         asset.approve(address(sushiChef), type(uint256).max);
         uint256 assetBal = asset.balanceOf(address(this));
 
@@ -223,7 +223,7 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         uint256 /** amount */
     ) internal override {
         // stake outstanding SLP
-        _stake();
+        _stake(asset.balanceOf(address(this)));
     }
 
     function _beforeWithdrawYield(uint256 amount) internal override {

@@ -3,7 +3,9 @@
 pragma solidity ^0.8.9;
 
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
 
+import { BaseVault } from '../base/BaseVault.sol';
 import { EightyTwentyRangeStrategyVault } from '../rangeStrategy/EightyTwentyRangeStrategyVault.sol';
 
 import { ICurveGauge } from '../interfaces/curve/ICurveGauge.sol';
@@ -16,7 +18,7 @@ import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullM
 import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
 
 // TODO: remove abstract after fixing constructor
-abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
+contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
     using FullMath for uint256;
 
     IERC20 public usdt;
@@ -34,6 +36,8 @@ abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
 
     uint256 public constant MAX_BPS = 10_000;
     uint256 public constant FEE = 1000;
+
+    constructor() BaseVault(ERC20(address(lpToken)), '', '', 0) {}
 
     function __CurveYieldStratergy__init(
         IERC20 _usdc,
