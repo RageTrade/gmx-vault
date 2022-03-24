@@ -278,7 +278,8 @@ describe('Basic', () => {
 
     const vaultTestFactory = await hre.ethers.getContractFactory('VaultTest');
     vaultTest = await vaultTestFactory.deploy(wethUsdcPairAddress, 'RageVault', 'RV', truncate(vTokenAddress));
-    collateralToken.mint(vaultTest.address, parseTokenAmount(10n ** 6n, 18));
+    await collateralToken.grantRole(await collateralToken.MINTER_ROLE(), vaultTest.address);
+    // collateralToken.mint(vaultTest.address, parseTokenAmount(10n ** 6n, 18));
 
     usdcOracle = await smock.fake<IAggregatorV3Interface>('IAggregatorV3Interface');
     usdcOracle.decimals.returns(8);
