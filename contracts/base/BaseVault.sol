@@ -205,7 +205,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         _settleProfitAndCollateral(deposits, vaultMarketValue);
 
         // stake the remaining LP tokens
-        _stake();
+        _stake(asset.balanceOf(address(this)));
     }
 
     function _unrealizedBalance() internal view returns (uint256) {
