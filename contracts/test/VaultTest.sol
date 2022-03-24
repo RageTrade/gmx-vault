@@ -41,13 +41,12 @@ contract VaultTest is BaseSushiVault {
         // solhint-disable-previous-line no-empty-blocks
     }
 
-    function getLiquidityChangeParams(IClearingHouse.VTokenPositionView memory vTokenPosition, int256 vaultMarketValue)
+    function testLiquidityChangeParams(IClearingHouse.VTokenPositionView memory vTokenPosition, int256 vaultMarketValue)
         external
         view
         returns (IClearingHouse.LiquidityChangeParams[4] memory liquidityChangeParamList)
     {
-        IClearingHouse.Pool memory rageTradePool = rageClearingHouse.getPoolInfo(ethPoolId);
-        return getLiquidityChangeParams(vTokenPosition, rageTradePool, vaultMarketValue);
+        return getLiquidityChangeParams(vTokenPosition, vaultMarketValue);
     }
 
     function testSettleCollateral(int256 vaultMarketValueDiff) external {

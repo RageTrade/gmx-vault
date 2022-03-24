@@ -44,12 +44,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         RANGE STRATEGY
     */
 
-    function _isValidRebalanceRange(IClearingHouse.Pool memory rageTradePool)
-        internal
-        view
-        override
-        returns (bool isValid)
-    {
+    function _isValidRebalanceRange() internal view override returns (bool isValid) {
         uint256 twapSqrtPriceX96 = uint256(rageTradePool.vPool.twapSqrtPrice(rageTradePool.settings.twapDuration));
         uint256 twapSqrtPriceX96Delta = twapSqrtPriceX96.mulDiv(rebalancePriceThresholdBps, 1e4);
         if (
@@ -111,26 +106,22 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         }
     }
 
-    function _rebalanceRanges(
-        IClearingHouse.VTokenPositionView memory vTokenPosition,
-        IClearingHouse.Pool memory rageTradePool,
-        int256 vaultMarketValue
-    ) internal override {
+    function _rebalanceRanges(IClearingHouse.VTokenPositionView memory vTokenPosition, int256 vaultMarketValue)
+        internal
+        override
+    {
         IClearingHouseStructures.LiquidityChangeParams[2]
-            memory liquidityChangeParamList = _getLiquidityChangeParamsOnRebalance(rageTradePool, vaultMarketValue);
+            memory liquidityChangeParamList = _getLiquidityChangeParamsOnRebalance(vaultMarketValue);
 
         for (uint8 i = 0; i < liquidityChangeParamList.length; i++) {
             if (liquidityChangeParamList[i].liquidityDelta == 0) break;
             rageClearingHouse.updateRangeOrder(rageAccountNo, ethPoolId, liquidityChangeParamList[i]);
         }
 
-        if (isReset) _closeTokenPosition(vTokenPosition, rageTradePool);
+        if (isReset) _closeTokenPosition(vTokenPosition);
     }
 
-    function _closeTokenPosition(
-        IClearingHouse.VTokenPositionView memory vTokenPosition,
-        IClearingHouse.Pool memory rageTradePool
-    ) internal override {
+    function _closeTokenPosition(IClearingHouse.VTokenPositionView memory vTokenPosition) internal override {
         int256 tokensToTrade = -vTokenPosition.netTraderPosition;
         uint160 sqrtTwapPriceX96 = rageTradePool.vPool.twapSqrtPrice(rageTradePool.settings.twapDuration);
 
@@ -164,7 +155,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         (vTokenAmountOut, vQuoteAmountOut) = rageClearingHouse.swapToken(rageAccountNo, ethPoolId, swapParams);
     }
 
-    function _getLiquidityChangeParamsOnRebalance(IClearingHouse.Pool memory rageTradePool, int256 vaultMarketValue)
+    function _getLiquidityChangeParamsOnRebalance(int256 vaultMarketValue)
         internal
         returns (IClearingHouseStructures.LiquidityChangeParams[2] memory liquidityChangeParamList)
     {
