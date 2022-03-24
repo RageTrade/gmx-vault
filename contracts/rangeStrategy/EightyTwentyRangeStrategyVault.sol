@@ -89,6 +89,28 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         _settleCollateral(-depositMarketValue);
     }
 
+    function _beforeBurnRanges(
+        uint256 amountBeforeWithdraw,
+        uint256 amountWithdrawn,
+        uint160 sqrtPriceX96
+    ) internal override returns (uint256 updatedAmountWithdrawn) {
+        int256 netPosition = rageClearingHouse.getAccountNetTokenPosition(rageAccountNo, ethPoolId);
+        int256 tokensToTrade = -netPosition.mulDiv(amountWithdrawn, amountBeforeWithdraw);
+
+        (int256 vTokenAmountOut, ) = _closeTokenPosition(
+            tokensToTrade,
+            sqrtPriceX96,
+            closePositionSlippageSqrtToleranceBps
+        );
+
+        if (vTokenAmountOut == tokensToTrade) return amountWithdrawn;
+        else {
+            int256 updatedAmountWithdrawnInt = -vTokenAmountOut.mulDiv(amountBeforeWithdraw.toInt256(), netPosition);
+            assert(updatedAmountWithdrawnInt > 0);
+            updatedAmountWithdrawn = uint256(updatedAmountWithdrawnInt);
+        }
+    }
+
     function _rebalanceRanges(
         IClearingHouse.VTokenPositionView memory vTokenPosition,
         IClearingHouse.Pool memory rageTradePool,
@@ -110,23 +132,36 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         IClearingHouse.Pool memory rageTradePool
     ) internal override {
         int256 tokensToTrade = -vTokenPosition.netTraderPosition;
-        uint256 sqrtTwapPrice = uint256(rageTradePool.vPool.twapSqrtPrice(rageTradePool.settings.twapDuration));
-        uint160 sqrtPriceLimit;
+        uint160 sqrtTwapPriceX96 = rageTradePool.vPool.twapSqrtPrice(rageTradePool.settings.twapDuration);
+
+        (int256 vTokenAmountOut, ) = _closeTokenPosition(
+            tokensToTrade,
+            sqrtTwapPriceX96,
+            closePositionSlippageSqrtToleranceBps
+        );
+
+        if (tokensToTrade == vTokenAmountOut) isReset = false;
+    }
+
+    function _closeTokenPosition(
+        int256 tokensToTrade,
+        uint160 sqrtPriceX96,
+        uint16 slippageToleranceBps
+    ) internal returns (int256 vTokenAmountOut, int256 vQuoteAmountOut) {
+        uint160 sqrtPriceLimitX96;
 
         if (tokensToTrade > 0) {
-            sqrtPriceLimit = sqrtTwapPrice.mulDiv(1e4 + closePositionSlippageSqrtToleranceBps, 1e4).toUint160();
+            sqrtPriceLimitX96 = uint256(sqrtPriceX96).mulDiv(1e4 + slippageToleranceBps, 1e4).toUint160();
         } else {
-            sqrtPriceLimit = sqrtTwapPrice.mulDiv(1e4 - closePositionSlippageSqrtToleranceBps, 1e4).toUint160();
+            sqrtPriceLimitX96 = uint256(sqrtPriceX96).mulDiv(1e4 - slippageToleranceBps, 1e4).toUint160();
         }
         IClearingHouseStructures.SwapParams memory swapParams = IClearingHouseStructures.SwapParams(
             tokensToTrade,
-            sqrtPriceLimit,
+            sqrtPriceLimitX96,
             false,
             true
         );
-        (int256 vTokenAmountOut, ) = rageClearingHouse.swapToken(rageAccountNo, ethPoolId, swapParams);
-
-        if (tokensToTrade == vTokenAmountOut) isReset = false;
+        (vTokenAmountOut, vQuoteAmountOut) = rageClearingHouse.swapToken(rageAccountNo, ethPoolId, swapParams);
     }
 
     function _getLiquidityChangeParamsOnRebalance(IClearingHouse.Pool memory rageTradePool, int256 vaultMarketValue)

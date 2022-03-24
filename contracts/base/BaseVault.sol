@@ -22,6 +22,7 @@ import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullM
 
 import { SafeCast } from '../libraries/SafeCast.sol';
 import { RageERC4626 } from './RageERC4626.sol';
+import { UniswapV3PoolHelper, IUniswapV3Pool } from '@ragetrade/core/contracts/libraries/UniswapV3PoolHelper.sol';
 
 abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, OwnableUpgradeable {
     using AddressHelper for address;
@@ -31,6 +32,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     using SafeCast for uint256;
     using SignedMath for int256;
     using SignedFullMath for int256;
+    using UniswapV3PoolHelper for IUniswapV3Pool;
 
     error BV_InvalidRebalance();
 
@@ -172,6 +174,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         IClearingHouse.VTokenPositionView[] memory vTokenPositions;
         // Step-0 Check if the rebalance can go through (time and threshold based checks)
         (, , , vTokenPositions) = rageClearingHouse.getAccountInfo(rageAccountNo);
+        //TODO: Can keep rageTradePool saved, would not change for a vault
         IClearingHouse.Pool memory rageTradePool = rageClearingHouse.getPoolInfo(ethPoolId);
 
         _closeTokenPosition(vTokenPositions[0], rageTradePool);
@@ -233,8 +236,15 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     }
 
     function beforeWithdraw(uint256 amount) internal override {
-        _beforeWithdrawRanges(totalAssets(), amount);
+        // _beforeWithdrawRanges(totalAssets(), amount);
         _beforeWithdrawYield(amount);
+    }
+
+    function beforeBurn(uint256 amount) internal override returns (uint256 updatedAmount) {
+        //TODO: Can keep rageTradePool saved, would not change for a vault
+        IClearingHouse.Pool memory rageTradePool = rageClearingHouse.getPoolInfo(ethPoolId);
+        uint160 twapSqrtPriceX96 = rageTradePool.vPool.twapSqrtPrice(rageTradePool.settings.twapDuration);
+        return _beforeBurnRanges(totalAssets(), amount, twapSqrtPriceX96);
     }
 
     /*
@@ -277,6 +287,12 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     ) internal virtual;
 
     function _afterDepositRanges(uint256 amountAfterDeposit, uint256 amountDeposited) internal virtual;
+
+    function _beforeBurnRanges(
+        uint256 amountBeforeWithdraw,
+        uint256 amountWithdrawn,
+        uint160 sqrtPriceX96
+    ) internal virtual returns (uint256 updatedAmountWithdrawn);
 
     function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal virtual;
 

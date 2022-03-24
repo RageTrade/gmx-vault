@@ -42,19 +42,62 @@ abstract contract RageERC4626 is ERC4626 {
         uint256 amount,
         address to,
         address from
-    ) public virtual override returns (uint256 shares) {
+    ) public override returns (uint256 shares) {
         _beforeShareTransfer();
-        return super.withdraw(amount, to, from);
+        shares = previewWithdraw(amount); // No need to check for rounding error, previewWithdraw rounds up.
+
+        uint256 allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.
+
+        if (msg.sender != from && allowed != type(uint256).max) allowance[from][msg.sender] = allowed - shares;
+
+        //Additional cap on withdraw to ensure the position closed does not breach slippage tolerance
+        //In case tolerance is reached only partial withdraw is executed
+        uint256 updatedAmount = beforeBurn(amount);
+        if (updatedAmount != amount) {
+            amount = updatedAmount;
+            shares = previewWithdraw(updatedAmount);
+        }
+
+        _burn(from, shares);
+
+        emit Withdraw(from, to, amount);
+
+        beforeWithdraw(amount);
+
+        asset.safeTransfer(to, amount);
     }
 
     function redeem(
         uint256 shares,
         address to,
         address from
-    ) public virtual override returns (uint256 amount) {
+    ) public override returns (uint256 amount) {
         _beforeShareTransfer();
-        return super.redeem(shares, to, from);
+        uint256 allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.
+
+        if (msg.sender != from && allowed != type(uint256).max) allowance[from][msg.sender] = allowed - shares;
+
+        // Check for rounding error since we round down in previewRedeem.
+        require((amount = previewRedeem(shares)) != 0, 'ZERO_ASSETS');
+
+        //Additional cap on withdraw to ensure the position closed does not breach slippage tolerance
+        //In case tolerance is reached only partial withdraw is executed
+        uint256 updatedAmount = beforeBurn(amount);
+        if (updatedAmount != amount) {
+            amount = updatedAmount;
+            shares = previewWithdraw(updatedAmount);
+        }
+
+        _burn(from, shares);
+
+        emit Withdraw(from, to, amount);
+
+        beforeWithdraw(amount);
+
+        asset.safeTransfer(to, amount);
     }
 
     function _beforeShareTransfer() internal virtual;
+
+    function beforeBurn(uint256 amount) internal virtual returns (uint256 updatedAmount);
 }
