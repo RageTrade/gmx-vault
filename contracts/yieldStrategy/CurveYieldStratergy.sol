@@ -128,7 +128,27 @@ abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
         return staked * pricePerLP;
     }
 
-    function _withdrawBase(uint256 amount) internal override {}
+    // unstake some LP -> usdc
+    // fix: division rounding
+    function _withdrawBase(uint256 amount) internal override {
+        uint256 pricePerLP = lpPriceHolder.lp_price();
+        uint256 lpToWithdraw = amount / pricePerLP;
+
+        triCryptoPool.remove_liquidity_one_coin(lpToWithdraw, 0, 0);
+        usdt.approve(address(uniV3Router), amount);
+
+        bytes memory path = abi.encodePacked(usdc, uint256(500), usdt);
+
+        ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
+            path: path,
+            amountIn: amount,
+            amountOutMinimum: 0,
+            recipient: address(this),
+            deadline: block.timestamp
+        });
+
+        uniV3Router.exactInput(params);
+    }
 
     function getMarketValue(uint256 amount) public view override returns (uint256 marketValue) {}
 
