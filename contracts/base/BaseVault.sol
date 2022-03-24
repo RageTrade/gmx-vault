@@ -39,7 +39,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     // TODO: Make relevant things immutable
     IERC20Metadata public rageBaseToken;
     IClearingHouse public rageClearingHouse;
-    IERC20Metadata public rageCollateralToken;
+    CollateralToken public rageCollateralToken;
 
     uint256 public rageAccountNo;
     uint32 public immutable ethPoolId;
@@ -67,7 +67,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         transferOwnership(_owner);
         rageClearingHouse = IClearingHouse(_rageClearingHouse);
         rageAccountNo = rageClearingHouse.createAccount();
-        rageCollateralToken = IERC20Metadata(_rageCollateralToken);
+        rageCollateralToken = CollateralToken(_rageCollateralToken);
         rageBaseToken = IERC20Metadata(_rageBaseToken);
         rageTradePool = rageClearingHouse.getPoolInfo(ethPoolId);
         // Give rageClearingHouse full allowance of rageCollateralToken and usdc
@@ -131,7 +131,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
         if (normalizedVaultMarketValueDiff > 0) {
             // Mint collateral coins and deposit into rage trade
-            assert(rageCollateralToken.balanceOf(address(this)) > normalizedVaultMarketValueDiffAbs);
+            rageCollateralToken.mint(address(this), normalizedVaultMarketValueDiffAbs);
             rageClearingHouse.updateMargin(
                 rageAccountNo,
                 address(rageCollateralToken).truncate(),
@@ -144,6 +144,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
                 address(rageCollateralToken).truncate(),
                 -int256(normalizedVaultMarketValueDiffAbs)
             );
+            rageCollateralToken.burn(normalizedVaultMarketValueDiffAbs);
         }
     }
 
