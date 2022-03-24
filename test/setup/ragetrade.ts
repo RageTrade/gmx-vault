@@ -7,13 +7,14 @@ import {
   VToken__factory,
 } from '../../typechain-types';
 import {
-  DeployVTokenParamsStruct,
-  InitializePoolParamsStruct,
-  PoolSettingsStruct,
-} from '../../typechain-types/RageTradeFactory';
+  VTokenDeployer,
+  RageTradeFactory as RageTradeFactoryNamespace,
+  IClearingHouseStructures,
+} from '../../typechain-types/artifacts/@ragetrade/core/contracts/protocol/RageTradeFactory';
 
 // type ArgumentTypes<F extends Function> = F extends (...args: infer A) => any ? A : never;
 
+// TODO remove this and use hardhat-deploy fixtures instead
 export class RageTradeSetup {
   // _ready: Promise<void>;
   rageTradeFactory?: RageTradeFactory;
@@ -121,13 +122,13 @@ export class RageTradeSetup {
   async initializePool() {
     const oracle = await (await hre.ethers.getContractFactory('OracleMock')).deploy();
 
-    const deployVTokenParams: DeployVTokenParamsStruct = {
+    const deployVTokenParams: VTokenDeployer.DeployVTokenParamsStruct = {
       vTokenName: 'Virtual Ether (Rage Trade)',
       vTokenSymbol: 'vETH',
       cTokenDecimals: 18,
     };
 
-    const poolInitialSettings: PoolSettingsStruct = {
+    const poolInitialSettings: IClearingHouseStructures.PoolSettingsStruct = {
       initialMarginRatioBps: 2000,
       maintainanceMarginRatioBps: 1000,
       maxVirtualPriceDeviationRatioBps: 1000, // 10%
@@ -137,7 +138,7 @@ export class RageTradeSetup {
       oracle: oracle.address,
     };
 
-    const params: InitializePoolParamsStruct = {
+    const params: RageTradeFactoryNamespace.InitializePoolParamsStruct = {
       deployVTokenParams,
       poolInitialSettings,
       liquidityFeePips: 1000,

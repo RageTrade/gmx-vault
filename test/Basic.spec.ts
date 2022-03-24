@@ -2,7 +2,6 @@ import { FakeContract, smock } from '@defi-wonderland/smock';
 import { BigNumber, BigNumberish } from '@ethersproject/bignumber';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { getCreateAddressFor } from '@ragetrade/core/test/utils/create-addresses';
-import { activateMainnetFork, deactivateMainnetFork } from '@ragetrade/core/test/utils/mainnet-fork';
 import { priceToTick, sqrtPriceX96ToPrice, tickToSqrtPriceX96 } from '@ragetrade/core/test/utils/price-tick';
 // import { ConstantsStruct } from '../typechain-types/ClearingHouse';
 import { SETTLEMENT_TOKEN } from '@ragetrade/core/test/utils/realConstants';
@@ -30,8 +29,7 @@ import {
   VQuote,
   VToken,
 } from '../typechain-types';
-import { LiquidityChangeParamsStructOutput } from '../typechain-types/IClearingHouse';
-import { VTokenPositionViewStruct } from '../typechain-types/VaultTest';
+import { IClearingHouseStructures } from '../typechain-types/artifacts/@ragetrade/core/contracts/interfaces/IClearingHouse';
 
 const whaleForBase = '0x47ac0Fb4F2D84898e4D9E7b4DaB3C24507a6D503';
 const whaleForWETH = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
@@ -100,10 +98,10 @@ describe('Basic', () => {
 
   function getNumChanges(
     liquidityChangeParamList: [
-      LiquidityChangeParamsStructOutput,
-      LiquidityChangeParamsStructOutput,
-      LiquidityChangeParamsStructOutput,
-      LiquidityChangeParamsStructOutput,
+      IClearingHouseStructures.LiquidityChangeParamsStructOutput,
+      IClearingHouseStructures.LiquidityChangeParamsStructOutput,
+      IClearingHouseStructures.LiquidityChangeParamsStructOutput,
+      IClearingHouseStructures.LiquidityChangeParamsStructOutput,
     ],
   ) {
     let num = 0;
@@ -165,8 +163,6 @@ describe('Basic', () => {
   }
 
   before(async () => {
-    await activateMainnetFork();
-
     rBase = await hre.ethers.getContractAt('IERC20', SETTLEMENT_TOKEN);
 
     dummyTokenAddress = ethers.utils.hexZeroPad(BigNumber.from(148392483294).toHexString(), 20);
@@ -286,8 +282,6 @@ describe('Basic', () => {
     wethOracle = await smock.fake<IAggregatorV3Interface>('IAggregatorV3Interface');
     wethOracle.decimals.returns(8);
   });
-
-  after(deactivateMainnetFork);
 
   describe('#Init Params', () => {
     it('Set Params', async () => {
@@ -509,7 +503,7 @@ describe('Basic', () => {
   describe('#Range Strategy', () => {
     describe('Liquidity Change Params', () => {
       it.skip('No previous range', async () => {
-        const vTokenPosition: VTokenPositionViewStruct = {
+        const vTokenPosition: IClearingHouseStructures.VTokenPositionViewStruct = {
           poolId: truncate(vTokenAddress),
           balance: 0,
           netTraderPosition: 0,
