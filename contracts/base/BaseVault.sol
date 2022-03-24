@@ -250,7 +250,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         YIELD STRATEGY
     */
 
-    function _stake() internal virtual;
+    function _stake(uint256 amount) internal virtual;
 
     function _harvestFees() internal virtual;
 

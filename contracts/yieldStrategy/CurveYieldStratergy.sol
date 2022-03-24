@@ -27,6 +27,7 @@ abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
     address public usdc;
     address public crvToken;
 
+    address public gauge;
     address public triCryptoPool;
     address public lpPriceHolder;
 
@@ -39,12 +40,14 @@ abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
 
     function __CurveYieldStratergy__init(
         address _usdc,
-        address _tricryptoPool,
+        address _gauge,
         address _crvToken,
+        address _uniV3Router,
         address _lpPriceHolder,
-        address _uniV3Router
+        address _tricryptoPool
     ) internal onlyInitializing {
         usdc = _usdc;
+        gauge = _gauge;
         crvToken = _crvToken;
         triCryptoPool = _tricryptoPool;
         lpPriceHolder = _lpPriceHolder;
@@ -59,31 +62,39 @@ abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
         address _rageCollateralToken,
         address _rageBaseToken,
         address _usdc,
-        address _tricryptoPool,
+        address _gauge,
         address _crvToken,
-        address _lpPriceHolder,
-        address _uniV3Router
+        address _uniV3Router,
+        address _tricryptoPool,
+        address _lpPriceHolder
     ) external initializer {
         __BaseVault_init(_owner, _rageClearingHouse, _rageCollateralToken, _rageBaseToken);
-        __CurveYieldStratergy__init(_usdc, _tricryptoPool, _crvToken, _lpPriceHolder, _uniV3Router);
+        __CurveYieldStratergy__init(_usdc, _gauge, _crvToken, _uniV3Router, _tricryptoPool, _lpPriceHolder);
     }
 
     function grantAllowances() public override {
         _grantBaseAllowances();
-        IERC20(lpToken).approve(triCryptoPool, type(uint256).max);
+        IERC20(lpToken).approve(gauge, type(uint256).max);
         IERC20(usdc).approve(triCryptoPool, type(uint256).max);
         IERC20(crvToken).approve(uniV3Router, type(uint256).max);
+        IERC20(lpToken).approve(triCryptoPool, type(uint256).max);
     }
 
-    function _afterDepositYield(uint256 amount) internal override {}
+    function _afterDepositYield(uint256 amount) internal override {
+        _stake(amount);
+    }
 
-    function _beforeWithdrawYield(uint256 amount) internal override {}
+    function _beforeWithdrawYield(uint256 amount) internal override {
+
+    }
 
     function _depositBase(uint256 amount) internal override {}
 
     function _harvestFees() internal override {}
 
-    function _stake() internal override {}
+    function _stake(uint256 amount) internal override {
+        ICurveGauge(gauge).deposit(amount);
+    }
 
     function _stakedAssetBalance() internal view override returns (uint256) {}
 
