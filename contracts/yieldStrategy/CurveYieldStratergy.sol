@@ -12,8 +12,13 @@ import { ICurveStableSwap } from '../interfaces/curve/ICurveStableSwap.sol';
 
 import { ISwapRouter } from '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
 
+import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
+import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
+
 // TODO: remove abstract after fixing constructor
 abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
+    using FullMath for uint256;
+
     IERC20 public usdt;
     IERC20 public crvToken;
 
@@ -76,7 +81,9 @@ abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
         _stake(amount);
     }
 
-    function _beforeWithdrawYield(uint256 amount) internal override {}
+    function _beforeWithdrawYield(uint256 amount) internal override {
+
+    }
 
     function _depositBase(uint256 amount) internal override {
         usdt.approve(address(uniV3Router), amount);
@@ -150,7 +157,12 @@ abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
         uniV3Router.exactInput(params);
     }
 
-    function getMarketValue(uint256 amount) public view override returns (uint256 marketValue) {}
+    function getMarketValue(uint256 amount) public view override returns (uint256 marketValue) {
+        marketValue = amount.mulDiv(getPriceX128(), FixedPoint128.Q128);
+    }
 
-    function getPriceX128() public view override returns (uint256 priceX128) {}
+    function getPriceX128() public view override returns (uint256 priceX128) {
+        uint256 pricePerLP = lpPriceHolder.lp_price();
+        return pricePerLP * FixedPoint128.Q128;
+    }
 }
