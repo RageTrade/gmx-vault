@@ -219,7 +219,9 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         return 0;
     }
 
-    function _getTwapSqrtPriceX96() internal view returns (uint160) {}
+    function _getTwapSqrtPriceX96() internal view returns (uint160 twapSqrtPriceX96) {
+        twapSqrtPriceX96 = rageTradePool.vPool.twapSqrtPrice(rageTradePool.settings.twapDuration);
+    }
 
     function totalAssets() public view override returns (uint256) {
         return asset.balanceOf(address(this)) + _stakedAssetBalance();
@@ -240,8 +242,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     }
 
     function beforeBurn(uint256 amount) internal override returns (uint256 updatedAmount) {
-        uint160 twapSqrtPriceX96 = rageTradePool.vPool.twapSqrtPrice(rageTradePool.settings.twapDuration);
-        return _beforeBurnRanges(totalAssets(), amount, twapSqrtPriceX96);
+        return _beforeBurnRanges(totalAssets(), amount);
     }
 
     /*
@@ -280,11 +281,10 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
     function _afterDepositRanges(uint256 amountAfterDeposit, uint256 amountDeposited) internal virtual;
 
-    function _beforeBurnRanges(
-        uint256 amountBeforeWithdraw,
-        uint256 amountWithdrawn,
-        uint160 sqrtPriceX96
-    ) internal virtual returns (uint256 updatedAmountWithdrawn);
+    function _beforeBurnRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn)
+        internal
+        virtual
+        returns (uint256 updatedAmountWithdrawn);
 
     function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal virtual;
 

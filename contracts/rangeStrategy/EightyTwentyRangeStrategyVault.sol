@@ -45,7 +45,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     */
 
     function _isValidRebalanceRange() internal view override returns (bool isValid) {
-        uint256 twapSqrtPriceX96 = uint256(rageTradePool.vPool.twapSqrtPrice(rageTradePool.settings.twapDuration));
+        uint256 twapSqrtPriceX96 = uint256(_getTwapSqrtPriceX96());
         uint256 twapSqrtPriceX96Delta = twapSqrtPriceX96.mulDiv(rebalancePriceThresholdBps, 1e4);
         if (
             TickMath.getTickAtSqrtRatio((twapSqrtPriceX96 + twapSqrtPriceX96Delta).toUint160()) > baseTickUpper ||
@@ -84,11 +84,12 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         _settleCollateral(-depositMarketValue);
     }
 
-    function _beforeBurnRanges(
-        uint256 amountBeforeWithdraw,
-        uint256 amountWithdrawn,
-        uint160 sqrtPriceX96
-    ) internal override returns (uint256 updatedAmountWithdrawn) {
+    function _beforeBurnRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn)
+        internal
+        override
+        returns (uint256 updatedAmountWithdrawn)
+    {
+        uint160 sqrtPriceX96 = _getTwapSqrtPriceX96();
         int256 netPosition = rageClearingHouse.getAccountNetTokenPosition(rageAccountNo, ethPoolId);
         int256 tokensToTrade = -netPosition.mulDiv(amountWithdrawn, amountBeforeWithdraw);
 
@@ -123,7 +124,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
 
     function _closeTokenPosition(IClearingHouse.VTokenPositionView memory vTokenPosition) internal override {
         int256 tokensToTrade = -vTokenPosition.netTraderPosition;
-        uint160 sqrtTwapPriceX96 = rageTradePool.vPool.twapSqrtPrice(rageTradePool.settings.twapDuration);
+        uint160 sqrtTwapPriceX96 = _getTwapSqrtPriceX96();
 
         (int256 vTokenAmountOut, ) = _closeTokenPosition(
             tokensToTrade,
@@ -178,7 +179,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
             liqCount++;
         }
         //TODO: should we take netPosition from outside
-        uint256 twapSqrtPriceX96 = uint256(rageTradePool.vPool.twapSqrtPrice(rageTradePool.settings.twapDuration));
+        uint256 twapSqrtPriceX96 = _getTwapSqrtPriceX96();
 
         uint160 sqrtPriceLowerX96 = twapSqrtPriceX96.mulDiv(PRICE_FACTOR_PIPS, 1e6).toUint160();
         uint160 sqrtPriceUpperX96 = twapSqrtPriceX96.mulDiv(1e6, PRICE_FACTOR_PIPS).toUint160();
