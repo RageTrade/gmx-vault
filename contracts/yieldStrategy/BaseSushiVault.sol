@@ -104,7 +104,8 @@ contract BaseSushiVault is BaseRangeStrategyVault {
             token0Oracle,
             token1Oracle,
             rageBaseToken.decimals(),
-            maxOracleDelayTime
+            maxOracleDelayTime,
+            _blockTimestamp()
         );
     }
 
@@ -145,7 +146,9 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         _depositToken(address(rageBaseToken), amount);
     }
 
-    function _stake(uint256 /** amount */) internal override {
+    function _stake(
+        uint256 /** amount */
+    ) internal override {
         asset.approve(address(sushiChef), type(uint256).max);
         uint256 assetBal = asset.balanceOf(address(this));
 
@@ -231,10 +234,5 @@ contract BaseSushiVault is BaseRangeStrategyVault {
         sushiChef.withdraw(sushiPoolId, amount, msg.sender);
         // harvest & send share of harvested fees to user
         _harvestFees();
-    }
-
-    function _blockTimestamp() internal view returns (uint256) {
-        // solhint-disable-next-line not-rely-on-time
-        return block.timestamp;
     }
 }

@@ -18,7 +18,7 @@ import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullM
 import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
 
 // TODO: remove abstract after fixing constructor
-contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
+contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     using FullMath for uint256;
 
     IERC20 public usdt;
@@ -30,15 +30,20 @@ contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
     ICurveStableSwap public triCryptoPool;
 
     // TODO: replace, after removing constructor from base
+
+    /* solhint-disable const-name-snakecase */
     IERC20 public constant weth = IERC20(address(0));
     IERC20 public constant usdc = IERC20(address(0));
     IERC20 public constant lpToken = IERC20(address(0));
+    /* solhint-enable const-name-snakecase */
 
     uint256 public constant MAX_BPS = 10_000;
     uint256 public constant FEE = 1000;
 
+    // solhint-disable-next-line no-empty-blocks
     constructor() BaseVault(ERC20(address(lpToken)), '', '', 0) {}
 
+    // solhint-disable-next-line func-name-mixedcase
     function __CurveYieldStratergy__init(
         IERC20 _usdc,
         IERC20 _crvToken,
@@ -99,7 +104,7 @@ contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
             amountIn: amount,
             amountOutMinimum: 0,
             recipient: address(this),
-            deadline: block.timestamp
+            deadline: _blockTimestamp()
         });
 
         uint256 usdtOut = uniV3Router.exactInput(params);
@@ -123,7 +128,7 @@ contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
                 amountIn: claimable,
                 amountOutMinimum: 0,
                 recipient: address(this),
-                deadline: block.timestamp
+                deadline: _blockTimestamp()
             });
 
             uint256 amountOut = uniV3Router.exactInput(params);
@@ -158,7 +163,7 @@ contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
             amountIn: amount,
             amountOutMinimum: 0,
             recipient: address(this),
-            deadline: block.timestamp
+            deadline: _blockTimestamp()
         });
 
         uniV3Router.exactInput(params);
