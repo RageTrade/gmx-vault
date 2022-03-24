@@ -24,7 +24,7 @@ import {
   OracleMock,
   VaultTest,
 } from '../typechain-types';
-import { SushiParamsStruct } from '../typechain-types/VaultTest';
+import { SushiParamsStruct } from '../typechain-types/artifacts/contracts/test/VaultTest';
 import arbConstants from './utils/arb-constants';
 
 const createUsers = async () => {
