@@ -1,35 +1,15 @@
-import { getCreateAddressFor } from '@ragetrade/core/test/utils/create-addresses';
-import { priceToSqrtPriceX96 } from '@ragetrade/core/test/utils/price-tick';
-import { randomAddress } from '@ragetrade/core/test/utils/random';
-import {
-  UNISWAP_V3_FACTORY_ADDRESS,
-  UNISWAP_V3_POOL_BYTE_CODE_HASH,
-  UNISWAP_V3_DEFAULT_FEE_TIER,
-} from '@ragetrade/core/test/utils/realConstants';
-
-import hre from 'hardhat';
-
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumberish, ethers } from 'ethers';
 import { parseUnits } from 'ethers/lib/utils';
-
+import hre from 'hardhat';
 import {
-  ClearingHouse,
-  ERC20,
-  VQuote,
-  RageTradeFactory,
-  RealTokenMock,
-  RageTradeFactory__factory,
-  VToken__factory,
   IUniswapV3Pool__factory,
-  VPoolWrapper__factory,
+  RageTradeFactory,
   VPoolWrapperMockRealistic__factory,
+  VToken__factory,
 } from '../../typechain-types';
-
 import {
   DeployVTokenParamsStruct,
-  PoolSettingsStruct,
   InitializePoolParamsStruct,
+  PoolSettingsStruct,
 } from '../../typechain-types/RageTradeFactory';
 
 // type ArgumentTypes<F extends Function> = F extends (...args: infer A) => any ? A : never;
