@@ -57,14 +57,25 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         int256 depositMarketValue = getMarketValue(amountDeposited).toInt256();
         _settleCollateral(depositMarketValue);
 
-        // Add to base range based on the additional collateral
-        IClearingHouseStructures.LiquidityChangeParams
-            memory liquidityChangeParam = _getLiquidityChangeParamsAfterDeposit(amountAfterDeposit, amountDeposited);
+        if (baseLiquidity == 0 && amountAfterDeposit == amountDeposited) {
+            uint160 twapSqrtPriceX96 = _getTwapSqrtPriceX96();
+            (baseTickLower, baseTickUpper, baseLiquidity) = _getUpdatedBaseRangeParams(
+                twapSqrtPriceX96,
+                depositMarketValue
+            );
+        } else {
+            // Add to base range based on the additional collateral
+            IClearingHouseStructures.LiquidityChangeParams
+                memory liquidityChangeParam = _getLiquidityChangeParamsAfterDeposit(
+                    amountAfterDeposit,
+                    amountDeposited
+                );
 
-        assert(liquidityChangeParam.liquidityDelta > 0);
+            assert(liquidityChangeParam.liquidityDelta > 0);
 
-        rageClearingHouse.updateRangeOrder(rageAccountNo, ethPoolId, liquidityChangeParam);
-        baseLiquidity += uint128(liquidityChangeParam.liquidityDelta);
+            rageClearingHouse.updateRangeOrder(rageAccountNo, ethPoolId, liquidityChangeParam);
+            baseLiquidity += uint128(liquidityChangeParam.liquidityDelta);
+        }
     }
 
     function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal override {
@@ -179,12 +190,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
             liqCount++;
         }
         //TODO: should we take netPosition from outside
-        uint256 twapSqrtPriceX96 = _getTwapSqrtPriceX96();
-
-        uint160 sqrtPriceLowerX96 = twapSqrtPriceX96.mulDiv(PRICE_FACTOR_PIPS, 1e6).toUint160();
-        uint160 sqrtPriceUpperX96 = twapSqrtPriceX96.mulDiv(1e6, PRICE_FACTOR_PIPS).toUint160();
-        baseTickLower = _sqrtPriceX96ToValidTick(sqrtPriceLowerX96, false);
-        baseTickUpper = _sqrtPriceX96ToValidTick(sqrtPriceUpperX96, true);
+        uint160 twapSqrtPriceX96 = _getTwapSqrtPriceX96();
 
         int256 netPosition = rageClearingHouse.getAccountNetTokenPosition(rageAccountNo, ethPoolId);
 
@@ -195,19 +201,17 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         //To Reset if netPositionNotional > 20% of vaultMarketValue
         isReset = netPositionNotional > vaultMarketValue.mulDiv(resetPositionThresholdBps, 1e4);
 
-        // If (there are no ranges) || (netPositionNotional > 20% of vault market value) then update base liquidity
+        uint128 baseLiquidityUpdate;
+        (baseTickLower, baseTickUpper, baseLiquidityUpdate) = _getUpdatedBaseRangeParams(
+            twapSqrtPriceX96,
+            vaultMarketValue
+        );
+
+        // If (there are no ranges) || (netPositionNotional > 20% of vault market value) then update base liquidity otherwise carry forward same liquidity value
         if (baseLiquidity == 0 || isReset) {
-            baseLiquidity = (
-                uint256(vaultMarketValue).mulDiv(FixedPoint96.Q96 / 10, (twapSqrtPriceX96 - sqrtPriceLowerX96))
-            ).toUint128();
-        } else {
-            liquidityChangeParamList[liqCount] = _getLiquidityChangeParams(
-                baseTickLower,
-                baseTickUpper,
-                baseLiquidity.toInt128()
-            );
-            liqCount++;
+            baseLiquidity = baseLiquidityUpdate;
         }
+
         //Add new range
         liquidityChangeParamList[liqCount] = _getLiquidityChangeParams(
             baseTickLower,
@@ -250,6 +254,26 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
             false,
             IClearingHouseEnums.LimitOrderType.NONE
         );
+    }
+
+    function _getUpdatedBaseRangeParams(uint160 sqrtPriceX96, int256 vaultMarketValue)
+        internal
+        pure
+        returns (
+            int24 baseTickLowerUpdate,
+            int24 baseTickUpperUpdate,
+            uint128 baseLiquidityUpdate
+        )
+    {
+        uint160 sqrtPriceLowerX96 = uint256(sqrtPriceX96).mulDiv(PRICE_FACTOR_PIPS, 1e6).toUint160();
+        uint160 sqrtPriceUpperX96 = uint256(sqrtPriceX96).mulDiv(1e6, PRICE_FACTOR_PIPS).toUint160();
+        baseTickLowerUpdate = _sqrtPriceX96ToValidTick(sqrtPriceLowerX96, false);
+        baseTickUpperUpdate = _sqrtPriceX96ToValidTick(sqrtPriceUpperX96, true);
+
+        assert(vaultMarketValue > 0);
+        baseLiquidityUpdate = (
+            uint256(vaultMarketValue).mulDiv(FixedPoint96.Q96 / 10, (sqrtPriceX96 - sqrtPriceLowerX96))
+        ).toUint128();
     }
 
     // TODO can be moved to library
