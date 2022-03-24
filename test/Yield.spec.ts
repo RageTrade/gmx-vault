@@ -1,40 +1,31 @@
-import { assert, expect } from 'chai';
-import hre, { network } from 'hardhat';
-
+import { FakeContract, smock } from '@defi-wonderland/smock';
 import { BigNumber } from '@ethersproject/bignumber';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-
-import arbConstants from './utils/arb-constants';
-
 import { activateMainnetFork, deactivateMainnetFork } from '@ragetrade/core/test/utils/mainnet-fork';
-
-import { smock, FakeContract } from '@defi-wonderland/smock';
-
+import { tickToSqrtPriceX96 } from '@ragetrade/core/test/utils/price-tick';
+import { parseTokenAmount } from '@ragetrade/core/test/utils/stealFunds';
+import { truncate } from '@ragetrade/core/test/utils/vToken';
+import { assert, expect } from 'chai';
+import hre, { network } from 'hardhat';
 import {
-  IWETH,
+  BaseSushiVault,
+  ClearingHouse,
+  IAggregatorV3Interface,
   IERC20,
-  IVQuote,
-  IVToken,
   IMiniChefV2,
   IUniswapV2Factory,
   IUniswapV2Pair,
   IUniswapV2Router02,
   IUniswapV3Pool,
-  IAggregatorV3Interface,
-  IOracle,
   IVPoolWrapper,
-  ClearingHouse,
-  BaseSushiVault,
-  VaultTest,
+  IVQuote,
+  IVToken,
+  IWETH,
   OracleMock,
+  VaultTest,
 } from '../typechain-types';
-
 import { SushiParamsStruct } from '../typechain-types/VaultTest';
-
-import { tickToSqrtPriceX96 } from '@ragetrade/core/test/utils/price-tick';
-
-import { stealFunds, parseTokenAmount } from '@ragetrade/core/test/utils/stealFunds';
-import { truncate } from '@ragetrade/core/test/utils/vToken';
+import arbConstants from './utils/arb-constants';
 
 const createUsers = async () => {
   let signers = await hre.ethers.getSigners();

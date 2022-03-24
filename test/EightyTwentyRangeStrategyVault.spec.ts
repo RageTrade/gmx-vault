@@ -2,6 +2,8 @@ import hre, { waffle } from 'hardhat';
 import { truncate } from '@ragetrade/core/test/utils/vToken';
 import { RageTradeSetup } from './setup/ragetrade';
 import { EightyTwentyRangeStrategyVaultTest } from '../typechain-types';
+import { activateMainnetFork, deactivateMainnetFork } from '@ragetrade/core/test/utils/mainnet-fork';
+
 const { deployContract } = waffle;
 
 describe('EightyTwentyRangeStrategyVault', () => {
@@ -10,6 +12,7 @@ describe('EightyTwentyRangeStrategyVault', () => {
   let test: EightyTwentyRangeStrategyVaultTest;
 
   before(async () => {
+    await activateMainnetFork();
     // setup rage trade
     await rageTrade.setup();
 
@@ -29,6 +32,7 @@ describe('EightyTwentyRangeStrategyVault', () => {
     await hre.network.provider.send('evm_revert', [snapshotId]);
     snapshotId = await hre.ethers.provider.send('evm_snapshot', []);
   });
+  after(deactivateMainnetFork);
 
   describe('#rebalance', () => {
     it('should not update ticks when price within thresholds', async () => {

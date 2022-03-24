@@ -1,65 +1,38 @@
-import { expect } from 'chai';
-import hre from 'hardhat';
-import { network } from 'hardhat';
-import { ContractReceipt, ContractTransaction, ethers, providers } from 'ethers';
-
+import { FakeContract, smock } from '@defi-wonderland/smock';
 import { BigNumber, BigNumberish } from '@ethersproject/bignumber';
-
-import { activateMainnetFork, deactivateMainnetFork } from '@ragetrade/core/test/utils/mainnet-fork';
-import { getCreateAddressFor } from '@ragetrade/core/test/utils/create-addresses';
-import {
-  RageTradeFactory,
-  ClearingHouse,
-  VPoolWrapper,
-  ERC20,
-  RealTokenMock,
-  OracleMock,
-  IERC20,
-  IUniswapV3Pool,
-  VToken,
-  VQuote,
-  Account__factory,
-  IWETH,
-  IUniswapV2Factory,
-  IMiniChefV2,
-  IUniswapV2Router02,
-  IUniswapV2Pair,
-  BaseVault,
-  ERC20PresetMinterPauserUpgradeable as CollateralToken,
-  BaseSushiVault,
-  IAggregatorV3Interface,
-  VaultTest,
-} from '../typechain-types';
-
-// import { ConstantsStruct } from '../typechain-types/ClearingHouse';
-import {
-  UNISWAP_V3_FACTORY_ADDRESS,
-  UNISWAP_V3_DEFAULT_FEE_TIER,
-  UNISWAP_V3_POOL_BYTE_CODE_HASH,
-  SETTLEMENT_TOKEN,
-} from '@ragetrade/core/test/utils/realConstants';
-
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-
-import { config } from 'dotenv';
-import { stealFunds, parseTokenAmount } from '@ragetrade/core/test/utils/stealFunds';
-import {
-  sqrtPriceX96ToTick,
-  priceToSqrtPriceX96WithoutContract,
-  priceToTick,
-  tickToPrice,
-  tickToSqrtPriceX96,
-  sqrtPriceX96ToPrice,
-  priceToSqrtPriceX96,
-  sqrtPriceX96ToPriceX128,
-  priceX128ToPrice,
-} from '@ragetrade/core/test/utils/price-tick';
-
-import { FakeContract, smock, SmockContractBase } from '@defi-wonderland/smock';
-import { ADDRESS_ZERO, priceToClosestTick } from '@uniswap/v3-sdk';
-import { LiquidityChangeParamsStructOutput, LiquidityPositionViewStruct } from '../typechain-types/IClearingHouse';
-import { VTokenPositionViewStruct } from '../typechain-types/VaultTest';
+import { getCreateAddressFor } from '@ragetrade/core/test/utils/create-addresses';
+import { activateMainnetFork, deactivateMainnetFork } from '@ragetrade/core/test/utils/mainnet-fork';
+import { priceToTick, sqrtPriceX96ToPrice, tickToSqrtPriceX96 } from '@ragetrade/core/test/utils/price-tick';
+// import { ConstantsStruct } from '../typechain-types/ClearingHouse';
+import { SETTLEMENT_TOKEN } from '@ragetrade/core/test/utils/realConstants';
+import { parseTokenAmount, stealFunds } from '@ragetrade/core/test/utils/stealFunds';
 import { truncate } from '@ragetrade/core/test/utils/vToken';
+import { expect } from 'chai';
+import { config } from 'dotenv';
+import { ethers } from 'ethers';
+import hre from 'hardhat';
+import {
+  ClearingHouse,
+  ERC20PresetMinterPauserUpgradeable as CollateralToken,
+  IAggregatorV3Interface,
+  IERC20,
+  IMiniChefV2,
+  IUniswapV2Factory,
+  IUniswapV2Pair,
+  IUniswapV2Router02,
+  IUniswapV3Pool,
+  IWETH,
+  OracleMock,
+  RageTradeFactory,
+  VaultTest,
+  VPoolWrapper,
+  VQuote,
+  VToken,
+} from '../typechain-types';
+import { LiquidityChangeParamsStructOutput } from '../typechain-types/IClearingHouse';
+import { VTokenPositionViewStruct } from '../typechain-types/VaultTest';
+
 const whaleForBase = '0x47ac0Fb4F2D84898e4D9E7b4DaB3C24507a6D503';
 const whaleForWETH = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
 
@@ -119,7 +92,6 @@ describe('Basic', () => {
   let oracle1: OracleMock;
 
   let realToken: IWETH;
-  let realToken1: RealTokenMock;
   let initialBlockTimestamp: number;
 
   function X128ToDecimal(numX128: BigNumber, numDecimals: bigint) {
