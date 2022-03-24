@@ -23,6 +23,7 @@ abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
     ICurveStableSwap public triCryptoPool;
 
     // TODO: replace, after removing constructor from base
+    IERC20 public constant weth = IERC20(address(0));
     IERC20 public constant lpToken = IERC20(address(0));
 
     uint256 public constant MAX_BPS = 10_000;
@@ -81,6 +82,19 @@ abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
     function _harvestFees() internal override {
         uint256 claimable = gauge.claimable_reward(address(this));
         gauge.claim_rewards(address(this));
+
+        bytes memory path = abi.encodePacked(weth, uint256(500), usdc, uint256(3000), address(crvToken));
+
+        ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
+            path: path,
+            amountIn: claimable,
+            amountOutMinimum: 0,
+            recipient: address(this),
+            deadline: block.timestamp
+        });
+
+        uint256 amountOut = uniV3Router.exactInput(params);
+        _stake(amountOut);
     }
 
     function _stake(uint256 amount) internal override {
