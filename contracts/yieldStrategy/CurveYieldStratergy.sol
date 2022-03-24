@@ -14,7 +14,7 @@ import { ISwapRouter } from '@uniswap/v3-periphery/contracts/interfaces/ISwapRou
 
 // TODO: remove abstract after fixing constructor
 abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
-    IERC20 public usdc;
+    IERC20 public usdt;
     IERC20 public crvToken;
 
     ICurveGauge public gauge;
@@ -24,6 +24,7 @@ abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
 
     // TODO: replace, after removing constructor from base
     IERC20 public constant weth = IERC20(address(0));
+    IERC20 public constant usdc = IERC20(address(0));
     IERC20 public constant lpToken = IERC20(address(0));
 
     uint256 public constant MAX_BPS = 10_000;
@@ -37,7 +38,7 @@ abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
         ILPPriceGetter _lpPriceHolder,
         ICurveStableSwap _tricryptoPool
     ) internal onlyInitializing {
-        usdc = _usdc;
+        usdt = _usdc;
         gauge = _gauge;
         crvToken = _crvToken;
         uniV3Router = _uniV3Router;
@@ -66,7 +67,7 @@ abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
     function grantAllowances() public override {
         _grantBaseAllowances();
         lpToken.approve(address(gauge), type(uint256).max);
-        usdc.approve(address(triCryptoPool), type(uint256).max);
+        usdt.approve(address(triCryptoPool), type(uint256).max);
         crvToken.approve(address(uniV3Router), type(uint256).max);
         lpToken.approve(address(triCryptoPool), type(uint256).max);
     }
@@ -77,13 +78,32 @@ abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
 
     function _beforeWithdrawYield(uint256 amount) internal override {}
 
-    function _depositBase(uint256 amount) internal override {}
+    function _depositBase(uint256 amount) internal override {
+        usdt.approve(address(uniV3Router), amount);
+        bytes memory path = abi.encodePacked(usdt, uint256(500), usdc);
+
+        ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
+            path: path,
+            amountIn: amount,
+            amountOutMinimum: 0,
+            recipient: address(this),
+            deadline: block.timestamp
+        });
+
+        uint256 usdtOut = uniV3Router.exactInput(params);
+
+        // USDT, WBTC, WETH
+        uint256[3] memory amounts = [usdtOut, uint256(0), uint256(0)];
+        triCryptoPool.add_liquidity(amounts, 0);
+
+        _stake(lpToken.balanceOf(address(this)));
+    }
 
     function _harvestFees() internal override {
         uint256 claimable = gauge.claimable_reward(address(this));
         gauge.claim_rewards(address(this));
 
-        bytes memory path = abi.encodePacked(weth, uint256(500), usdc, uint256(3000), address(crvToken));
+        bytes memory path = abi.encodePacked(weth, uint256(500), usdt, uint256(3000), address(crvToken));
 
         ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
             path: path,
@@ -98,10 +118,15 @@ abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
     }
 
     function _stake(uint256 amount) internal override {
-        ICurveGauge(gauge).deposit(amount);
+        gauge.deposit(amount);
     }
 
-    function _stakedAssetBalance() internal view override returns (uint256) {}
+    function _stakedAssetBalance() internal view override returns (uint256) {
+        uint256 staked = gauge.balanceOf(address(this)) / 10**18;
+        uint256 pricePerLP = lpPriceHolder.lp_price();
+
+        return staked * pricePerLP;
+    }
 
     function _withdrawBase(uint256 amount) internal override {}
 
