@@ -41,11 +41,10 @@ contract EightyTwentyRangeStrategyVaultTest is EightyTwentyRangeStrategyVault {
 
     /* solhint-enable no-empty-blocks */
 
-    function getLiquidityChangeParamsOnRebalance(
-        IClearingHouse clearingHouse,
-        uint32 poolId,
-        int256 vaultMarketValue
-    ) external returns (IClearingHouseStructures.LiquidityChangeParams[2] memory liquidityChangeParamList) {
-        return _getLiquidityChangeParamsOnRebalance(clearingHouse.getPoolInfo(poolId), vaultMarketValue);
+    function getLiquidityChangeParamsOnRebalance(int256 vaultMarketValue)
+        external
+        returns (IClearingHouseStructures.LiquidityChangeParams[2] memory liquidityChangeParamList)
+    {
+        return _getLiquidityChangeParamsOnRebalance(vaultMarketValue);
     }
 }

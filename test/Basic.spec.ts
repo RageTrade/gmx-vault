@@ -516,7 +516,7 @@ describe('Basic', () => {
           liquidityPositions: [],
         };
         const accountMarketValue = parseTokenAmount(50000n, 6);
-        const liquidityChangeParams = await vaultTest.getLiquidityChangeParams(vTokenPosition, accountMarketValue);
+        const liquidityChangeParams = await vaultTest.testLiquidityChangeParams(vTokenPosition, accountMarketValue);
 
         expect(getNumChanges(liquidityChangeParams)).to.eq(1);
         // expect(liquidityChangeParams[0].liquidityDelta).to.eq(0);

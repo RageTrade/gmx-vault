@@ -61,14 +61,12 @@ abstract contract BaseRangeStrategyVault is BaseVault {
         uint160 sqrtPriceX96
     ) internal override returns (uint256 updatedAmountWithdrawn) {}
 
-    function _rebalanceRanges(
-        IClearingHouse.VTokenPositionView memory vTokenPosition,
-        IClearingHouse.Pool memory rageTradePool,
-        int256 vaultMarketValue
-    ) internal override {
+    function _rebalanceRanges(IClearingHouse.VTokenPositionView memory vTokenPosition, int256 vaultMarketValue)
+        internal
+        override
+    {
         IClearingHouse.LiquidityChangeParams[4] memory liquidityChangeParamList = getLiquidityChangeParams(
             vTokenPosition,
-            rageTradePool,
             vaultMarketValue
         );
 
@@ -78,19 +76,16 @@ abstract contract BaseRangeStrategyVault is BaseVault {
         }
     }
 
-    function _closeTokenPosition(
-        IClearingHouse.VTokenPositionView memory vTokenPosition,
-        IClearingHouse.Pool memory rageTradePool
-    ) internal override {
+    function _closeTokenPosition(IClearingHouse.VTokenPositionView memory vTokenPosition) internal override {
         // solhint-disable-previous-line no-empty-blocks
         //Do Nothing
     }
 
-    function getLiquidityChangeParams(
-        IClearingHouse.VTokenPositionView memory vTokenPosition,
-        IClearingHouse.Pool memory rageTradePool,
-        int256 vaultMarketValue
-    ) internal view returns (IClearingHouseStructures.LiquidityChangeParams[4] memory liquidityChangeParamList) {
+    function getLiquidityChangeParams(IClearingHouse.VTokenPositionView memory vTokenPosition, int256 vaultMarketValue)
+        internal
+        view
+        returns (IClearingHouseStructures.LiquidityChangeParams[4] memory liquidityChangeParamList)
+    {
         // Get net token position
         // Remove reabalance
         // Add new rebalance range
@@ -199,7 +194,7 @@ abstract contract BaseRangeStrategyVault is BaseVault {
         }
     }
 
-    function _isValidRebalanceRange(IClearingHouse.Pool memory) internal pure override returns (bool isValid) {
+    function _isValidRebalanceRange() internal pure override returns (bool isValid) {
         isValid = true;
     }
 }
