@@ -40,6 +40,14 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     uint16 public resetPositionThresholdBps;
     uint64 public constant PRICE_FACTOR_PIPS = 640000; // scaled by 1e6
 
+    function __EightyTwentyRangeStrategyVault_init(
+        uint16 _closePositionSlippageSqrtToleranceBps,
+        uint16 _resetPositionThresholdBps
+    ) internal onlyInitializing {
+        closePositionSlippageSqrtToleranceBps = _closePositionSlippageSqrtToleranceBps;
+        resetPositionThresholdBps = _resetPositionThresholdBps;
+    }
+
     /*
         RANGE STRATEGY
     */
