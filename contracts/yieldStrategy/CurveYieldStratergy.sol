@@ -82,7 +82,8 @@ abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
     }
 
     function _beforeWithdrawYield(uint256 amount) internal override {
-
+        gauge.withdraw(amount);
+        _harvestFees();
     }
 
     function _depositBase(uint256 amount) internal override {
@@ -108,20 +109,22 @@ abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
 
     function _harvestFees() internal override {
         uint256 claimable = gauge.claimable_reward(address(this));
-        gauge.claim_rewards(address(this));
+        if (claimable > 0) {
+            gauge.claim_rewards(address(this));
 
-        bytes memory path = abi.encodePacked(weth, uint256(500), usdt, uint256(3000), address(crvToken));
+            bytes memory path = abi.encodePacked(weth, uint256(500), usdt, uint256(3000), address(crvToken));
 
-        ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
-            path: path,
-            amountIn: claimable,
-            amountOutMinimum: 0,
-            recipient: address(this),
-            deadline: block.timestamp
-        });
+            ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
+                path: path,
+                amountIn: claimable,
+                amountOutMinimum: 0,
+                recipient: address(this),
+                deadline: block.timestamp
+            });
 
-        uint256 amountOut = uniV3Router.exactInput(params);
-        _stake(amountOut);
+            uint256 amountOut = uniV3Router.exactInput(params);
+            _stake(amountOut);
+        }
     }
 
     function _stake(uint256 amount) internal override {
@@ -161,6 +164,7 @@ abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
         marketValue = amount.mulDiv(getPriceX128(), FixedPoint128.Q128);
     }
 
+    // confirm if conversion to X128 is correct
     function getPriceX128() public view override returns (uint256 priceX128) {
         uint256 pricePerLP = lpPriceHolder.lp_price();
         return pricePerLP * FixedPoint128.Q128;
