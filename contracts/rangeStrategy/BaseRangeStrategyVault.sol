@@ -55,11 +55,11 @@ abstract contract BaseRangeStrategyVault is BaseVault {
         _settleCollateral(-depositMarketValue);
     }
 
-    function _beforeBurnRanges(
-        uint256 amountBeforeWithdraw,
-        uint256 amountWithdrawn,
-        uint160 sqrtPriceX96
-    ) internal override returns (uint256 updatedAmountWithdrawn) {}
+    function _beforeBurnRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn)
+        internal
+        override
+        returns (uint256 updatedAmountWithdrawn)
+    {}
 
     function _rebalanceRanges(IClearingHouse.VTokenPositionView memory vTokenPosition, int256 vaultMarketValue)
         internal
