@@ -59,7 +59,9 @@ abstract contract BaseRangeStrategyVault is BaseVault {
         internal
         override
         returns (uint256 updatedAmountWithdrawn)
-    {}
+    {
+        // solhint-disable-previous-line no-empty-blocks
+    }
 
     function _rebalanceRanges(IClearingHouse.VTokenPositionView memory vTokenPosition, int256 vaultMarketValue)
         internal

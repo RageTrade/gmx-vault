@@ -19,7 +19,7 @@ contract EightyTwentyRangeStrategyVaultTest is EightyTwentyRangeStrategyVault {
         uint32 _ethPoolId
     ) BaseVault(_asset, _name, _symbol, _ethPoolId) {}
 
-    function _stake() internal virtual override {}
+    function _stake(uint256 amount) internal virtual override {}
 
     function _harvestFees() internal virtual override {}
 

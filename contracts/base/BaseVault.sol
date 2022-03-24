@@ -179,8 +179,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     }
 
     function _isValidRebalance() internal view returns (bool isValid) {
-        // solhint-disable-next-line not-rely-on-time
-        if (block.timestamp - lastRebalanceTS > 1 days || _isValidRebalanceRange()) isValid = true;
+        if (_blockTimestamp() - lastRebalanceTS > 1 days || _isValidRebalanceRange()) isValid = true;
     }
 
     function _rebalanceProfitAndCollateral() internal {
@@ -244,6 +243,11 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
     function beforeBurn(uint256 amount) internal override returns (uint256 updatedAmount) {
         return _beforeBurnRanges(totalAssets(), amount);
+    }
+
+    function _blockTimestamp() internal view returns (uint256) {
+        // solhint-disable-next-line not-rely-on-time
+        return block.timestamp;
     }
 
     /*

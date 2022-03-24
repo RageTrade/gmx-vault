@@ -17,14 +17,17 @@ import { console } from 'hardhat/console.sol';
 library Pricing {
     using FullMath for uint256;
 
-    function assetPriceX128(address tokenOracle, uint256 maxDelay) internal view returns (uint256 price) {
+    function assetPriceX128(
+        address tokenOracle,
+        uint256 maxDelay,
+        uint256 blockTimestamp
+    ) internal view returns (uint256 price) {
         uint8 decimals = IAggregatorV3Interface(tokenOracle).decimals();
 
         require(maxDelay != 0, 'NULL_DELAY');
 
         (, int256 answer, , uint256 updatedAt, ) = IAggregatorV3Interface(tokenOracle).latestRoundData();
-        // solhint-disable-next-line not-rely-on-time
-        require(updatedAt >= block.timestamp - maxDelay, 'DELAYED');
+        require(updatedAt >= blockTimestamp - maxDelay, 'DELAYED');
         return (uint256(answer) * (FixedPoint128.Q128)) / (10**decimals);
     }
 
@@ -35,7 +38,8 @@ library Pricing {
         address token0Oracle,
         address token1Oracle,
         uint8 baseDecimals,
-        uint256 maxDelayTime
+        uint256 maxDelayTime,
+        uint256 blockTimestamp
     ) internal view returns (uint256) {
         address token0 = IUniswapV2Pair(pair).token0();
         address token1 = IUniswapV2Pair(pair).token1();
@@ -50,8 +54,8 @@ library Pricing {
             totalSupply * HomoraMath.sqrt(10**tokenDecimals)
         ); // in 2**112
 
-        uint256 px0 = assetPriceX128(token0Oracle, maxDelayTime); // in 2**112
-        uint256 px1 = assetPriceX128(token1Oracle, maxDelayTime); // in 2**112
+        uint256 px0 = assetPriceX128(token0Oracle, maxDelayTime, blockTimestamp); // in 2**112
+        uint256 px1 = assetPriceX128(token1Oracle, maxDelayTime, blockTimestamp); // in 2**112
 
         // fair token0 amt: sqrtK * sqrt(px1/px0)
         // fair token1 amt: sqrtK * sqrt(px0/px1)
