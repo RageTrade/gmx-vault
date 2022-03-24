@@ -10,48 +10,38 @@ import { ICurveGauge } from '../interfaces/curve/ICurveGauge.sol';
 import { ILPPriceGetter } from '../interfaces/curve/ILPPriceGetter.sol';
 import { ICurveStableSwap } from '../interfaces/curve/ICurveStableSwap.sol';
 
-import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
-
-import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
-import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
-import { IUniswapV2Router02 } from '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
-import { IUniswapV2Pair } from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
-
-import { BaseRangeStrategyVault } from '../rangeStrategy/BaseRangeStrategyVault.sol';
-import { BaseVault } from '../base/BaseVault.sol';
-import { IMiniChefV2 } from '../interfaces/sushi/IMiniChefV2.sol';
-import { Pricing } from '../libraries/Pricing.sol';
+import { ISwapRouter } from '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
 
 // TODO: remove abstract after fixing constructor
 abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
-    address public usdc;
-    address public crvToken;
+    IERC20 public usdc;
+    IERC20 public crvToken;
 
-    address public gauge;
-    address public triCryptoPool;
-    address public lpPriceHolder;
+    ICurveGauge public gauge;
+    ISwapRouter public uniV3Router;
+    ILPPriceGetter public lpPriceHolder;
+    ICurveStableSwap public triCryptoPool;
 
-    address public uniV3Router;
-
-    address public constant lpToken = address(0);
     // TODO: replace, after removing constructor from base
+    IERC20 public constant lpToken = IERC20(address(0));
+
     uint256 public constant MAX_BPS = 10_000;
     uint256 public constant FEE = 1000;
 
     function __CurveYieldStratergy__init(
-        address _usdc,
-        address _gauge,
-        address _crvToken,
-        address _uniV3Router,
-        address _lpPriceHolder,
-        address _tricryptoPool
+        IERC20 _usdc,
+        IERC20 _crvToken,
+        ICurveGauge _gauge,
+        ISwapRouter _uniV3Router,
+        ILPPriceGetter _lpPriceHolder,
+        ICurveStableSwap _tricryptoPool
     ) internal onlyInitializing {
         usdc = _usdc;
         gauge = _gauge;
         crvToken = _crvToken;
+        uniV3Router = _uniV3Router;
         triCryptoPool = _tricryptoPool;
         lpPriceHolder = _lpPriceHolder;
-        uniV3Router = _uniV3Router;
 
         grantAllowances();
     }
@@ -61,36 +51,37 @@ abstract contract CurveYieldStratergy is EightyTwentyRangeStrategyVault {
         address _rageClearingHouse,
         address _rageCollateralToken,
         address _rageBaseToken,
-        address _usdc,
-        address _gauge,
-        address _crvToken,
-        address _uniV3Router,
-        address _tricryptoPool,
-        address _lpPriceHolder
+        IERC20 _usdc,
+        IERC20 _crvToken,
+        ICurveGauge _gauge,
+        ISwapRouter _uniV3Router,
+        ILPPriceGetter _lpPriceHolder,
+        ICurveStableSwap _tricryptoPool
     ) external initializer {
         __BaseVault_init(_owner, _rageClearingHouse, _rageCollateralToken, _rageBaseToken);
-        __CurveYieldStratergy__init(_usdc, _gauge, _crvToken, _uniV3Router, _tricryptoPool, _lpPriceHolder);
+        __CurveYieldStratergy__init(_usdc, _crvToken, _gauge, _uniV3Router, _lpPriceHolder, _tricryptoPool);
     }
 
     function grantAllowances() public override {
         _grantBaseAllowances();
-        IERC20(lpToken).approve(gauge, type(uint256).max);
-        IERC20(usdc).approve(triCryptoPool, type(uint256).max);
-        IERC20(crvToken).approve(uniV3Router, type(uint256).max);
-        IERC20(lpToken).approve(triCryptoPool, type(uint256).max);
+        lpToken.approve(address(gauge), type(uint256).max);
+        usdc.approve(address(triCryptoPool), type(uint256).max);
+        crvToken.approve(address(uniV3Router), type(uint256).max);
+        lpToken.approve(address(triCryptoPool), type(uint256).max);
     }
 
     function _afterDepositYield(uint256 amount) internal override {
         _stake(amount);
     }
 
-    function _beforeWithdrawYield(uint256 amount) internal override {
-
-    }
+    function _beforeWithdrawYield(uint256 amount) internal override {}
 
     function _depositBase(uint256 amount) internal override {}
 
-    function _harvestFees() internal override {}
+    function _harvestFees() internal override {
+        uint256 claimable = gauge.claimable_reward(address(this));
+        gauge.claim_rewards(address(this));
+    }
 
     function _stake(uint256 amount) internal override {
         ICurveGauge(gauge).deposit(amount);
