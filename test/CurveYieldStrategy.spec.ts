@@ -1,31 +1,27 @@
 import hre, { deployments } from 'hardhat';
 import { CurveYieldStrategyTest } from '../typechain-types';
-import { RageTradeSetup } from './setup/ragetrade';
-
-const setupRageTrade = deployments.createFixture(async hre => {
-  await deployments.fixture('RageTradeFactory');
-  await (await hre.ethers.getContractFactory('CurveYieldStrategyTest')).deploy();
-  return {};
-});
+import { setupCurveYieldStrategy } from './fixtures/curve-yield-strategy';
 
 describe('CurveYieldStrategy', () => {
-  const rageTrade = new RageTradeSetup();
-  let test: CurveYieldStrategyTest;
+  let curveYieldStrategyTest: CurveYieldStrategyTest;
 
-  before(async () => {
-    await setupRageTrade();
-    test = await (await hre.ethers.getContractFactory('CurveYieldStrategyTest')).deploy();
+  beforeEach(async () => {
+    ({ curveYieldStrategyTest } = await setupCurveYieldStrategy());
     const [signer] = await hre.ethers.getSigners();
     // test.initialize(signer.address);
   });
 
-  beforeEach(async () => {});
+  // beforeEach(async () => {});
 
   describe('#deposit', () => {
     it('should perform approvals', async () => {
       // grantAllowances
+      // const val = await curveYieldStrategyTest.FEE();
+      // console.log(val);
     });
-    it('should transfer tokens');
+    it('should transfer tokens', async () => {
+      // console.log(1);
+    });
     it('should add liquidity');
   });
 
