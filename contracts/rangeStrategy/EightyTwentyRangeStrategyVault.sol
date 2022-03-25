@@ -65,26 +65,23 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     function _afterDepositRanges(uint256 amountAfterDeposit, uint256 amountDeposited) internal override {
         int256 depositMarketValue = getMarketValue(amountDeposited).toInt256();
         _settleCollateral(depositMarketValue);
-
+        IClearingHouseStructures.LiquidityChangeParams memory liquidityChangeParam;
         if (baseLiquidity == 0 && amountAfterDeposit == amountDeposited) {
             uint160 twapSqrtPriceX96 = _getTwapSqrtPriceX96();
             (baseTickLower, baseTickUpper, baseLiquidity) = _getUpdatedBaseRangeParams(
                 twapSqrtPriceX96,
                 depositMarketValue
             );
+            liquidityChangeParam = _getLiquidityChangeParams(baseTickLower, baseTickUpper, baseLiquidity.toInt128());
         } else {
             // Add to base range based on the additional collateral
-            IClearingHouseStructures.LiquidityChangeParams
-                memory liquidityChangeParam = _getLiquidityChangeParamsAfterDeposit(
-                    amountAfterDeposit,
-                    amountDeposited
-                );
+            liquidityChangeParam = _getLiquidityChangeParamsAfterDeposit(amountAfterDeposit, amountDeposited);
 
             assert(liquidityChangeParam.liquidityDelta > 0);
 
-            rageClearingHouse.updateRangeOrder(rageAccountNo, ethPoolId, liquidityChangeParam);
             baseLiquidity += uint128(liquidityChangeParam.liquidityDelta);
         }
+        rageClearingHouse.updateRangeOrder(rageAccountNo, ethPoolId, liquidityChangeParam);
     }
 
     function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal override {
