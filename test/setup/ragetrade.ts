@@ -1,3 +1,4 @@
+import { BigNumber } from 'ethers';
 import { parseUnits } from 'ethers/lib/utils';
 import hre from 'hardhat';
 import {
@@ -24,8 +25,8 @@ export class RageTradeSetup {
     // this._ready = this.setup();
   }
 
-  setup = async () => {
-    await this.deployContracts();
+  setup = async (initialPriceX128: BigNumber) => {
+    await this.deployContracts(initialPriceX128);
   };
 
   // takeSnapshot = async () => {
@@ -69,7 +70,7 @@ export class RageTradeSetup {
   /**
    * Deploys all the Rage Trade contracts and deploys two pools
    */
-  async deployContracts() {
+  async deployContracts(initialPriceX128: BigNumber) {
     // deploying logic
     const accountLib = await (await hre.ethers.getContractFactory('Account')).deploy();
     const clearingHouseLogic = await (
@@ -113,15 +114,15 @@ export class RageTradeSetup {
     );
 
     // deploy pool 1
-    await this.initializePool();
+    await this.initializePool(initialPriceX128);
 
     // deploy pool 2
-    await this.initializePool();
+    await this.initializePool(initialPriceX128);
   }
 
-  async initializePool() {
+  async initializePool(initialPriceX128: BigNumber) {
     const oracle = await (await hre.ethers.getContractFactory('OracleMock')).deploy();
-
+    await oracle.setPriceX128(initialPriceX128);
     const deployVTokenParams: VTokenDeployer.DeployVTokenParamsStruct = {
       vTokenName: 'Virtual Ether (Rage Trade)',
       vTokenSymbol: 'vETH',
