@@ -5,7 +5,7 @@ import {
 } from '@ragetrade/core/typechain-types/contracts/protocol/RageTradeFactory';
 import { deployments } from 'hardhat';
 
-export const setupRageTrade = deployments.createFixture(async hre => {
+export const rageTradeFixture = deployments.createFixture(async hre => {
   const rageTradeDeployments = await deployments.fixture('RageTradeFactory');
 
   const rageTradeFactory = await hre.ethers.getContractAt(

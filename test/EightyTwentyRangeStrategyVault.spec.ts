@@ -1,19 +1,18 @@
 import hre from 'hardhat';
 import { parseTokenAmount } from '@ragetrade/core/test/utils/stealFunds';
 import { EightyTwentyRangeStrategyVaultTest } from '../typechain-types';
-import { setupEightyTwentyRangeStrategy } from './fixtures/eighty-twenty-range-strategy-vault';
+import { eightyTwentyRangeStrategyFixture } from './fixtures/eighty-twenty-range-strategy-vault';
 
 describe('EightyTwentyRangeStrategyVault', () => {
-  let eightyTwentyRangeStrategyVaultTest: EightyTwentyRangeStrategyVaultTest;
-
-  beforeEach(async () => {
-    // takes time only first time, later it's super quick
-    ({ eightyTwentyRangeStrategyVaultTest } = await setupEightyTwentyRangeStrategy());
+  before(async () => {
+    // deploys contracts once
+    await eightyTwentyRangeStrategyFixture();
   });
 
   describe('#Deposit', () => {
     it('should perform first deposit', async () => {
       const [, user0] = await hre.ethers.getSigners();
+      const { eightyTwentyRangeStrategyVaultTest } = await eightyTwentyRangeStrategyFixture();
 
       await eightyTwentyRangeStrategyVaultTest.connect(user0).deposit(parseTokenAmount(10n ** 3n, 18), user0.address);
 
@@ -29,12 +28,14 @@ describe('EightyTwentyRangeStrategyVault', () => {
   describe('#Withdraw', () => {
     before(async () => {
       const [, user0] = await hre.ethers.getSigners();
+      const { eightyTwentyRangeStrategyVaultTest } = await eightyTwentyRangeStrategyFixture();
 
       await eightyTwentyRangeStrategyVaultTest.connect(user0).deposit(parseTokenAmount(10n ** 3n, 18), user0.address);
     });
 
     it.skip('should perform full withdraw with zero assets afterwards', async () => {
       const [, user0] = await hre.ethers.getSigners();
+      const { eightyTwentyRangeStrategyVaultTest } = await eightyTwentyRangeStrategyFixture();
       // console.log(await clearingHouse.getAccountNetProfit(vaultRageAccountNo));
       // console.log((await clearingHouse.getAccountInfo(vaultRageAccountNo)).tokenPositions[0].liquidityPositions[0]);
       await eightyTwentyRangeStrategyVaultTest

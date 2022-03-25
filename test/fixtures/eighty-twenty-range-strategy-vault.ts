@@ -4,10 +4,10 @@ import { truncate } from '@ragetrade/core/test/utils/vToken';
 import { deployments } from 'hardhat';
 import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
 
-import { setupRageTrade } from './ragetrade-core';
+import { rageTradeFixture } from './ragetrade-core';
 
-export const setupEightyTwentyRangeStrategy = deployments.createFixture(async hre => {
-  const { clearingHouse, settlementToken, pool0 } = await setupRageTrade();
+export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async hre => {
+  const { clearingHouse, settlementToken, pool0 } = await rageTradeFixture();
 
   // set price in pool0
   const initialPriceX128 = await priceToPriceX128(4000, 6, 18);
