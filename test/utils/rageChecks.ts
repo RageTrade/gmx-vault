@@ -1,5 +1,5 @@
 import { ClearingHouse } from '@ragetrade/core/typechain-types';
-import { LiquidityPositionViewStructOutput } from '@ragetrade/core/typechain-types/IClearingHouse';
+import { IClearingHouseStructures } from '@ragetrade/core/typechain-types/artifacts/contracts/interfaces/IClearingHouse';
 import { expect } from 'chai';
 import { BigNumber, BigNumberish } from 'ethers';
 
@@ -8,7 +8,7 @@ export async function getLiquidityPosition(
   accountNo: BigNumber,
   poolSerialNo: number,
   liquidityPositionSerialNo: number,
-): Promise<LiquidityPositionViewStructOutput> {
+): Promise<IClearingHouseStructures.LiquidityPositionViewStructOutput> {
   const accountInfo = await clearingHouse.getAccountInfo(accountNo);
   return accountInfo.tokenPositions[poolSerialNo].liquidityPositions[liquidityPositionSerialNo];
 }

@@ -9,3 +9,4 @@ cp -r node_modules/@ragetrade/core/typechain-types/@openzeppelin node_modules/@r
 cp -r node_modules/@ragetrade/core/typechain-types/@uniswap node_modules/@ragetrade/core/typechain-types/artifacts/
 cp -r node_modules/@ragetrade/core/typechain-types/contracts node_modules/@ragetrade/core/typechain-types/artifacts/
 cp -r node_modules/@ragetrade/core/typechain-types/index.ts node_modules/@ragetrade/core/typechain-types/artifacts/
+cp -r node_modules/@ragetrade/core/typechain-types/common.ts node_modules/@ragetrade/core/typechain-types/artifacts/

@@ -30,18 +30,17 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     ICurveStableSwap public triCryptoPool;
 
     // TODO: replace, after removing constructor from base
-
     /* solhint-disable const-name-snakecase */
-    IERC20 public constant weth = IERC20(address(0));
-    IERC20 public constant usdc = IERC20(address(0));
-    IERC20 public constant lpToken = IERC20(address(0));
+    ERC20 public constant weth = ERC20(address(0));
+    ERC20 public constant usdc = ERC20(address(0));
+    ERC20 public lpToken;
     /* solhint-enable const-name-snakecase */
 
     uint256 public constant MAX_BPS = 10_000;
     uint256 public constant FEE = 1000;
 
     // solhint-disable-next-line no-empty-blocks
-    constructor() BaseVault(ERC20(address(lpToken)), '', '', 0) {}
+    constructor(ERC20 _lpToken) BaseVault(_lpToken, '', '', 0) {}
 
     // solhint-disable-next-line func-name-mixedcase
     function __CurveYieldStratergy__init(
