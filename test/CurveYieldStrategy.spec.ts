@@ -1,23 +1,17 @@
 import hre, { deployments } from 'hardhat';
 import { CurveYieldStrategyTest } from '../typechain-types';
-import { setupCurveYieldStrategy } from './fixtures/curve-yield-strategy';
+import { curveYieldStrategyFixture } from './fixtures/curve-yield-strategy';
 
 describe('CurveYieldStrategy', () => {
-  let curveYieldStrategyTest: CurveYieldStrategyTest;
-
   beforeEach(async () => {
-    ({ curveYieldStrategyTest } = await setupCurveYieldStrategy());
-    const [signer] = await hre.ethers.getSigners();
-    // test.initialize(signer.address);
+    // deploys contracts once
+    await curveYieldStrategyFixture();
   });
-
-  // beforeEach(async () => {});
 
   describe('#deposit', () => {
     it('should perform approvals', async () => {
-      // grantAllowances
-      // const val = await curveYieldStrategyTest.FEE();
-      // console.log(val);
+      const { curveYieldStrategyTest } = await curveYieldStrategyFixture();
+      curveYieldStrategyTest.grantAllowances();
     });
     it('should transfer tokens', async () => {
       // console.log(1);
