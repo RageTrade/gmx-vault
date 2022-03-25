@@ -30,6 +30,7 @@ contract EightyTwentyRangeStrategyVaultTest is EightyTwentyRangeStrategyVault {
     ) BaseVault(_asset, _name, _symbol, _ethPoolId) {}
 
     function _stake(uint256 amount) internal virtual override {}
+
     function initialize(
         address _owner,
         address _rageClearingHouse,
@@ -45,8 +46,6 @@ contract EightyTwentyRangeStrategyVaultTest is EightyTwentyRangeStrategyVault {
         priceX128 = _priceX128;
         settlementTokenTreasury = _settlementTokenTreasury;
     }
-
-    function _stake() internal virtual override {}
 
     function _harvestFees() internal virtual override {}
 
