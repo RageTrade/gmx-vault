@@ -1,8 +1,10 @@
+import { priceToPriceX128 } from '@ragetrade/core/test/utils/price-tick';
 import {
   IClearingHouseStructures,
   VTokenDeployer,
   RageTradeFactory as RageTradeFactoryNamespace,
 } from '@ragetrade/core/typechain-types/contracts/protocol/RageTradeFactory';
+import { BigNumber } from 'ethers';
 import { deployments } from 'hardhat';
 
 export const rageTradeFixture = deployments.createFixture(async hre => {
@@ -18,13 +20,16 @@ export const rageTradeFixture = deployments.createFixture(async hre => {
     rageTradeDeployments.SettlementToken.address,
   );
 
-  const pool0 = await initializePool();
-  const pool1 = await initializePool();
+  // Set price to update init price of vpool
+  const priceX128 = await priceToPriceX128(4000, 6, 18);
+  const pool0 = await initializePool(priceX128);
+  const pool1 = await initializePool(priceX128);
 
   return { rageTradeFactory, rageTradeDeployments, clearingHouse, settlementToken, pool0, pool1 };
 
-  async function initializePool() {
+  async function initializePool(priceX128: BigNumber) {
     const oracle = await (await hre.ethers.getContractFactory('OracleMock')).deploy();
+    await oracle.setPriceX128(priceX128);
     const deployVTokenParams: VTokenDeployer.DeployVTokenParamsStruct = {
       vTokenName: 'Virtual Ether (Rage Trade)',
       vTokenSymbol: 'vETH',
