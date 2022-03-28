@@ -10,14 +10,14 @@ export async function setYieldTokenPrice(vault: EightyTwentyRangeStrategyVaultTe
 
 export async function checkTotalSupply(
   vault: { totalSupply: () => Promise<BigNumber> },
-  expectedTotalSupply: BigNumber,
+  expectedTotalSupply: BigNumberish,
 ) {
   expect(await vault.totalSupply()).to.eq(expectedTotalSupply);
 }
 
 export async function checkTotalAssets(
   vault: { totalAssets: () => Promise<BigNumber> },
-  expectedTotalAssets: BigNumber,
+  expectedTotalAssets: BigNumberish,
 ) {
   expect(await vault.totalAssets()).to.eq(expectedTotalAssets);
 }

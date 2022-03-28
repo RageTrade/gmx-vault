@@ -58,6 +58,12 @@ export async function getLiquidityPositionNum(
   poolSerialNo: number,
 ): Promise<number> {
   const accountInfo = await clearingHouse.getAccountInfo(accountNo);
+  if (
+    typeof accountInfo.tokenPositions === 'undefined' ||
+    typeof accountInfo.tokenPositions[poolSerialNo] === 'undefined' ||
+    typeof accountInfo.tokenPositions[poolSerialNo].liquidityPositions === 'undefined'
+  )
+    return 0;
   return accountInfo.tokenPositions[poolSerialNo].liquidityPositions.length;
 }
 
