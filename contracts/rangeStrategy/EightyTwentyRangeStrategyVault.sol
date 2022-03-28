@@ -38,15 +38,18 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     bool public isReset;
     uint16 public closePositionSlippageSqrtToleranceBps;
     uint16 public resetPositionThresholdBps;
+    uint64 public minNotionalPositionToCloseThreshold;
     uint64 public constant PRICE_FACTOR_PIPS = 640000; // scaled by 1e6
 
     // solhint-disable-next-line func-name-mixedcase
     function __EightyTwentyRangeStrategyVault_init(
         uint16 _closePositionSlippageSqrtToleranceBps,
-        uint16 _resetPositionThresholdBps
+        uint16 _resetPositionThresholdBps,
+        uint64 _minNotionalPositionToCloseThreshold
     ) internal onlyInitializing {
         closePositionSlippageSqrtToleranceBps = _closePositionSlippageSqrtToleranceBps;
         resetPositionThresholdBps = _resetPositionThresholdBps;
+        minNotionalPositionToCloseThreshold = _minNotionalPositionToCloseThreshold;
     }
 
     /*
@@ -93,8 +96,8 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
                 amountWithdrawn
             );
         assert(liquidityChangeParam.liquidityDelta < 0);
-
         baseLiquidity -= uint128(-liquidityChangeParam.liquidityDelta);
+        if (baseLiquidity == 0) liquidityChangeParam.closeTokenPosition = true;
         rageClearingHouse.updateRangeOrder(rageAccountNo, ethPoolId, liquidityChangeParam);
         // Settle collateral based on updated value
         int256 depositMarketValue = getMarketValue(amountWithdrawn).toInt256();
@@ -109,18 +112,31 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         uint160 sqrtPriceX96 = _getTwapSqrtPriceX96();
         int256 netPosition = rageClearingHouse.getAccountNetTokenPosition(rageAccountNo, ethPoolId);
         int256 tokensToTrade = -netPosition.mulDiv(amountWithdrawn, amountBeforeWithdraw);
+        uint256 tokensToTradeNotionalAbs = _getTokenNotionalAbs(netPosition, sqrtPriceX96);
 
-        (int256 vTokenAmountOut, ) = _closeTokenPosition(
-            tokensToTrade,
-            sqrtPriceX96,
-            closePositionSlippageSqrtToleranceBps
-        );
+        if (tokensToTradeNotionalAbs > minNotionalPositionToCloseThreshold) {
+            // TODO: Remove after testing
+            // console.log(amountWithdrawn);
+            // console.log(amountBeforeWithdraw);
+            // console.logInt(netPosition);
+            // console.logInt(tokensToTrade);
+            (int256 vTokenAmountOut, ) = _closeTokenPosition(
+                tokensToTrade,
+                sqrtPriceX96,
+                closePositionSlippageSqrtToleranceBps
+            );
 
-        if (vTokenAmountOut == tokensToTrade) return amountWithdrawn;
-        else {
-            int256 updatedAmountWithdrawnInt = -vTokenAmountOut.mulDiv(amountBeforeWithdraw.toInt256(), netPosition);
-            assert(updatedAmountWithdrawnInt > 0);
-            updatedAmountWithdrawn = uint256(updatedAmountWithdrawnInt);
+            if (vTokenAmountOut == tokensToTrade) updatedAmountWithdrawn = amountWithdrawn;
+            else {
+                int256 updatedAmountWithdrawnInt = -vTokenAmountOut.mulDiv(
+                    amountBeforeWithdraw.toInt256(),
+                    netPosition
+                );
+                assert(updatedAmountWithdrawnInt > 0);
+                updatedAmountWithdrawn = uint256(updatedAmountWithdrawnInt);
+            }
+        } else {
+            updatedAmountWithdrawn = amountWithdrawn;
         }
     }
 
@@ -200,12 +216,9 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
 
         int256 netPosition = rageClearingHouse.getAccountNetTokenPosition(rageAccountNo, ethPoolId);
 
-        int256 netPositionNotional = netPosition.mulDiv(twapSqrtPriceX96, FixedPoint96.Q96).mulDiv(
-            twapSqrtPriceX96,
-            FixedPoint96.Q96
-        );
+        uint256 netPositionNotional = _getTokenNotionalAbs(netPosition, twapSqrtPriceX96);
         //To Reset if netPositionNotional > 20% of vaultMarketValue
-        isReset = netPositionNotional > vaultMarketValue.mulDiv(resetPositionThresholdBps, 1e4);
+        isReset = netPositionNotional > vaultMarketValue.absUint().mulDiv(resetPositionThresholdBps, 1e4);
 
         uint128 baseLiquidityUpdate;
         (baseTickLower, baseTickUpper, baseLiquidityUpdate) = _getUpdatedBaseRangeParams(
@@ -280,6 +293,17 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         baseLiquidityUpdate = (
             uint256(vaultMarketValue).mulDiv(FixedPoint96.Q96 / 10, (sqrtPriceX96 - sqrtPriceLowerX96))
         ).toUint128();
+    }
+
+    function _getTokenNotionalAbs(int256 tokenAmount, uint160 sqrtPriceX96)
+        internal
+        pure
+        returns (uint256 tokenNotionalAbs)
+    {
+        tokenNotionalAbs = tokenAmount
+            .mulDiv(sqrtPriceX96, FixedPoint96.Q96)
+            .mulDiv(sqrtPriceX96, FixedPoint96.Q96)
+            .absUint();
     }
 
     // TODO can be moved to library

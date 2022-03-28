@@ -24,6 +24,8 @@ import { SafeCast } from '../libraries/SafeCast.sol';
 import { RageERC4626 } from './RageERC4626.sol';
 import { UniswapV3PoolHelper, IUniswapV3Pool } from '@ragetrade/core/contracts/libraries/UniswapV3PoolHelper.sol';
 
+import { console } from 'hardhat/console.sol';
+
 abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, OwnableUpgradeable {
     using AddressHelper for address;
     using AddressHelper for IVToken;
@@ -90,6 +92,8 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     function _settleProfitAndCollateral(IClearingHouse.CollateralDepositView[] memory deposits, int256 vaultMarketValue)
         internal
     {
+        //TODO: Reduce the deposit amount by already deposited USDC
+        //TODO: Add an interation over the array to convert the list into balances of USDC and dummy Collateral
         // Settle net profit made from ranges and deposit/withdraw profits in USDC
         int256 netProfit = rageClearingHouse.getAccountNetProfit(rageAccountNo);
         if (netProfit > 0) {
@@ -179,6 +183,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     }
 
     function _isValidRebalance() internal view returns (bool isValid) {
+        //TODO: make rebalance period variable
         if (_blockTimestamp() - lastRebalanceTS > 1 days || _isValidRebalanceRange()) isValid = true;
     }
 
@@ -237,7 +242,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     }
 
     function beforeWithdraw(uint256 amount) internal override {
-        // _beforeWithdrawRanges(totalAssets(), amount);
+        _beforeWithdrawRanges(totalAssets(), amount);
         _beforeWithdrawYield(amount);
     }
 
