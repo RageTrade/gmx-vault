@@ -66,6 +66,16 @@ describe('EightyTwentyRangeStrategyVault', () => {
         0n,
       );
     });
+
+    it('Deposit cap', async () => {
+      const [, user0] = await hre.ethers.getSigners();
+      const { eightyTwentyRangeStrategyVaultTest } = await eightyTwentyRangeStrategyFixture();
+
+      await eightyTwentyRangeStrategyVaultTest.updateDepositCap(parseTokenAmount(1, 18));
+      await expect(
+        eightyTwentyRangeStrategyVaultTest.connect(user0).deposit(parseTokenAmount(1, 18).add(1), user0.address),
+      ).to.be.revertedWith('BV_DepositCap(1000000000000000000, 1000000000000000001)');
+    });
   });
 
   describe('#Withdraw', () => {

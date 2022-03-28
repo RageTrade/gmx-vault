@@ -1,6 +1,7 @@
 import { priceToPriceX128 } from '@ragetrade/core/test/utils/price-tick';
 import { parseTokenAmount } from '@ragetrade/core/test/utils/stealFunds';
 import { truncate } from '@ragetrade/core/test/utils/vToken';
+import { parseEther } from 'ethers/lib/utils';
 import { deployments } from 'hardhat';
 import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
 import { updateSettlementTokenMargin } from '../utils/rageHelpers';
@@ -93,6 +94,8 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
     slippageToleranceBps: 0,
     limitOrderType: 0,
   });
+
+  await eightyTwentyRangeStrategyVaultTest.updateDepositCap(parseTokenAmount(10n ** 10n, 18));
 
   return {
     eightyTwentyRangeStrategyVaultTest,
