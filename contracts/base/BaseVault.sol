@@ -36,8 +36,6 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     using SignedFullMath for int256;
     using UniswapV3PoolHelper for IUniswapV3Pool;
 
-    error BV_InvalidRebalance();
-
     // TODO: Make relevant things immutable
     IERC20Metadata public rageBaseToken;
     IClearingHouse public rageClearingHouse;
@@ -48,6 +46,11 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     IClearingHouse.Pool public rageTradePool;
     uint64 public lastRebalanceTS;
     uint16 public rebalancePriceThresholdBps;
+
+    uint256 public depositCap;
+
+    error BV_InvalidRebalance();
+    error BV_DepositCap(uint256 depositCap, uint256 depositAmount);
 
     constructor(
         ERC20 _asset,
@@ -73,6 +76,16 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         rageBaseToken = IERC20Metadata(_rageBaseToken);
         rageTradePool = rageClearingHouse.getPoolInfo(ethPoolId);
         // Give rageClearingHouse full allowance of rageCollateralToken and usdc
+    }
+
+    function updateDepositCap(uint256 newDepositCap) external onlyOwner {
+        depositCap = newDepositCap;
+    }
+
+    function deposit(uint256 amount, address to) public virtual override returns (uint256 shares) {
+        if (amount > depositCap) revert BV_DepositCap(depositCap, amount);
+
+        return super.deposit(amount, to);
     }
 
     function grantAllowances() external virtual {
