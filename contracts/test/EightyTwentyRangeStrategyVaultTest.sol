@@ -39,10 +39,15 @@ contract EightyTwentyRangeStrategyVaultTest is EightyTwentyRangeStrategyVault {
         uint16 _closePositionSlippageSqrtToleranceBps,
         uint16 _resetPositionThresholdBps,
         uint256 _priceX128,
-        address _settlementTokenTreasury
+        address _settlementTokenTreasury,
+        uint64 _minNotionalPositionToCloseThreshold
     ) external initializer {
         __BaseVault_init(_owner, _rageClearingHouse, _rageCollateralToken, _rageBaseToken);
-        __EightyTwentyRangeStrategyVault_init(_closePositionSlippageSqrtToleranceBps, _resetPositionThresholdBps);
+        __EightyTwentyRangeStrategyVault_init(
+            _closePositionSlippageSqrtToleranceBps,
+            _resetPositionThresholdBps,
+            _minNotionalPositionToCloseThreshold
+        );
         priceX128 = _priceX128;
         settlementTokenTreasury = _settlementTokenTreasury;
     }
@@ -57,6 +62,7 @@ contract EightyTwentyRangeStrategyVaultTest is EightyTwentyRangeStrategyVault {
         marketValue = amount.mulDiv(priceX128, FixedPoint128.Q128);
     }
 
+    //TODO: handle update of yield tokens based on their value along with update in settlement token
     // To convert yield token into USDC to cover loss on rage trade
     function _withdrawBase(uint256 amount) internal virtual override {
         rageBaseToken.transferFrom(settlementTokenTreasury, address(this), amount);
@@ -64,6 +70,7 @@ contract EightyTwentyRangeStrategyVaultTest is EightyTwentyRangeStrategyVault {
 
     // To deposit the USDC profit made from rage trade into yield protocol
     function _depositBase(uint256 amount) internal virtual override {
+        // asset.transfer(settlementTokenTreasury, amount.mulDiv(FixedPoint128.Q128,priceX128));
         rageBaseToken.transfer(settlementTokenTreasury, amount);
     }
 
