@@ -67,11 +67,12 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
   await clearingHouse.createAccount();
   const adminAccountNo = (await clearingHouse.numAccounts()).sub(1);
 
-  clearingHouse.updateMargin(adminAccountNo, truncate(settlementToken.address), parseTokenAmount(10n ** 6n, 6));
-  clearingHouse.updateRangeOrder(adminAccountNo, ethPoolId, {
-    liquidityDelta: 1000000n,
+  await settlementToken.approve(clearingHouse.address, parseTokenAmount(10n ** 5n, 6));
+  await clearingHouse.updateMargin(adminAccountNo, truncate(settlementToken.address), parseTokenAmount(10n ** 5n, 6));
+  await clearingHouse.updateRangeOrder(adminAccountNo, ethPoolId, {
+    liquidityDelta: 10n ** 15n,
     tickLower: -220000,
-    tickUpper: -180000,
+    tickUpper: -170000,
     closeTokenPosition: false,
     sqrtPriceCurrent: 0,
     slippageToleranceBps: 0,
