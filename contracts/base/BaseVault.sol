@@ -92,8 +92,6 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     function _settleProfitAndCollateral(IClearingHouse.CollateralDepositView[] memory deposits, int256 vaultMarketValue)
         internal
     {
-        //TODO: Reduce the deposit amount by already deposited USDC
-        //TODO: Add an interation over the array to convert the list into balances of USDC and dummy Collateral
         // Settle net profit made from ranges and deposit/withdraw profits in USDC
         int256 netProfit = rageClearingHouse.getAccountNetProfit(rageAccountNo);
         if (netProfit > 0) {
@@ -110,6 +108,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         // Vault market value is just the collateral value since profit has been settled
         int256 vaultMarketValueDiff;
         if (deposits.length > 0) {
+            //Since USDC never deposited as margin so there would just be 1 collateral
             assert(deposits.length == 1);
             IClearingHouse.CollateralDepositView memory stablecoinDeposit = deposits[0];
             assert(address(stablecoinDeposit.collateral) == address(rageCollateralToken));
@@ -201,7 +200,6 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         _rebalanceProfitAndCollateral(deposits, vTokenPositions, vaultMarketValue);
     }
 
-    // TODO: Uncomment stake and harvest fees
     function _rebalanceProfitAndCollateral(
         IClearingHouse.CollateralDepositView[] memory deposits,
         IClearingHouse.VTokenPositionView[] memory vTokenPositions,

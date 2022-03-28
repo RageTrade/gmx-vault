@@ -89,7 +89,6 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
 
     function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal override {
         // Remove from base range based on the collateral removal
-        //TODO: check if the relevant token positions needs to be closed or not
         IClearingHouseStructures.LiquidityChangeParams
             memory liquidityChangeParam = _getLiquidityChangeParamsBeforeWithdraw(
                 amountBeforeWithdraw,
@@ -211,9 +210,9 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
             );
             liqCount++;
         }
-        //TODO: should we take netPosition from outside
         uint160 twapSqrtPriceX96 = _getTwapSqrtPriceX96();
 
+        //TODO: should we take netPosition from outside
         int256 netPosition = rageClearingHouse.getAccountNetTokenPosition(rageAccountNo, ethPoolId);
 
         uint256 netPositionNotional = _getTokenNotionalAbs(netPosition, twapSqrtPriceX96);
