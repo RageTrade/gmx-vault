@@ -39,7 +39,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     uint16 public closePositionSlippageSqrtToleranceBps;
     uint16 public resetPositionThresholdBps;
     uint64 public minNotionalPositionToCloseThreshold;
-    uint64 public constant PRICE_FACTOR_PIPS = 640000; // scaled by 1e6
+    uint64 public constant SQRT_PRICE_FACTOR_PIPS = 800000; // scaled by 1e6
 
     // solhint-disable-next-line func-name-mixedcase
     function __EightyTwentyRangeStrategyVault_init(
@@ -283,14 +283,19 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
             uint128 baseLiquidityUpdate
         )
     {
-        uint160 sqrtPriceLowerX96 = uint256(sqrtPriceX96).mulDiv(PRICE_FACTOR_PIPS, 1e6).toUint160();
-        uint160 sqrtPriceUpperX96 = uint256(sqrtPriceX96).mulDiv(1e6, PRICE_FACTOR_PIPS).toUint160();
-        baseTickLowerUpdate = _sqrtPriceX96ToValidTick(sqrtPriceLowerX96, false);
-        baseTickUpperUpdate = _sqrtPriceX96ToValidTick(sqrtPriceUpperX96, true);
+        {
+            uint160 sqrtPriceLowerX96 = uint256(sqrtPriceX96).mulDiv(SQRT_PRICE_FACTOR_PIPS, 1e6).toUint160();
+            uint160 sqrtPriceUpperX96 = uint256(sqrtPriceX96).mulDiv(1e6, SQRT_PRICE_FACTOR_PIPS).toUint160();
+
+            baseTickLowerUpdate = _sqrtPriceX96ToValidTick(sqrtPriceLowerX96, false);
+            baseTickUpperUpdate = _sqrtPriceX96ToValidTick(sqrtPriceUpperX96, true);
+        }
+
+        uint160 updatedSqrtPriceLowerX96 = TickMath.getSqrtRatioAtTick(baseTickLowerUpdate);
 
         assert(vaultMarketValue > 0);
         baseLiquidityUpdate = (
-            uint256(vaultMarketValue).mulDiv(FixedPoint96.Q96 / 10, (sqrtPriceX96 - sqrtPriceLowerX96))
+            uint256(vaultMarketValue).mulDiv(FixedPoint96.Q96 / 10, (sqrtPriceX96 - updatedSqrtPriceLowerX96))
         ).toUint128();
     }
 
@@ -306,12 +311,18 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     }
 
     // TODO can be moved to library
-    function _sqrtPriceX96ToValidTick(uint160 sqrtPriceX96, bool roundUp) internal pure returns (int24 roundedTick) {
+    function _sqrtPriceX96ToValidTick(uint160 sqrtPriceX96, bool isTickUpper)
+        internal
+        pure
+        returns (int24 roundedTick)
+    {
         int24 tick = TickMath.getTickAtSqrtRatio(sqrtPriceX96);
-        if (roundUp) {
+        if (isTickUpper) {
             roundedTick = tick + 10 - (tick % 10);
         } else {
             roundedTick = tick - (tick % 10);
         }
+
+        if (tick < 0) roundedTick -= 10;
     }
 }
