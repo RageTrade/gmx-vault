@@ -1,9 +1,20 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { truncate } from '@ragetrade/core/test/utils/vToken';
-import { ClearingHouse } from '@ragetrade/core/typechain-types';
+import { ClearingHouse, SettlementTokenMock } from '@ragetrade/core/typechain-types';
 import { IClearingHouseStructures } from '@ragetrade/core/typechain-types/artifacts/contracts/interfaces/IClearingHouse';
 import { expect } from 'chai';
 import { BigNumber, BigNumberish, ContractTransaction } from 'ethers';
+
+export async function updateSettlementTokenMargin(
+  clearingHouse: ClearingHouse,
+  settlementToken: SettlementTokenMock,
+  user: SignerWithAddress,
+  userAccountNo: BigNumberish,
+  vTokenAmount: BigNumberish,
+) {
+  await settlementToken.connect(user).approve(clearingHouse.address, vTokenAmount);
+  await clearingHouse.connect(user).updateMargin(userAccountNo, truncate(settlementToken.address), vTokenAmount);
+}
 
 export async function swapToken(
   clearingHouse: ClearingHouse,

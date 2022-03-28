@@ -3,6 +3,7 @@ import { parseTokenAmount } from '@ragetrade/core/test/utils/stealFunds';
 import { truncate } from '@ragetrade/core/test/utils/vToken';
 import { deployments } from 'hardhat';
 import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
+import { updateSettlementTokenMargin } from '../utils/rageHelpers';
 
 import { rageTradeFixture } from './ragetrade-core';
 
@@ -26,7 +27,7 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
   const ethPoolId = truncate(pool0.vToken.address);
   const pool = await clearingHouse.getPoolInfo(truncate(pool0.vToken.address));
 
-  const [admin, user0, user1, settlementTokenTreasury] = await hre.ethers.getSigners();
+  const [admin, user0, user1, trader0, settlementTokenTreasury] = await hre.ethers.getSigners();
 
   const closePositionToleranceBps = 500; //5%
   const resetPositionThresholdBps = 2000; //20%
@@ -57,6 +58,9 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
   await yieldToken.mint(user0.address, parseTokenAmount(10n ** 10n, 18));
   await yieldToken.connect(user0).approve(eightyTwentyRangeStrategyVaultTest.address, parseTokenAmount(10n ** 10n, 18));
 
+  await yieldToken.mint(user1.address, parseTokenAmount(10n ** 10n, 18));
+  await yieldToken.connect(user1).approve(eightyTwentyRangeStrategyVaultTest.address, parseTokenAmount(10n ** 10n, 18));
+
   await settlementToken.mint(settlementTokenTreasury.address, parseTokenAmount(10n ** 20n, 18));
   await settlementToken.mint(admin.address, parseTokenAmount(10n ** 20n, 18));
 
@@ -67,10 +71,21 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
   await clearingHouse.createAccount();
   const adminAccountNo = (await clearingHouse.numAccounts()).sub(1);
 
+  await clearingHouse.connect(trader0).createAccount();
+  const trader0AccountNo = (await clearingHouse.numAccounts()).sub(1);
+  settlementToken.mint(trader0.address, parseTokenAmount(10n ** 7n, 6));
+  await updateSettlementTokenMargin(
+    clearingHouse,
+    settlementToken,
+    trader0,
+    trader0AccountNo,
+    parseTokenAmount(10n ** 7n, 6),
+  );
+
   await settlementToken.approve(clearingHouse.address, parseTokenAmount(10n ** 5n, 6));
   await clearingHouse.updateMargin(adminAccountNo, truncate(settlementToken.address), parseTokenAmount(10n ** 5n, 6));
   await clearingHouse.updateRangeOrder(adminAccountNo, ethPoolId, {
-    liquidityDelta: 10n ** 15n,
+    liquidityDelta: 10n ** 9n,
     tickLower: -220000,
     tickUpper: -170000,
     closeTokenPosition: false,
@@ -90,5 +105,9 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
     settlementTokenTreasury,
     ethPoolId,
     ethPool: pool0,
+    user0,
+    user1,
+    trader0,
+    trader0AccountNo,
   };
 });
