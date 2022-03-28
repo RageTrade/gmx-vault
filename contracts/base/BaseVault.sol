@@ -49,8 +49,16 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
     uint256 public depositCap;
 
+    address public keeper;
+
     error BV_InvalidRebalance();
     error BV_DepositCap(uint256 depositCap, uint256 depositAmount);
+    error BV_OnlyKeeperAllowed(address keeperAddress, address msgSender);
+
+    modifier onlyKeeper() {
+        if (keeper != msg.sender) revert BV_OnlyKeeperAllowed(keeper, msg.sender);
+        _;
+    }
 
     constructor(
         ERC20 _asset,
@@ -164,7 +172,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         }
     }
 
-    function rebalance() public {
+    function rebalance() public onlyKeeper {
         if (!_isValidRebalance()) {
             revert BV_InvalidRebalance();
         }
@@ -185,7 +193,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         // Step-5 Rebalance
     }
 
-    function closeTokenPosition() public {
+    function closeTokenPosition() public onlyKeeper {
         //TODO: Check if isReset check needs to be added
         IClearingHouse.VTokenPositionView[] memory vTokenPositions;
         // Step-0 Check if the rebalance can go through (time and threshold based checks)
