@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # this should be run post install
 
 # there is some weird bug in typechain that doesn't generate artifact dir in the right place during @ragetrade/core postinstall run
