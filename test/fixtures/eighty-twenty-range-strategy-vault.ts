@@ -64,9 +64,15 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
   await yieldToken.connect(user1).approve(eightyTwentyRangeStrategyVaultTest.address, parseTokenAmount(10n ** 10n, 18));
 
   await settlementToken.mint(settlementTokenTreasury.address, parseTokenAmount(10n ** 20n, 18));
+  await yieldToken.mint(settlementTokenTreasury.address, parseTokenAmount(10n ** 20n, 18));
+
   await settlementToken.mint(admin.address, parseTokenAmount(10n ** 20n, 18));
 
   await settlementToken
+    .connect(settlementTokenTreasury)
+    .approve(eightyTwentyRangeStrategyVaultTest.address, parseTokenAmount(10n ** 20n, 18));
+
+  await yieldToken
     .connect(settlementTokenTreasury)
     .approve(eightyTwentyRangeStrategyVaultTest.address, parseTokenAmount(10n ** 20n, 18));
 

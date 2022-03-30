@@ -53,7 +53,7 @@ export async function checkVaultRangeParamsApproximate(
   baseTickUpper: number,
   baseLiquidity: BigNumberish,
 ) {
-  expect(await (await vault.baseLiquidity()).sub(baseLiquidity)).to.lte(10n ** 3n);
+  expect((await vault.baseLiquidity()).sub(baseLiquidity).abs()).to.lte(10n ** 3n);
   expect(await vault.baseTickLower()).to.eq(baseTickLower);
   expect(await vault.baseTickUpper()).to.eq(baseTickUpper);
 }
@@ -63,4 +63,17 @@ export async function increaseBlockTimestamp(timestampDelta: number) {
   const curBlockTimestamp = block.timestamp;
   await network.provider.send('evm_setNextBlockTimestamp', [curBlockTimestamp + timestampDelta]);
   await network.provider.send('evm_mine');
+}
+
+export async function logVaultParams(title: string, vault: EightyTwentyRangeStrategyVaultTest) {
+  console.log('#######', title, '#######');
+  console.log('totalAssets', await vault.totalAssets(), 'totalSupply', await vault.totalSupply());
+  console.log(
+    'baseTickLower',
+    await vault.baseTickLower(),
+    'baseTickUpper',
+    await vault.baseTickUpper(),
+    'baseLiquidity',
+    await vault.baseLiquidity(),
+  );
 }

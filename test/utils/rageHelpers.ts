@@ -1,9 +1,12 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { truncate } from '@ragetrade/core/test/utils/vToken';
-import { ClearingHouse, SettlementTokenMock } from '@ragetrade/core/typechain-types';
+import { amountsForLiquidity } from '@ragetrade/core/test/utils/liquidity';
+
+import { ClearingHouse, IUniswapV3Pool, SettlementTokenMock, VPoolWrapper } from '@ragetrade/core/typechain-types';
 import { IClearingHouseStructures } from '@ragetrade/core/typechain-types/artifacts/contracts/interfaces/IClearingHouse';
 import { expect } from 'chai';
 import { BigNumber, BigNumberish, ContractTransaction } from 'ethers';
+import { sqrtPriceX96ToPrice } from '@ragetrade/core/test/utils/price-tick';
 
 export async function updateSettlementTokenMargin(
   clearingHouse: ClearingHouse,
@@ -137,7 +140,7 @@ export async function checkLiquidityPositionApproximate(
   );
   expect(liquidityPosition.tickLower).to.eq(baseTickLower);
   expect(liquidityPosition.tickUpper).to.eq(baseTickUpper);
-  expect(liquidityPosition.liquidity.sub(baseLiquidity)).to.lte(10n ** 3n);
+  expect(liquidityPosition.liquidity.sub(baseLiquidity).abs()).to.lte(10n ** 3n);
 }
 
 export async function checkNetTokenPosition(
@@ -148,6 +151,16 @@ export async function checkNetTokenPosition(
 ) {
   const netTokenPosition = await getNetTokenPosition(clearingHouse, accountNo, poolId);
   expect(netTokenPosition).to.eq(expectedNetTokenPosition);
+}
+
+export async function checkNetTokenPositionApproximate(
+  clearingHouse: ClearingHouse,
+  accountNo: BigNumber,
+  poolId: BigNumberish,
+  expectedNetTokenPosition: BigNumberish,
+) {
+  const netTokenPosition = await getNetTokenPosition(clearingHouse, accountNo, poolId);
+  expect(netTokenPosition.sub(expectedNetTokenPosition).abs()).to.lte(10n ** 6n);
 }
 
 export async function checkAccountNetProfit(
@@ -175,4 +188,45 @@ export async function checkRealTokenBalances(
   );
   expect(collateralTokenBalance).to.eq(expectedCollateralTokenBalance);
   expect(settlementTokenBalance).to.eq(expectedSettlementTokenBalance);
+}
+
+export async function logRageParams(
+  title: string,
+  clearingHouse: ClearingHouse,
+  vPool: IUniswapV3Pool,
+  accountNo: BigNumber,
+  poolSerialNo: number,
+  liquidityPositionSerialNo: number,
+) {
+  console.log('#######', title, '#######');
+  const accountInfo = await clearingHouse.getAccountInfo(accountNo);
+  const tokenPosition = accountInfo.tokenPositions[poolSerialNo];
+  const liquidityPosition = tokenPosition.liquidityPositions[liquidityPositionSerialNo];
+  console.log(
+    'Trader States:',
+    'vQuoteBalance',
+    accountInfo.vQuoteBalance,
+    'vTokenBalance',
+    tokenPosition.balance,
+    'netTraderPosition',
+    tokenPosition.netTraderPosition,
+  );
+
+  const { sqrtPriceX96 } = await vPool.slot0();
+  const amounts = amountsForLiquidity(
+    liquidityPosition.tickLower,
+    sqrtPriceX96,
+    liquidityPosition.tickUpper,
+    liquidityPosition.liquidity,
+    false,
+  );
+  console.log(
+    'Inside Range:',
+    'vQuoteBalance',
+    amounts.vQuoteAmount,
+    'vTokenBalance',
+    amounts.vTokenAmount,
+    'Price',
+    await sqrtPriceX96ToPrice(sqrtPriceX96, 6, 18),
+  );
 }

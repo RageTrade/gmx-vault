@@ -20,7 +20,7 @@ contract EightyTwentyRangeStrategyVaultTest is EightyTwentyRangeStrategyVault {
 
     /* solhint-disable no-empty-blocks */
     uint256 public priceX128;
-    address public settlementTokenTreasury;
+    address public tokenTreasury;
 
     constructor(
         ERC20 _asset,
@@ -39,7 +39,7 @@ contract EightyTwentyRangeStrategyVaultTest is EightyTwentyRangeStrategyVault {
         uint16 _closePositionSlippageSqrtToleranceBps,
         uint16 _resetPositionThresholdBps,
         uint256 _priceX128,
-        address _settlementTokenTreasury,
+        address _tokenTreasury,
         uint64 _minNotionalPositionToCloseThreshold
     ) external initializer {
         __BaseVault_init(_owner, _rageClearingHouse, _rageCollateralToken, _rageBaseToken);
@@ -49,7 +49,7 @@ contract EightyTwentyRangeStrategyVaultTest is EightyTwentyRangeStrategyVault {
             _minNotionalPositionToCloseThreshold
         );
         priceX128 = _priceX128;
-        settlementTokenTreasury = _settlementTokenTreasury;
+        tokenTreasury = _tokenTreasury;
     }
 
     function setKeeper(address _keeper) external {
@@ -69,14 +69,14 @@ contract EightyTwentyRangeStrategyVaultTest is EightyTwentyRangeStrategyVault {
     //TODO: handle update of yield tokens based on their value along with update in settlement token
     // To convert yield token into USDC to cover loss on rage trade
     function _withdrawBase(uint256 amount) internal virtual override {
-        rageBaseToken.transferFrom(settlementTokenTreasury, address(this), amount);
-        asset.transfer(settlementTokenTreasury, amount.mulDiv(FixedPoint128.Q128, priceX128));
+        rageBaseToken.transferFrom(tokenTreasury, address(this), amount);
+        asset.transfer(tokenTreasury, amount.mulDiv(FixedPoint128.Q128, priceX128));
     }
 
     // To deposit the USDC profit made from rage trade into yield protocol
     function _depositBase(uint256 amount) internal virtual override {
-        asset.transferFrom(settlementTokenTreasury, address(this), amount.mulDiv(FixedPoint128.Q128, priceX128));
-        rageBaseToken.transfer(settlementTokenTreasury, amount);
+        asset.transferFrom(tokenTreasury, address(this), amount.mulDiv(FixedPoint128.Q128, priceX128));
+        rageBaseToken.transfer(tokenTreasury, amount);
     }
 
     function _stakedAssetBalance() internal view virtual override returns (uint256) {}
