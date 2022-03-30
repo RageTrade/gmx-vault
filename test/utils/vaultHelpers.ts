@@ -15,11 +15,25 @@ export async function checkTotalSupply(
   expect(await vault.totalSupply()).to.eq(expectedTotalSupply);
 }
 
+export async function checkTotalSupplyApproximate(
+  vault: { totalSupply: () => Promise<BigNumber> },
+  expectedTotalSupply: BigNumberish,
+) {
+  expect((await vault.totalSupply()).sub(expectedTotalSupply).abs()).to.lte(10n ** 12n);
+}
+
 export async function checkTotalAssets(
   vault: { totalAssets: () => Promise<BigNumber> },
   expectedTotalAssets: BigNumberish,
 ) {
   expect(await vault.totalAssets()).to.eq(expectedTotalAssets);
+}
+
+export async function checkTotalAssetsApproximate(
+  vault: { totalAssets: () => Promise<BigNumber> },
+  expectedTotalAssets: BigNumberish,
+) {
+  expect((await vault.totalAssets()).sub(expectedTotalAssets).abs()).to.lte(10n ** 12n);
 }
 
 export async function checkVaultRangeParams(
@@ -29,6 +43,17 @@ export async function checkVaultRangeParams(
   baseLiquidity: BigNumberish,
 ) {
   expect(await vault.baseLiquidity()).to.eq(baseLiquidity);
+  expect(await vault.baseTickLower()).to.eq(baseTickLower);
+  expect(await vault.baseTickUpper()).to.eq(baseTickUpper);
+}
+
+export async function checkVaultRangeParamsApproximate(
+  vault: EightyTwentyRangeStrategyVaultTest,
+  baseTickLower: number,
+  baseTickUpper: number,
+  baseLiquidity: BigNumberish,
+) {
+  expect(await (await vault.baseLiquidity()).sub(baseLiquidity)).to.lte(10n ** 3n);
   expect(await vault.baseTickLower()).to.eq(baseTickLower);
   expect(await vault.baseTickUpper()).to.eq(baseTickUpper);
 }
