@@ -52,6 +52,10 @@ contract EightyTwentyRangeStrategyVaultTest is EightyTwentyRangeStrategyVault {
         settlementTokenTreasury = _settlementTokenTreasury;
     }
 
+    function setKeeper(address _keeper) external {
+        keeper = _keeper;
+    }
+
     function _harvestFees() internal virtual override {}
 
     function getPriceX128() public view virtual override returns (uint256) {

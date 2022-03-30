@@ -45,6 +45,7 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
     settlementTokenTreasury.address,
     minNotionalPositionToCloseThreshold,
   );
+  eightyTwentyRangeStrategyVaultTest.setKeeper(admin.address);
   await eightyTwentyRangeStrategyVaultTest.grantAllowances();
   collateralToken.grantRole(await collateralToken.MINTER_ROLE(), eightyTwentyRangeStrategyVaultTest.address);
   const collateralTokenOracle = await (await hre.ethers.getContractFactory('OracleMock')).deploy();
@@ -85,15 +86,6 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
 
   await settlementToken.approve(clearingHouse.address, parseTokenAmount(10n ** 5n, 6));
   await clearingHouse.updateMargin(adminAccountNo, truncate(settlementToken.address), parseTokenAmount(10n ** 5n, 6));
-  await clearingHouse.updateRangeOrder(adminAccountNo, ethPoolId, {
-    liquidityDelta: 10n ** 9n,
-    tickLower: -220000,
-    tickUpper: -170000,
-    closeTokenPosition: false,
-    sqrtPriceCurrent: 0,
-    slippageToleranceBps: 0,
-    limitOrderType: 0,
-  });
 
   await eightyTwentyRangeStrategyVaultTest.updateDepositCap(parseTokenAmount(10n ** 10n, 18));
 
@@ -112,5 +104,7 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
     user1,
     trader0,
     trader0AccountNo,
+    admin,
+    adminAccountNo,
   };
 });
