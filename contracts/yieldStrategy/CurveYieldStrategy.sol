@@ -31,9 +31,9 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
     // TODO: replace, after removing constructor from base
     /* solhint-disable const-name-snakecase */
-    ERC20 public constant weth = ERC20(address(0));
-    ERC20 public constant usdc = ERC20(address(0));
-    ERC20 public lpToken;
+    IERC20 public constant weth = IERC20(address(0));
+    IERC20 public constant usdc = IERC20(address(0));
+    IERC20 public lpToken;
     /* solhint-enable const-name-snakecase */
 
     uint256 public constant MAX_BPS = 10_000;
@@ -85,6 +85,11 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         lpToken.approve(address(triCryptoPool), type(uint256).max);
     }
 
+    function withdrawFees() external onlyOwner {
+        uint256 bal = crvToken.balanceOf(address(this));
+        crvToken.transfer(owner(), bal);
+    }
+
     function _afterDepositYield(uint256 amount) internal override {
         _stake(amount);
     }
@@ -117,6 +122,8 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
     function _harvestFees() internal override {
         uint256 claimable = gauge.claimable_reward(address(this));
+        uint256 afterDeductions = claimable - (claimable * FEE / MAX_BPS);
+
         if (claimable > 0) {
             gauge.claim_rewards(address(this));
 
@@ -124,7 +131,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
             ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
                 path: path,
-                amountIn: claimable,
+                amountIn: afterDeductions,
                 amountOutMinimum: 0,
                 recipient: address(this),
                 deadline: _blockTimestamp()
