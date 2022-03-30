@@ -22,6 +22,9 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     using FullMath for uint256;
 
     IERC20 public usdt;
+    IERC20 public weth;
+    IERC20 public usdc;
+    IERC20 public lpToken;
     IERC20 public crvToken;
 
     ICurveGauge public gauge;
@@ -29,11 +32,6 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     ILPPriceGetter public lpPriceHolder;
     ICurveStableSwap public triCryptoPool;
 
-    // TODO: replace, after removing constructor from base
-    /* solhint-disable const-name-snakecase */
-    IERC20 public constant weth = IERC20(address(0));
-    IERC20 public constant usdc = IERC20(address(0));
-    IERC20 public lpToken;
     /* solhint-enable const-name-snakecase */
 
     uint256 public constant MAX_BPS = 10_000;
@@ -44,14 +42,18 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
     // solhint-disable-next-line func-name-mixedcase
     function __CurveYieldStratergy__init(
+        IERC20 _usdt,
         IERC20 _usdc,
+        IERC20 _weth,
         IERC20 _crvToken,
         ICurveGauge _gauge,
         ISwapRouter _uniV3Router,
         ILPPriceGetter _lpPriceHolder,
         ICurveStableSwap _tricryptoPool
     ) internal onlyInitializing {
-        usdt = _usdc;
+        usdt = _usdt;
+        usdc = _usdc;
+        weth = _weth;
         gauge = _gauge;
         crvToken = _crvToken;
         uniV3Router = _uniV3Router;
@@ -66,7 +68,9 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         address _rageClearingHouse,
         address _rageCollateralToken,
         address _rageBaseToken,
+        IERC20 _usdt,
         IERC20 _usdc,
+        IERC20 _weth,
         IERC20 _crvToken,
         ICurveGauge _gauge,
         ISwapRouter _uniV3Router,
@@ -74,7 +78,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         ICurveStableSwap _tricryptoPool
     ) external initializer {
         __BaseVault_init(_owner, _rageClearingHouse, _rageCollateralToken, _rageBaseToken);
-        __CurveYieldStratergy__init(_usdc, _crvToken, _gauge, _uniV3Router, _lpPriceHolder, _tricryptoPool);
+        __CurveYieldStratergy__init(_usdt, _usdc, _weth, _crvToken, _gauge, _uniV3Router, _lpPriceHolder, _tricryptoPool);
     }
 
     function grantAllowances() public override {
