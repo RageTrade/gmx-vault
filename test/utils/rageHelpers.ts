@@ -85,6 +85,11 @@ export async function getNetTokenPosition(
 ): Promise<BigNumber> {
   return clearingHouse.getAccountNetTokenPosition(accountNo, poolId);
 }
+
+export async function getAccountNetProfit(clearingHouse: ClearingHouse, accountNo: BigNumber) {
+  return clearingHouse.getAccountNetProfit(accountNo);
+}
+
 export async function checkLiquidityPositionNum(
   clearingHouse: ClearingHouse,
   accountNo: BigNumber,
@@ -115,6 +120,26 @@ export async function checkLiquidityPosition(
   expect(liquidityPosition.liquidity).to.eq(baseLiquidity);
 }
 
+export async function checkLiquidityPositionApproximate(
+  clearingHouse: ClearingHouse,
+  accountNo: BigNumber,
+  poolSerialNo: number,
+  liquidityPositionSerialNo: number,
+  baseTickLower: number,
+  baseTickUpper: number,
+  baseLiquidity: BigNumberish,
+) {
+  const liquidityPosition = await getLiquidityPosition(
+    clearingHouse,
+    accountNo,
+    poolSerialNo,
+    liquidityPositionSerialNo,
+  );
+  expect(liquidityPosition.tickLower).to.eq(baseTickLower);
+  expect(liquidityPosition.tickUpper).to.eq(baseTickUpper);
+  expect(liquidityPosition.liquidity.sub(baseLiquidity)).to.lte(10n ** 3n);
+}
+
 export async function checkNetTokenPosition(
   clearingHouse: ClearingHouse,
   accountNo: BigNumber,
@@ -123,6 +148,15 @@ export async function checkNetTokenPosition(
 ) {
   const netTokenPosition = await getNetTokenPosition(clearingHouse, accountNo, poolId);
   expect(netTokenPosition).to.eq(expectedNetTokenPosition);
+}
+
+export async function checkAccountNetProfit(
+  clearingHouse: ClearingHouse,
+  accountNo: BigNumber,
+  expectedNetProfit: BigNumberish,
+) {
+  const netProfit = await getAccountNetProfit(clearingHouse, accountNo);
+  expect(netProfit).to.eq(expectedNetProfit);
 }
 
 export async function checkRealTokenBalances(
