@@ -17,6 +17,8 @@ import { ISwapRouter } from '@uniswap/v3-periphery/contracts/interfaces/ISwapRou
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
 
+import { console } from 'hardhat/console.sol';
+
 // TODO: remove abstract after fixing constructor
 contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     using FullMath for uint256;
@@ -38,7 +40,9 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     uint256 public constant FEE = 1000;
 
     // solhint-disable-next-line no-empty-blocks
-    constructor(ERC20 _lpToken) BaseVault(_lpToken, '', '', 0) {}
+    constructor(ERC20 _lpToken) BaseVault(_lpToken, '', '', 0) {
+        lpToken = IERC20(address(_lpToken));
+    }
 
     // solhint-disable-next-line func-name-mixedcase
     function __CurveYieldStratergy__init(
@@ -59,8 +63,6 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         uniV3Router = _uniV3Router;
         triCryptoPool = _tricryptoPool;
         lpPriceHolder = _lpPriceHolder;
-
-        grantAllowances();
     }
 
     function initialize(
@@ -78,12 +80,20 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         ICurveStableSwap _tricryptoPool
     ) external initializer {
         __BaseVault_init(_owner, _rageClearingHouse, _rageCollateralToken, _rageBaseToken);
-        __CurveYieldStratergy__init(_usdt, _usdc, _weth, _crvToken, _gauge, _uniV3Router, _lpPriceHolder, _tricryptoPool);
+        __CurveYieldStratergy__init(
+            _usdt,
+            _usdc,
+            _weth,
+            _crvToken,
+            _gauge,
+            _uniV3Router,
+            _lpPriceHolder,
+            _tricryptoPool
+        );
     }
 
     function grantAllowances() public override {
         _grantBaseAllowances();
-        lpToken.approve(address(gauge), type(uint256).max);
         usdt.approve(address(triCryptoPool), type(uint256).max);
         crvToken.approve(address(uniV3Router), type(uint256).max);
         lpToken.approve(address(triCryptoPool), type(uint256).max);
@@ -95,7 +105,10 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     function _afterDepositYield(uint256 amount) internal override {
+        // lpToken.transferFrom(msg.sender, address(this), amount);
+        console.log('before stake');
         _stake(amount);
+        console.log('after stake');
     }
 
     function _beforeWithdrawYield(uint256 amount) internal override {
@@ -125,10 +138,12 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     function _harvestFees() internal override {
-        uint256 claimable = gauge.claimable_reward(address(this));
-        uint256 afterDeductions = claimable - (claimable * FEE / MAX_BPS);
+        console.log('harvest fees 1');
+        uint256 claimable = gauge.claimable_reward(address(this), address(lpToken));
+        console.log('harvest fees 2');
 
         if (claimable > 0) {
+            uint256 afterDeductions = claimable - ((claimable * FEE) / MAX_BPS);
             gauge.claim_rewards(address(this));
 
             bytes memory path = abi.encodePacked(weth, uint256(500), usdt, uint256(3000), address(crvToken));
@@ -147,6 +162,9 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     function _stake(uint256 amount) internal override {
+        console.log('amount', amount);
+        lpToken.approve(address(gauge), amount);
+        console.log('gauge address', address(gauge));
         gauge.deposit(amount);
     }
 
