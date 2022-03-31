@@ -728,9 +728,10 @@
     fs-extra "^9.0.1"
     js-yaml "^3.14.0"
 
-"@ragetrade/core@https://github.com/rage-trade/perpswap-contracts.git#cc96a5e37e19fcaa4426aba7a5039a315e2f4c03":
+"@ragetrade/core@^1.0.0":
   version "1.0.0"
-  resolved "https://github.com/rage-trade/perpswap-contracts.git#cc96a5e37e19fcaa4426aba7a5039a315e2f4c03"
+  resolved "https://registry.yarnpkg.com/@ragetrade/core/-/core-1.0.0.tgz#2ea891b3f6c44c60a0813a6d6fa7a5e9e1ffc9ba"
+  integrity sha512-V4QbySn+5GpinWc+n9YSgnbQu4A15/999/6LNsh3qDKByEkrU1sW4vPIsd2M0anbKIBFBg2Vsll3wpceDXvSWw==
   dependencies:
     "@chainlink/contracts" "^0.4.0"
     "@openzeppelin/contracts" "^4.5.0"
