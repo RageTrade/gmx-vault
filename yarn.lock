@@ -728,16 +728,24 @@
     fs-extra "^9.0.1"
     js-yaml "^3.14.0"
 
-"@ragetrade/core@https://github.com/rage-trade/perpswap-contracts.git#90c1d2fd2fc27fd0b258e225d665c9e1ea3f73ff":
+"@ragetrade/core@https://github.com/rage-trade/perpswap-contracts.git#cc96a5e37e19fcaa4426aba7a5039a315e2f4c03":
   version "1.0.0"
-  resolved "https://github.com/rage-trade/perpswap-contracts.git#90c1d2fd2fc27fd0b258e225d665c9e1ea3f73ff"
+  resolved "https://github.com/rage-trade/perpswap-contracts.git#cc96a5e37e19fcaa4426aba7a5039a315e2f4c03"
   dependencies:
     "@chainlink/contracts" "^0.4.0"
     "@openzeppelin/contracts" "^4.5.0"
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
     "@uniswap/v3-core-0.8-support" "https://github.com/uniswap/v3-core.git#36bc9101b91e2b8b5690f59e0911a85deb2d2480"
     "@uniswap/v3-periphery" "^1.4.0"
-    ethers "^5.5.4"
+
+"@ragetrade/sdk@^0.5.13":
+  version "0.5.13"
+  resolved "https://registry.yarnpkg.com/@ragetrade/sdk/-/sdk-0.5.13.tgz#30524878b80f2ea4c1097e8660774743ec45f388"
+  integrity sha512-ni5LCi8k4HCxRiUnVuwPxwkufmGCHI11f4VXGAMD8VUzgoMGFws+QJyiRISo7MeSDujDyU5JPAiuUJ3ssPgThA==
+  dependencies:
+    "@uniswap/v3-sdk" "^3.8.2"
+    ethers "^5.6.2"
+    ethers-repl "^1.0.3"
 
 "@rari-capital/solmate@https://github.com/Rari-Capital/solmate.git#32edfe8cf8e163515a30b1214d0480029f6094cd":
   version "6.2.0"
@@ -1173,7 +1181,7 @@
     base64-sol "1.0.1"
     hardhat-watcher "^2.1.1"
 
-"@uniswap/v3-sdk@^3.6.2-optimism-regenesis":
+"@uniswap/v3-sdk@^3.6.2-optimism-regenesis", "@uniswap/v3-sdk@^3.8.2":
   version "3.8.2"
   resolved "https://registry.yarnpkg.com/@uniswap/v3-sdk/-/v3-sdk-3.8.2.tgz#6e10eebe0da851a4f6a5036a1e70a896a5c239d4"
   integrity sha512-JVrs1ZuWKP8JmYi5hxFliOnCFAEREwMpE7qB6rKPCo155/pIRyQ90lJfQZCJO7pP/webx5t5JFxCOytmDIp29Q==
@@ -4084,7 +4092,14 @@ ethereumjs-wallet@0.6.5:
     utf8 "^3.0.0"
     uuid "^3.3.2"
 
-ethers@5.6.2, ethers@^5.6.1:
+ethers-repl@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/ethers-repl/-/ethers-repl-1.0.3.tgz#fca4474f330469d11da66b7d6c0a4efffff25814"
+  integrity sha512-Pdq6hzTEqoEAf56gEtaCwrYTP2Xz4SgP0A1G3zPVO/GVh9/BedxGynClH4kUOPljztS3WsewppdlXBpf/0vBlQ==
+  dependencies:
+    fs-extra "^10.0.0"
+
+ethers@5.6.2, ethers@^5.6.1, ethers@^5.6.2:
   version "5.6.2"
   resolved "https://registry.yarnpkg.com/ethers/-/ethers-5.6.2.tgz#e75bac7f038c5e0fdde667dba62fc223924143a2"
   integrity sha512-EzGCbns24/Yluu7+ToWnMca3SXJ1Jk1BvWB7CCmVNxyOeM4LLvw2OLuIHhlkhQk1dtOcj9UMsdkxUh8RiG1dxQ==
@@ -4135,7 +4150,7 @@ ethers@^4.0.32, ethers@^4.0.40:
     uuid "2.0.1"
     xmlhttprequest "1.8.0"
 
-ethers@^5.0.1, ethers@^5.0.2, ethers@^5.5.2, ethers@^5.5.4, ethers@^5.6.0:
+ethers@^5.0.1, ethers@^5.0.2, ethers@^5.5.2, ethers@^5.6.0:
   version "5.6.1"
   resolved "https://registry.yarnpkg.com/ethers/-/ethers-5.6.1.tgz#a56cd67f1595b745dc3dde0ccf2b5de53a41a6d0"
   integrity sha512-qtl/2W+dwmUa5Z3JqwsbV3JEBZZHNARe5K/A2ePcNAuhJYnEKIgGOT/O9ouPwBijSqVoQnmQMzi5D48LFNOY2A==
