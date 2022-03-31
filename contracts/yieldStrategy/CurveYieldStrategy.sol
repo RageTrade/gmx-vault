@@ -187,7 +187,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     function _withdrawBase(uint256 amount) internal override {
         uint256 pricePerLP = lpPriceHolder.lp_price();
         console.log('LP PRICE: ', pricePerLP);
-        uint256 lpToWithdraw = ( (amount*(10**12)) * (10**18) ) / pricePerLP;
+        uint256 lpToWithdraw = ((amount * (10**12)) * (10**18)) / pricePerLP;
         console.log('LP TO WITHDRAW:', lpToWithdraw);
         console.log('IN GAUGE', gauge.balanceOf(address(this)));
 
@@ -196,7 +196,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         console.log('BAL: ', lpToken.balanceOf(address(this)));
 
         console.log('USDT', usdt.balanceOf(address(this)));
-        usdt.approve(address(uniV3Router), amount*(10**12));
+        usdt.approve(address(uniV3Router), amount * (10**12));
 
         bytes memory path = abi.encodePacked(usdt, uint24(500), usdc);
 

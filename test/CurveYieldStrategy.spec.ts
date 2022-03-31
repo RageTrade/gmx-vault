@@ -65,7 +65,7 @@ describe('CurveYieldStrategy', () => {
       expect(await curveYieldStrategy.balanceOf(user.address)).to.be.eq(amount);
     });
 
-    it('should add liquidity', async () => { });
+    it('should add liquidity', async () => {});
   });
 
   describe('#internal', () => {
@@ -87,8 +87,7 @@ describe('CurveYieldStrategy', () => {
 
       await curveYieldStrategy.depositUsdc(amount);
 
-      await curveYieldStrategy.withdrawUsdc(BigNumber.from(990000000))
-
+      await curveYieldStrategy.withdrawUsdc(BigNumber.from(990000000));
     });
 
     it('should withdraw usdc', async () => {
@@ -147,11 +146,11 @@ describe('CurveYieldStrategy', () => {
 
       await curveYieldStrategy.deposit(amount, user.address);
 
-      const before = await lpToken.balanceOf(curveYieldStrategy.address)
+      const before = await lpToken.balanceOf(curveYieldStrategy.address);
 
-      await hre.network.provider.send("evm_mine", []);
-      await hre.network.provider.send("evm_increaseTime", [7_890_000]);
-      await hre.network.provider.send("evm_mine", []);
+      await hre.network.provider.send('evm_mine', []);
+      await hre.network.provider.send('evm_increaseTime', [7_890_000]);
+      await hre.network.provider.send('evm_mine', []);
 
       await curveYieldStrategy.harvestFees();
     });
@@ -161,7 +160,7 @@ describe('CurveYieldStrategy', () => {
       const { crv, usdt, lpToken, curveYieldStrategyTest, triCrypto } = await curveYieldStrategyFixture();
       const curveYieldStrategy = curveYieldStrategyTest.connect(admin);
 
-      await curveYieldStrategy.withdrawFees()
+      await curveYieldStrategy.withdrawFees();
     });
   });
 
@@ -189,8 +188,8 @@ describe('CurveYieldStrategy', () => {
 
       await curveYieldStrategy.deposit(amount, user.address);
 
-      const output = await curveYieldStrategy.getVaultMarketValue()
-      console.log(output)
+      const output = await curveYieldStrategy.getVaultMarketValue();
+      console.log(output);
     });
   });
 
@@ -201,7 +200,6 @@ describe('CurveYieldStrategy', () => {
       const curveYieldStrategy = curveYieldStrategyTest.connect(admin);
 
       await curveYieldStrategy.changeFee(2000);
-
     });
   });
 });
