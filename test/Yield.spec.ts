@@ -1,12 +1,11 @@
+import { assert, expect } from 'chai';
+import hre, { network } from 'hardhat';
+
 import { FakeContract, smock } from '@defi-wonderland/smock';
 import { BigNumber } from '@ethersproject/bignumber';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { activateMainnetFork, deactivateMainnetFork } from '@ragetrade/core/test/utils/mainnet-fork';
-import { tickToSqrtPriceX96 } from '@ragetrade/core/test/utils/price-tick';
-import { parseTokenAmount } from '@ragetrade/core/test/utils/stealFunds';
-import { truncate } from '@ragetrade/core/test/utils/vToken';
-import { assert, expect } from 'chai';
-import hre, { network } from 'hardhat';
+import { parseTokenAmount, tickToSqrtPriceX96, truncate } from '@ragetrade/sdk';
+
 import {
   BaseSushiVault,
   ClearingHouse,
@@ -26,6 +25,7 @@ import {
 } from '../typechain-types';
 import { SushiParamsStruct } from '../typechain-types/artifacts/contracts/test/VaultTest';
 import arbConstants from './utils/arb-constants';
+import { activateMainnetFork, deactivateMainnetFork } from './utils/mainnet-fork';
 
 const createUsers = async () => {
   let signers = await hre.ethers.getSigners();
@@ -302,7 +302,7 @@ describe.skip('# Yield', () => {
         minimumOrderNotional,
         minRequiredMargin,
       );
-      const protocol = await clearingHouse.protocolInfo();
+      const protocol = await clearingHouse.getProtocolInfo();
       const curPaused = await clearingHouse.paused();
 
       expect(protocol.minRequiredMargin).eq(minRequiredMargin);

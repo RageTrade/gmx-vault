@@ -5017,6 +5017,11 @@ hardhat-contract-sizer@^2.1.1:
     chalk "^4.0.0"
     cli-table3 "^0.6.0"
 
+hardhat-dependency-compiler@^1.1.2:
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/hardhat-dependency-compiler/-/hardhat-dependency-compiler-1.1.2.tgz#02867b7c6dd3de4924d9d3d6593feab8408f1eeb"
+  integrity sha512-LVnsPSZnGvzWVvlpewlkPKlPtFP/S9V41RC1fd/ygZc4jkG8ubNlfE82nwiGw5oPueHSmFi6TACgmyrEOokK8w==
+
 hardhat-deploy@^0.11.4:
   version "0.11.4"
   resolved "https://registry.yarnpkg.com/hardhat-deploy/-/hardhat-deploy-0.11.4.tgz#39b06d3b0ad25195071cc1f2f71649b1f9f030d0"
