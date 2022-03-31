@@ -1,13 +1,14 @@
 import { deployments } from 'hardhat';
 import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
 
-import { eightyTwentyRangeStrategyFixture } from './eighty-twenty-range-strategy-vault'
+import { eightyTwentyRangeStrategyFixture } from './eighty-twenty-range-strategy-vault';
 import addresses from './addresses';
 import { BigNumber } from 'ethers';
 import { parseTokenAmount } from '@ragetrade/core/test/utils/stealFunds';
 
 export const curveYieldStrategyFixture = deployments.createFixture(async hre => {
-  const { clearingHouse, collateralToken, settlementToken, ethPoolId, settlementTokenTreasury } = await eightyTwentyRangeStrategyFixture();
+  const { clearingHouse, collateralToken, settlementToken, ethPoolId, settlementTokenTreasury } =
+    await eightyTwentyRangeStrategyFixture();
 
   const lpToken = (await hre.ethers.getContractAt(
     '@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20',
@@ -43,8 +44,7 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
     await hre.ethers.getContractFactory('CurveYieldStrategyTest')
   ).deploy(lpToken.address);
 
-  await collateralToken.grantRole(
-    await collateralToken.MINTER_ROLE(), curveYieldStrategyTest.address);
+  await collateralToken.grantRole(await collateralToken.MINTER_ROLE(), curveYieldStrategyTest.address);
 
   await settlementToken
     .connect(settlementTokenTreasury)
@@ -54,8 +54,7 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
     .connect(settlementTokenTreasury)
     .approve(clearingHouse.address, parseTokenAmount(10n ** 10n, 18));
 
-  await collateralToken
-    .approve(clearingHouse.address, parseTokenAmount(10n ** 10n, 18));
+  await collateralToken.approve(clearingHouse.address, parseTokenAmount(10n ** 10n, 18));
 
   await settlementToken.approve(clearingHouse.address, parseTokenAmount(10n ** 5n, 6));
 
@@ -85,5 +84,4 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
     triCrypto,
     curveYieldStrategyTest,
   };
-
 });
