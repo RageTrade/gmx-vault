@@ -1,8 +1,9 @@
-import { priceToPriceX128 } from '@ragetrade/core/test/utils/price-tick';
-import { parseTokenAmount } from '@ragetrade/core/test/utils/stealFunds';
 import { expect } from 'chai';
 import { BigNumber } from 'ethers';
 import hre from 'hardhat';
+
+import { parseTokenAmount, priceToPriceX128 } from '@ragetrade/sdk';
+
 import { eightyTwentyRangeStrategyFixture } from './fixtures/eighty-twenty-range-strategy-vault';
 import {
   checkAccountNetProfit,
@@ -14,7 +15,7 @@ import {
   checkRealTokenBalances,
   logRageParams,
   swapToken,
-} from './utils/rageHelpers';
+} from './utils/rage-helpers';
 import {
   checkTotalAssets,
   checkTotalAssetsApproximate,
@@ -23,8 +24,7 @@ import {
   checkVaultRangeParams,
   checkVaultRangeParamsApproximate,
   increaseBlockTimestamp,
-  logVaultParams,
-} from './utils/vaultHelpers';
+} from './utils/vault-helpers';
 
 describe('EightyTwentyRangeStrategyVault', () => {
   before(async () => {

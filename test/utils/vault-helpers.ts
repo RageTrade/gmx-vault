@@ -1,7 +1,7 @@
 import { expect } from 'chai';
-import { BaseContract, BigNumber, BigNumberish } from 'ethers';
-import { network } from 'hardhat';
-import hre from 'hardhat';
+import { BigNumber, BigNumberish } from 'ethers';
+import hre, { network } from 'hardhat';
+
 import { EightyTwentyRangeStrategyVaultTest } from '../../typechain-types';
 
 export async function setYieldTokenPrice(vault: EightyTwentyRangeStrategyVaultTest, priceX128: BigNumberish) {

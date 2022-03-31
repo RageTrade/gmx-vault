@@ -1,8 +1,9 @@
-import { assert, expect } from 'chai';
-import addresses from './fixtures/addresses';
-import hre, { deployments, ethers } from 'hardhat';
-import { curveYieldStrategyFixture } from './fixtures/curve-yield-strategy';
+import { expect } from 'chai';
 import { BigNumber } from 'ethers';
+import hre, { ethers } from 'hardhat';
+
+import addresses from './fixtures/addresses';
+import { curveYieldStrategyFixture } from './fixtures/curve-yield-strategy';
 
 describe('CurveYieldStrategy', () => {
   beforeEach(async () => {
