@@ -1,43 +1,83 @@
 import { deployments } from 'hardhat';
 import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
 
-import { rageTradeFixture } from './ragetrade-core';
+import { eightyTwentyRangeStrategyFixture } from './eighty-twenty-range-strategy-vault'
+import addresses from './addresses';
+import { BigNumber } from 'ethers';
+import { parseTokenAmount } from '@ragetrade/core/test/utils/stealFunds';
 
 export const curveYieldStrategyFixture = deployments.createFixture(async hre => {
-  const { clearingHouse, settlementToken } = await rageTradeFixture();
+  const { clearingHouse, collateralToken, settlementToken, ethPoolId, settlementTokenTreasury } = await eightyTwentyRangeStrategyFixture();
 
-  const lpToken = (await (
-    await hre.ethers.getContractFactory('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20')
-  ).deploy('LPToken', 'LPT')) as ERC20;
+  const lpToken = (await hre.ethers.getContractAt(
+    '@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20',
+    addresses.TRICRYPTO_LP_TOKEN,
+  )) as ERC20;
+
+  const usdc = (await hre.ethers.getContractAt(
+    '@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20',
+    addresses.USDC,
+  )) as ERC20;
+
+  const usdt = (await hre.ethers.getContractAt(
+    '@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20',
+    addresses.USDT,
+  )) as ERC20;
+
+  const weth = (await hre.ethers.getContractAt(
+    '@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20',
+    addresses.WETH,
+  )) as ERC20;
+
+  const crv = (await hre.ethers.getContractAt(
+    '@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20',
+    addresses.CRV,
+  )) as ERC20;
+
   const curveYieldStrategyTest = await (
     await hre.ethers.getContractFactory('CurveYieldStrategyTest')
   ).deploy(lpToken.address);
 
-  const dummyCollateral = (await (
-    await hre.ethers.getContractFactory('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20')
-  ).deploy('Dummy Collateral', 'DCT')) as ERC20;
+  await collateralToken.grantRole(
+    await collateralToken.MINTER_ROLE(), curveYieldStrategyTest.address);
 
-  const usdc = (await (
-    await hre.ethers.getContractFactory('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20')
-  ).deploy('USDC', 'USDC')) as ERC20;
+  await settlementToken
+    .connect(settlementTokenTreasury)
+    .approve(curveYieldStrategyTest.address, parseTokenAmount(10n ** 10n, 18));
 
-  const crvToken = (await await hre.ethers.getContractAt(
-    '@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20',
-    '0xD533a949740bb3306d119CC777fa900bA034cd52',
-  )) as ERC20;
+  await collateralToken
+    .connect(settlementTokenTreasury)
+    .approve(clearingHouse.address, parseTokenAmount(10n ** 10n, 18));
 
-  const [signer] = await hre.ethers.getSigners();
-  // await curveYieldStrategyTest.initialize(
-  //   signer.address,
-  //   clearingHouse.address,
-  //   dummyCollateral.address,
-  //   settlementToken.address,
-  //   usdc.address,
-  //   crvToken.address,
-  //   'guage',
-  //   'swaprouter',
-  //   'lp price holder',
-  //   'curve stable swap ',
-  // );
-  return { curveYieldStrategyTest, usdc, crvToken };
+  await collateralToken
+    .approve(clearingHouse.address, parseTokenAmount(10n ** 10n, 18));
+
+  await settlementToken.approve(clearingHouse.address, parseTokenAmount(10n ** 5n, 6));
+
+  const [signer, user1, user2] = await hre.ethers.getSigners();
+
+  await curveYieldStrategyTest.initialize(
+    signer.address,
+    clearingHouse.address,
+    collateralToken.address,
+    settlementToken.address,
+    addresses.USDT,
+    addresses.USDC,
+    addresses.WETH,
+    addresses.CRV,
+    addresses.GAUGE,
+    addresses.ROUTER,
+    addresses.QUOTER,
+    addresses.TRICRYPTO_POOL,
+  );
+
+  return {
+    crv,
+    usdt,
+    usdc,
+    weth,
+    lpToken,
+    curveYieldStrategyTest,
+  };
+
 });
