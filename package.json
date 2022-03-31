@@ -1,7 +1,7 @@
 {
-  "name": "@anon-farm/perpswap-vaults",
-  "version": "0.0.1",
-  "repository": "https://github.com/Anon-Farm/perpswap-vaults.git",
+  "name": "@ragetrade/vaults",
+  "version": "1.0.0",
+  "repository": "https://github.com/ragetrade/vaults.git",
   "license": "MIT",
   "scripts": {
     "clean": "hardhat clean",
@@ -9,19 +9,27 @@
     "coverage": "hardhat coverage",
     "deploy": "TS_NODE_SKIP_IGNORE=true hardhat deploy",
     "deploy:goerli": "hardhat deploy --network goerli && yarn etherscan --network goerli",
-    "deploy:rinkeby": "hardhat deploy --network rinkeby && yarn etherscan --network rinkeby",
     "deploy:localhost": "hardhat --network localhost deploy",
+    "deploy:rinkeby": "hardhat deploy --network rinkeby && yarn etherscan --network rinkeby",
     "etherscan": "hardhat etherscan-verify",
     "format": "prettier --check contracts test",
     "format:fix": "prettier --write contracts test",
     "size": "hardhat size-contracts",
     "test": "TS_NODE_SKIP_IGNORE=true hardhat test",
-    "typechain": "hardhat typechain",
-    "postinstall": "./fix-ragetradecore-typechain.sh"
+    "typechain": "hardhat typechain"
   },
-  "peerDependencies": {
-    "ethers": "5.x",
-    "typescript": "4.x"
+  "resolutions": {
+    "solidity-coverage/@solidity-parser/parser": "^0.14.0"
+  },
+  "dependencies": {
+    "@134dd3v/arbos-precompiles": "^1.0.4",
+    "@openzeppelin/contracts": "^4.0.0",
+    "@openzeppelin/contracts-upgradeable": "^4.1.0",
+    "@ragetrade/core": "https://github.com/rage-trade/perpswap-contracts.git#cc96a5e37e19fcaa4426aba7a5039a315e2f4c03",
+    "@rari-capital/solmate": "https://github.com/Rari-Capital/solmate.git#32edfe8cf8e163515a30b1214d0480029f6094cd",
+    "@uniswap/v2-core": "^1.0.1",
+    "@uniswap/v2-periphery": "^1.1.0-beta.0",
+    "@uniswap/v3-periphery": "^1.4.0"
   },
   "devDependencies": {
     "@134dd3v/prettier-plugin-solidity": "^1.0.0-beta.18",
@@ -30,7 +38,8 @@
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "^3.0.3",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
-    "@ragetrade/core": "https://github.com/rage-trade/perpswap-contracts.git#90c1d2fd2fc27fd0b258e225d665c9e1ea3f73ff",
+    "@protodev-rage/hardhat-tenderly": "^1.0.13",
+    "@ragetrade/sdk": "^0.5.13",
     "@typechain/ethers-v5": "^10.0.0",
     "@typechain/hardhat": "^6.0.0",
     "@types/chai": "^4.2.15",
@@ -41,6 +50,7 @@
     "copyfiles": "^2.4.1",
     "dotenv": "^16.0.0",
     "ethereum-waffle": "^3.3.0",
+    "ethers": "5.6.2",
     "hardhat": "^2.2.1",
     "hardhat-contract-sizer": "^2.1.1",
     "hardhat-deploy": "^0.11.4",
@@ -52,19 +62,5 @@
     "ts-node": "^10.7.0",
     "typechain": "^8.0.0",
     "typescript": "^4.6.3"
-  },
-  "dependencies": {
-    "@134dd3v/arbos-precompiles": "^1.0.4",
-    "@openzeppelin/contracts": "^4.0.0",
-    "@openzeppelin/contracts-upgradeable": "^4.1.0",
-    "@protodev-rage/hardhat-tenderly": "^1.0.13",
-    "@rari-capital/solmate": "https://github.com/Rari-Capital/solmate.git#32edfe8cf8e163515a30b1214d0480029f6094cd",
-    "@uniswap/v2-core": "^1.0.1",
-    "@uniswap/v2-periphery": "^1.1.0-beta.0",
-    "@uniswap/v3-periphery": "^1.4.0",
-    "ethers": "5.6.2"
-  },
-  "resolutions": {
-    "solidity-coverage/@solidity-parser/parser": "^0.14.0"
   }
 }
