@@ -41,7 +41,7 @@ export default {
     hardhat: {
       forking: {
         url: `https://arb-mainnet.alchemyapi.io/v2/${ALCHEMY_KEY}`,
-        blockNumber: 8607402,
+        blockNumber: 8937642,
       },
       blockGasLimit: 0x1fffffffffff,
       gasPrice: 0,
