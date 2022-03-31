@@ -1,12 +1,17 @@
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { truncate } from '@ragetrade/core/test/utils/vToken';
-import { amountsForLiquidity } from '@ragetrade/core/test/utils/liquidity';
-
-import { ClearingHouse, IUniswapV3Pool, SettlementTokenMock, VPoolWrapper } from '@ragetrade/core/typechain-types';
-import { IClearingHouseStructures } from '@ragetrade/core/typechain-types/artifacts/contracts/interfaces/IClearingHouse';
 import { expect } from 'chai';
 import { BigNumber, BigNumberish, ContractTransaction } from 'ethers';
-import { sqrtPriceX96ToPrice } from '@ragetrade/core/test/utils/price-tick';
+
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import {
+  amountsForLiquidity,
+  ClearingHouse,
+  IUniswapV3Pool,
+  SettlementTokenMock,
+  sqrtPriceX96ToPrice,
+  truncate,
+} from '@ragetrade/sdk';
+
+import { IClearingHouseStructures } from '../../typechain-types/artifacts/@ragetrade/core/contracts/interfaces/IClearingHouse';
 
 export async function updateSettlementTokenMargin(
   clearingHouse: ClearingHouse,

@@ -1,16 +1,20 @@
-import { FakeContract, smock } from '@defi-wonderland/smock';
-import { BigNumber, BigNumberish } from '@ethersproject/bignumber';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { getCreateAddressFor } from '@ragetrade/core/test/utils/create-addresses';
-import { priceToTick, sqrtPriceX96ToPrice, tickToSqrtPriceX96 } from '@ragetrade/core/test/utils/price-tick';
-// import { ConstantsStruct } from '../typechain-types/ClearingHouse';
-import { SETTLEMENT_TOKEN } from '@ragetrade/core/test/utils/realConstants';
-import { parseTokenAmount, stealFunds } from '@ragetrade/core/test/utils/stealFunds';
-import { truncate } from '@ragetrade/core/test/utils/vToken';
 import { expect } from 'chai';
 import { config } from 'dotenv';
 import { ethers } from 'ethers';
 import hre from 'hardhat';
+
+import { FakeContract, smock } from '@defi-wonderland/smock';
+import { BigNumber, BigNumberish } from '@ethersproject/bignumber';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import {
+  getCreateAddressFor,
+  parseTokenAmount,
+  priceToTick,
+  sqrtPriceX96ToPrice,
+  tickToSqrtPriceX96,
+  truncate,
+} from '@ragetrade/sdk';
+
 import {
   ClearingHouse,
   ERC20PresetMinterPauserUpgradeable as CollateralToken,
@@ -30,6 +34,8 @@ import {
   VToken,
 } from '../typechain-types';
 import { IClearingHouseStructures } from '../typechain-types/artifacts/@ragetrade/core/contracts/interfaces/IClearingHouse';
+import { SETTLEMENT_TOKEN } from './utils/real-constants';
+import { stealFunds } from './utils/steal-funds';
 
 const whaleForBase = '0x47ac0Fb4F2D84898e4D9E7b4DaB3C24507a6D503';
 const whaleForWETH = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
@@ -305,7 +311,7 @@ describe.skip('Basic', () => {
         minimumOrderNotional,
         minRequiredMargin,
       );
-      const protocol = await clearingHouse.protocolInfo();
+      const protocol = await clearingHouse.getProtocolInfo();
       const curPaused = await clearingHouse.paused();
 
       expect(protocol.minRequiredMargin).eq(minRequiredMargin);

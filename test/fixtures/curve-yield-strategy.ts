@@ -1,10 +1,10 @@
 import { deployments } from 'hardhat';
-import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
 
-import { eightyTwentyRangeStrategyFixture } from './eighty-twenty-range-strategy-vault';
+import { parseTokenAmount } from '@ragetrade/sdk';
+
+import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
 import addresses from './addresses';
-import { BigNumber } from 'ethers';
-import { parseTokenAmount } from '@ragetrade/core/test/utils/stealFunds';
+import { eightyTwentyRangeStrategyFixture } from './eighty-twenty-range-strategy-vault';
 
 export const curveYieldStrategyFixture = deployments.createFixture(async hre => {
   const { clearingHouse, collateralToken, settlementToken, ethPoolId, settlementTokenTreasury } =

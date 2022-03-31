@@ -1,11 +1,8 @@
-import { priceToPriceX128 } from '@ragetrade/core/test/utils/price-tick';
-import { parseTokenAmount } from '@ragetrade/core/test/utils/stealFunds';
-import { truncate } from '@ragetrade/core/test/utils/vToken';
-import { parseEther } from 'ethers/lib/utils';
 import { deployments } from 'hardhat';
-import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
-import { updateSettlementTokenMargin } from '../utils/rageHelpers';
 
+import { parseTokenAmount, priceToPriceX128, truncate } from '@ragetrade/sdk';
+
+import { updateSettlementTokenMargin } from '../utils/rage-helpers';
 import { rageTradeFixture } from './ragetrade-core';
 
 export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async hre => {

@@ -1,11 +1,12 @@
-import { priceToPriceX128 } from '@ragetrade/core/test/utils/price-tick';
-import {
-  IClearingHouseStructures,
-  VTokenDeployer,
-  RageTradeFactory as RageTradeFactoryNamespace,
-} from '@ragetrade/core/typechain-types/contracts/protocol/RageTradeFactory';
 import { BigNumber } from 'ethers';
 import { deployments } from 'hardhat';
+
+import {
+  IClearingHouseStructures,
+  RageTradeFactory as RageTradeFactoryNamespace,
+  VTokenDeployer,
+} from '../../typechain-types/artifacts/@ragetrade/core/contracts/protocol/RageTradeFactory';
+import { priceToPriceX128 } from '@ragetrade/sdk';
 
 export const rageTradeFixture = deployments.createFixture(async hre => {
   const rageTradeDeployments = await deployments.fixture('RageTradeFactory');

@@ -1,5 +1,3 @@
-import { config } from 'dotenv';
-import { task } from 'hardhat/config';
 import '@nomiclabs/hardhat-waffle';
 import 'hardhat-tracer';
 import '@typechain/hardhat';
@@ -9,7 +7,11 @@ import 'hardhat-deploy';
 import 'solidity-coverage';
 import '@nomiclabs/hardhat-etherscan';
 import '@protodev-rage/hardhat-tenderly';
+import 'hardhat-dependency-compiler';
+
+import { config } from 'dotenv';
 import { ethers } from 'ethers';
+import { task } from 'hardhat/config';
 
 config();
 const { ALCHEMY_KEY } = process.env;
@@ -86,7 +88,21 @@ export default {
             },
           },
         },
-      }
+      },
+    ],
+  },
+  dependencyCompiler: {
+    paths: [
+      '@ragetrade/core/contracts/protocol/clearinghouse/ClearingHouse.sol',
+      '@ragetrade/core/contracts/protocol/RageTradeFactory.sol',
+      '@ragetrade/core/contracts/protocol/wrapper/VPoolWrapper.sol',
+      '@ragetrade/core/contracts/protocol/insurancefund/InsuranceFund.sol',
+      '@ragetrade/core/contracts/test/mocks/OracleMock.sol',
+      '@ragetrade/core/contracts/test/mocks/SettlementTokenMock.sol',
+      '@ragetrade/core/contracts/test/mocks/VPoolWrapperMockRealistic.sol',
+      '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol',
+      '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol',
+      '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol',
     ],
   },
   typechain: {
