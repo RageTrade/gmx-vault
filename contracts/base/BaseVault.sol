@@ -257,7 +257,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
     function afterDeposit(uint256 amount) internal override {
         _afterDepositYield(amount);
-        _afterDepositRanges(totalAssets(), amount);
+        // _afterDepositRanges(totalAssets(), amount);
     }
 
     function beforeWithdraw(uint256 amount) internal override {
