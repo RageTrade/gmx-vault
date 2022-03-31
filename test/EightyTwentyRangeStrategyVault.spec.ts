@@ -12,6 +12,7 @@ import {
   checkNetTokenPosition,
   checkNetTokenPositionApproximate,
   checkRealTokenBalances,
+  logRageParams,
   swapToken,
 } from './utils/rageHelpers';
 import {
@@ -22,6 +23,7 @@ import {
   checkVaultRangeParams,
   checkVaultRangeParamsApproximate,
   increaseBlockTimestamp,
+  logVaultParams,
 } from './utils/vaultHelpers';
 
 describe('EightyTwentyRangeStrategyVault', () => {
@@ -659,6 +661,68 @@ describe('EightyTwentyRangeStrategyVault', () => {
       await ethPool.oracle.setPriceX128(await priceToPriceX128(8366.16650126176, 6, 18));
       await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -2377275516417390000n, 0, false, false);
       await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, 0);
+    });
+    it('Slippage Threshold - Partial Withdraw', async () => {
+      const {
+        eightyTwentyRangeStrategyVaultTest,
+        clearingHouse,
+        vaultAccountNo,
+        settlementTokenTreasury,
+        settlementToken,
+        ethPool,
+        ethPoolId,
+        user0,
+        trader0,
+        trader0AccountNo,
+      } = await eightyTwentyRangeStrategyFixture();
+      await eightyTwentyRangeStrategyVaultTest.connect(user0).deposit(parseTokenAmount(10n ** 6n, 18), user0.address);
+      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
+      await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 7895036065743972n);
+      await checkVaultRangeParams(eightyTwentyRangeStrategyVaultTest, -197850, -188910, 7895036065743972n);
+      await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -1n);
+      await checkTotalAssets(eightyTwentyRangeStrategyVaultTest, parseTokenAmount(10n ** 6n, 18));
+      await checkTotalSupply(eightyTwentyRangeStrategyVaultTest, parseTokenAmount(10n ** 6n, 18));
+
+      // await logVaultParams("Deposit - user1",eightyTwentyRangeStrategyVaultTest);
+      // await logRageParams("Deposit - user1",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
+
+      await increaseBlockTimestamp(10000);
+
+      //Set real price to end price so that funding payment is 0
+      await ethPool.oracle.setPriceX128(await priceToPriceX128(4500.67224272213, 6, 18));
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 7151872310113270000n, 0, false, false);
+      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -1811804020n);
+
+      const priceX128 = await priceToPriceX128(1.08094471200314, 6, 18);
+      await eightyTwentyRangeStrategyVaultTest.setYieldTokenPriceX128(priceX128);
+
+      // await logVaultParams("Swap1 - trader0",eightyTwentyRangeStrategyVaultTest);
+      // await logRageParams("Swap1 - trader0",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
+
+      await increaseBlockTimestamp(10000);
+
+      await eightyTwentyRangeStrategyVaultTest
+        .connect(user0)
+        .withdraw(parseTokenAmount(8n * 10n ** 5n, 18), user0.address, user0.address);
+      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
+      await checkTotalAssetsApproximate(eightyTwentyRangeStrategyVaultTest, 216607270713516000000000n);
+      await checkTotalSupplyApproximate(eightyTwentyRangeStrategyVaultTest, 216970942251063000000000n);
+      await checkLiquidityPositionApproximate(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 1712993414290590n);
+      await checkVaultRangeParamsApproximate(eightyTwentyRangeStrategyVaultTest, -197850, -188910, 1712993414290590n);
+      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -7151872310113270000n);
+
+      // await logVaultParams("Withdraw - user1",eightyTwentyRangeStrategyVaultTest);
+      // await logRageParams("Withdraw - user1",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
+
+      await increaseBlockTimestamp(10000);
+
+      //Arb1 - trader0
+      await ethPool.oracle.setPriceX128(await priceToPriceX128(4961.56838901073, 6, 18));
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -5600123836128710000n, 0, false, false);
+      await increaseBlockTimestamp(10000);
+      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -1551748473984560000n);
+      // await logVaultParams("Arb1 - trader0",eightyTwentyRangeStrategyVaultTest);
+      // await logRageParams("Arb1 - trader0",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
     });
   });
 });
