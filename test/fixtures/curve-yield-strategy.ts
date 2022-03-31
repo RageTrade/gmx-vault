@@ -34,6 +34,11 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
     addresses.CRV,
   )) as ERC20;
 
+  const triCrypto = (await hre.ethers.getContractAt(
+    'contracts/interfaces/curve/ICurveStableSwap.sol:ICurveStableSwap',
+    addresses.CRV,
+  )) as ERC20;
+
   const curveYieldStrategyTest = await (
     await hre.ethers.getContractFactory('CurveYieldStrategyTest')
   ).deploy(lpToken.address);
@@ -77,6 +82,7 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
     usdc,
     weth,
     lpToken,
+    triCrypto,
     curveYieldStrategyTest,
   };
 
