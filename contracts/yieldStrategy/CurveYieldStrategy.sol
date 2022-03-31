@@ -37,7 +37,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     /* solhint-enable const-name-snakecase */
 
     uint256 public constant MAX_BPS = 10_000;
-    uint256 public constant FEE = 1000;
+    uint256 public FEE = 1000;
 
     // solhint-disable-next-line no-empty-blocks
     constructor(ERC20 _lpToken) BaseVault(_lpToken, '', '', 0) {
@@ -99,6 +99,11 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         lpToken.approve(address(triCryptoPool), type(uint256).max);
     }
 
+    function changeFee(uint256 bps) external onlyOwner {
+        require(bps < MAX_BPS, 'fee out of bounds');
+        FEE = bps;
+    }
+
     function withdrawFees() external onlyOwner {
         uint256 bal = crvToken.balanceOf(address(this));
         crvToken.transfer(owner(), bal);
@@ -117,8 +122,11 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     function _depositBase(uint256 amount) internal override {
-        usdt.approve(address(uniV3Router), amount);
-        bytes memory path = abi.encodePacked(usdt, uint256(500), usdc);
+        usdc.transferFrom(msg.sender, address(this), amount);
+        usdc.approve(address(uniV3Router), amount);
+        bytes memory path = abi.encodePacked(usdc, uint24(500), usdt);
+
+        console.log('mid');
 
         ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
             path: path,
@@ -129,8 +137,10 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         });
 
         uint256 usdtOut = uniV3Router.exactInput(params);
+        console.log(usdtOut);
 
         // USDT, WBTC, WETH
+        usdt.approve(address(triCryptoPool), usdtOut);
         uint256[3] memory amounts = [usdtOut, uint256(0), uint256(0)];
         triCryptoPool.add_liquidity(amounts, 0);
 
@@ -138,9 +148,8 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     function _harvestFees() internal override {
-        console.log('harvest fees 1');
         uint256 claimable = gauge.claimable_reward(address(this), address(lpToken));
-        console.log('harvest fees 2');
+        console.log('fees claimable from gauge: ', claimable);
 
         if (claimable > 0) {
             uint256 afterDeductions = claimable - ((claimable * FEE) / MAX_BPS);
@@ -175,16 +184,21 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         return staked * pricePerLP;
     }
 
-    // unstake some LP -> usdc
-    // fix: division rounding
     function _withdrawBase(uint256 amount) internal override {
         uint256 pricePerLP = lpPriceHolder.lp_price();
-        uint256 lpToWithdraw = amount / pricePerLP;
+        console.log('LP PRICE: ', pricePerLP);
+        uint256 lpToWithdraw = ( (amount*(10**12)) * (10**18) ) / pricePerLP;
+        console.log('LP TO WITHDRAW:', lpToWithdraw);
+        console.log('IN GAUGE', gauge.balanceOf(address(this)));
 
+        gauge.withdraw(lpToWithdraw);
         triCryptoPool.remove_liquidity_one_coin(lpToWithdraw, 0, 0);
-        usdt.approve(address(uniV3Router), amount);
+        console.log('BAL: ', lpToken.balanceOf(address(this)));
 
-        bytes memory path = abi.encodePacked(usdc, uint256(500), usdt);
+        console.log('USDT', usdt.balanceOf(address(this)));
+        usdt.approve(address(uniV3Router), amount*(10**12));
+
+        bytes memory path = abi.encodePacked(usdt, uint24(500), usdc);
 
         ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
             path: path,
