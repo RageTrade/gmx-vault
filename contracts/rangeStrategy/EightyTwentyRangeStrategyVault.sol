@@ -65,7 +65,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         ) isValid = true;
     }
 
-    function _afterDepositRanges(uint256 amountAfterDeposit, uint256 amountDeposited) virtual internal override {
+    function _afterDepositRanges(uint256 amountAfterDeposit, uint256 amountDeposited) internal virtual override {
         int256 depositMarketValue = getMarketValue(amountDeposited).toInt256();
         _settleCollateral(depositMarketValue);
         IClearingHouseStructures.LiquidityChangeParams memory liquidityChangeParam;
@@ -79,7 +79,6 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         } else {
             // Add to base range based on the additional collateral
             liquidityChangeParam = _getLiquidityChangeParamsAfterDeposit(amountAfterDeposit, amountDeposited);
-
             assert(liquidityChangeParam.liquidityDelta > 0);
 
             baseLiquidity += uint128(liquidityChangeParam.liquidityDelta);
