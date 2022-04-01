@@ -33,7 +33,7 @@ contract CurveYieldStrategyTest is CurveYieldStrategy {
         updatedAmount = amount;
     }
 
-    function _beforeShareTransfer() internal override {
+    function _beforeShareAllocation() internal override {
         _harvestFees();
         _stake(asset.balanceOf(address(this)));
     }
