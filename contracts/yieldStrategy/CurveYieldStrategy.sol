@@ -77,7 +77,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         address _owner,
         address _rageClearingHouse,
         address _rageCollateralToken,
-        address _rageBaseToken,
+        address _rageSettlementToken,
         IERC20 _usdt,
         IERC20 _usdc,
         IERC20 _weth,
@@ -87,7 +87,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         ILPPriceGetter _lpPriceHolder,
         ICurveStableSwap _tricryptoPool
     ) external initializer {
-        __BaseVault_init(_owner, _rageClearingHouse, _rageCollateralToken, _rageBaseToken);
+        __BaseVault_init(_owner, _rageClearingHouse, _rageCollateralToken, _rageSettlementToken);
         __CurveYieldStratergy__init(
             _usdt,
             _usdc,

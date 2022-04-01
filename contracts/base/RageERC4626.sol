@@ -17,12 +17,12 @@ abstract contract RageERC4626 is ERC4626 {
     }
 
     function deposit(uint256 amount, address to) public virtual override returns (uint256 shares) {
-        _beforeShareTransfer();
+        _beforeShareAllocation();
         return super.deposit(amount, to);
     }
 
     function mint(uint256 shares, address to) public virtual override returns (uint256 amount) {
-        _beforeShareTransfer();
+        _beforeShareAllocation();
 
         amount = previewMint(shares); // No need to check for rounding error, previewMint rounds up.
 
@@ -41,7 +41,7 @@ abstract contract RageERC4626 is ERC4626 {
         address to,
         address from
     ) public override returns (uint256 shares) {
-        _beforeShareTransfer();
+        _beforeShareAllocation();
         shares = previewWithdraw(amount); // No need to check for rounding error, previewWithdraw rounds up.
 
         if (msg.sender != from) {
@@ -71,7 +71,7 @@ abstract contract RageERC4626 is ERC4626 {
         address to,
         address from
     ) public override returns (uint256 amount) {
-        _beforeShareTransfer();
+        _beforeShareAllocation();
 
         if (msg.sender != from) {
             uint256 allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.
@@ -98,7 +98,7 @@ abstract contract RageERC4626 is ERC4626 {
         asset.safeTransfer(to, amount);
     }
 
-    function _beforeShareTransfer() internal virtual;
+    function _beforeShareAllocation() internal virtual;
 
     function beforeBurn(uint256 amount) internal virtual returns (uint256 updatedAmount);
 }
