@@ -26,7 +26,6 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     IERC20 public usdt;
     IERC20 public weth;
     IERC20 public usdc;
-    IERC20 public lpToken;
     IERC20 public crvToken;
 
     ICurveGauge public gauge;
@@ -39,10 +38,12 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     uint256 public constant MAX_BPS = 10_000;
     uint256 public FEE = 1000;
 
-    // solhint-disable-next-line no-empty-blocks
-    constructor(ERC20 _lpToken) BaseVault(_lpToken, '', '', 0) {
-        lpToken = IERC20(address(_lpToken));
-    }
+    constructor(
+        ERC20 _asset,
+        string memory _name,
+        string memory _symbol,
+        uint32 _ethPoolId
+    ) BaseVault(_asset, _name, _symbol, _ethPoolId) {}
 
     // solhint-disable-next-line func-name-mixedcase
     function __CurveYieldStratergy__init(
@@ -96,7 +97,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         _grantBaseAllowances();
         usdt.approve(address(triCryptoPool), type(uint256).max);
         crvToken.approve(address(uniV3Router), type(uint256).max);
-        lpToken.approve(address(triCryptoPool), type(uint256).max);
+        asset.approve(address(triCryptoPool), type(uint256).max);
     }
 
     function changeFee(uint256 bps) external onlyOwner {
@@ -110,7 +111,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     function _afterDepositYield(uint256 amount) internal override {
-        // lpToken.transferFrom(msg.sender, address(this), amount);
+        // asset.transferFrom(msg.sender, address(this), amount);
         console.log('before stake');
         _stake(amount);
         console.log('after stake');
@@ -144,7 +145,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         uint256[3] memory amounts = [usdtOut, uint256(0), uint256(0)];
         triCryptoPool.add_liquidity(amounts, 0);
 
-        _stake(lpToken.balanceOf(address(this)));
+        _stake(asset.balanceOf(address(this)));
     }
 
     function _harvestFees() internal override {
@@ -185,16 +186,13 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
     function _stake(uint256 amount) internal override {
         console.log('amount', amount);
-        lpToken.approve(address(gauge), amount);
+        asset.approve(address(gauge), amount);
         console.log('gauge address', address(gauge));
         gauge.deposit(amount);
     }
 
     function _stakedAssetBalance() internal view override returns (uint256) {
-        uint256 staked = gauge.balanceOf(address(this)) / 10**18;
-        uint256 pricePerLP = lpPriceHolder.lp_price();
-
-        return staked * pricePerLP;
+        return gauge.balanceOf(address(this));
     }
 
     function _withdrawBase(uint256 amount) internal override {
@@ -206,7 +204,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
         gauge.withdraw(lpToWithdraw);
         triCryptoPool.remove_liquidity_one_coin(lpToWithdraw, 0, 0);
-        console.log('BAL: ', lpToken.balanceOf(address(this)));
+        console.log('BAL: ', asset.balanceOf(address(this)));
 
         console.log('USDT', usdt.balanceOf(address(this)));
         usdt.approve(address(uniV3Router), amount * (10**12));
@@ -228,9 +226,10 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         marketValue = amount.mulDiv(getPriceX128(), FixedPoint128.Q128);
     }
 
-    // confirm if conversion to X128 is correct
+    //TODO: Add test case for this in unit tests.
+    //TODO: Current impl assumes that that lpPrice has a scale of 10**18 and lp tokens has decimals of 10**18 - check if correct
     function getPriceX128() public view override returns (uint256 priceX128) {
         uint256 pricePerLP = lpPriceHolder.lp_price();
-        return pricePerLP * FixedPoint128.Q128;
+        return pricePerLP.mulDiv(FixedPoint128.Q128, 10**30); // 10**6 / (10**18*10**18)
     }
 }

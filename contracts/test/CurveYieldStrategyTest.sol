@@ -11,7 +11,7 @@ import { console } from 'hardhat/console.sol';
 
 contract CurveYieldStrategyTest is CurveYieldStrategy {
     // solhint-disable-next-line no-empty-blocks
-    constructor(ERC20 _lpToken) CurveYieldStrategy(_lpToken) {}
+    constructor(ERC20 _lpToken) CurveYieldStrategy(_lpToken, '', '', 0) {}
 
     function depositUsdc(uint256 amount) external {
         super._depositBase(amount);
@@ -29,15 +29,9 @@ contract CurveYieldStrategyTest is CurveYieldStrategy {
         super._harvestFees();
     }
 
-    function _afterDepositRanges(uint256 amountAfterDeposit, uint256 amountDeposited) internal override {
+    function _afterDepositRanges(uint256 amountAfterDeposit, uint256 amountDeposited) internal override {}
 
-    }
+    function beforeBurn(uint256 amount) internal override returns (uint256 updatedAmount) {}
 
-    function beforeBurn(uint256 amount) internal override returns (uint256 updatedAmount) {
-
-    }
-
-    function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal override {
-
-    }
+    function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal override {}
 }
