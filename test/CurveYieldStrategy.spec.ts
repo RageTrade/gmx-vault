@@ -129,7 +129,7 @@ describe('CurveYieldStrategy', () => {
 
     it('should claim fees from LP', async () => {
       const [admin, user] = await hre.ethers.getSigners();
-      const { crv, usdt, lpToken, curveYieldStrategyTest, triCrypto } = await curveYieldStrategyFixture();
+      const { crv, usdt, lpToken, curveYieldStrategyTest, gauge } = await curveYieldStrategyFixture();
       const curveYieldStrategy = curveYieldStrategyTest.connect(user);
 
       await hre.network.provider.request({
@@ -138,7 +138,10 @@ describe('CurveYieldStrategy', () => {
       });
 
       const whale = await ethers.getSigner(addresses.LP_TOKEN_WHALE);
-      const amount = BigNumber.from(10).pow(18).mul(50);
+      const amount1 = BigNumber.from(10).pow(18).mul(40);
+      const amount2 = BigNumber.from(10).pow(18).mul(10);
+
+      const amount = amount1.add(amount2);
 
       await curveYieldStrategy.connect(admin).updateDepositCap(amount);
 
@@ -146,12 +149,10 @@ describe('CurveYieldStrategy', () => {
       await lpToken.connect(user).approve(curveYieldStrategy.address, amount);
 
       await curveYieldStrategy.deposit(amount, user.address);
-
-      const before = await lpToken.balanceOf(curveYieldStrategy.address);
-
-      await hre.network.provider.send('evm_mine', []);
       await hre.network.provider.send('evm_increaseTime', [7_890_000]);
       await hre.network.provider.send('evm_mine', []);
+
+      await gauge.claimable_reward_write(curveYieldStrategy.address, addresses.CRV);
 
       await curveYieldStrategy.harvestFees();
     });
