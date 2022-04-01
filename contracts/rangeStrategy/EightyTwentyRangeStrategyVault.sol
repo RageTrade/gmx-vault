@@ -65,7 +65,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         ) isValid = true;
     }
 
-    function _afterDepositRanges(uint256 amountAfterDeposit, uint256 amountDeposited) internal override {
+    function _afterDepositRanges(uint256 amountAfterDeposit, uint256 amountDeposited) virtual internal override {
         int256 depositMarketValue = getMarketValue(amountDeposited).toInt256();
         _settleCollateral(depositMarketValue);
         IClearingHouseStructures.LiquidityChangeParams memory liquidityChangeParam;
@@ -87,7 +87,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         rageClearingHouse.updateRangeOrder(rageAccountNo, ethPoolId, liquidityChangeParam);
     }
 
-    function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal override {
+    function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal virtual override {
         // Remove from base range based on the collateral removal
         IClearingHouseStructures.LiquidityChangeParams
             memory liquidityChangeParam = _getLiquidityChangeParamsBeforeWithdraw(
