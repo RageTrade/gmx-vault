@@ -28,4 +28,16 @@ contract CurveYieldStrategyTest is CurveYieldStrategy {
     function harvestFees() external {
         super._harvestFees();
     }
+
+    function _afterDepositRanges(uint256 amountAfterDeposit, uint256 amountDeposited) internal override {
+
+    }
+
+    function beforeBurn(uint256 amount) internal override returns (uint256 updatedAmount) {
+
+    }
+
+    function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal override {
+
+    }
 }
