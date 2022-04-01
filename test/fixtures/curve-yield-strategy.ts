@@ -1,8 +1,9 @@
 import { deployments } from 'hardhat';
+import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
+import { ICurveGauge, ICurveStableSwap } from '../../typechain-types';
 
 import { parseTokenAmount } from '@ragetrade/sdk';
 
-import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
 import addresses from './addresses';
 import { eightyTwentyRangeStrategyFixture } from './eighty-twenty-range-strategy-vault';
 
@@ -37,8 +38,13 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
 
   const triCrypto = (await hre.ethers.getContractAt(
     'contracts/interfaces/curve/ICurveStableSwap.sol:ICurveStableSwap',
-    addresses.CRV,
-  )) as ERC20;
+    addresses.TRICRYPTO_POOL,
+  )) as ICurveStableSwap;
+
+  const gauge = (await hre.ethers.getContractAt(
+    'contracts/interfaces/curve/ICurveGauge.sol:ICurveGauge',
+    addresses.GAUGE,
+  )) as ICurveGauge;
 
   const curveYieldStrategyTest = await (
     await hre.ethers.getContractFactory('CurveYieldStrategyTest')
@@ -80,6 +86,7 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
     usdt,
     usdc,
     weth,
+    gauge,
     lpToken,
     triCrypto,
     curveYieldStrategyTest,
