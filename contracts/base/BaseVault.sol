@@ -39,7 +39,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     using UniswapV3PoolHelper for IUniswapV3Pool;
 
     // TODO: Make relevant things immutable
-    IERC20Metadata public rageBaseToken;
+    IERC20Metadata public rageSettlementToken;
     IClearingHouse public rageClearingHouse;
     CollateralToken public rageCollateralToken;
 
@@ -76,42 +76,93 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         address _owner,
         address _rageClearingHouse,
         address _rageCollateralToken,
-        address _rageBaseToken
+        address _rageSettlementToken
     ) internal onlyInitializing {
         __Ownable_init();
         transferOwnership(_owner);
         rageClearingHouse = IClearingHouse(_rageClearingHouse);
         rageAccountNo = rageClearingHouse.createAccount();
         rageCollateralToken = CollateralToken(_rageCollateralToken);
-        rageBaseToken = IERC20Metadata(_rageBaseToken);
+        rageSettlementToken = IERC20Metadata(_rageSettlementToken);
         rageTradePool = rageClearingHouse.getPoolInfo(ethPoolId);
         // Give rageClearingHouse full allowance of rageCollateralToken and usdc
     }
 
+    /// @notice Set the deposit cap for the vault in asset amount
+    /// @param newDepositCap The new deposit cap in asset amount
     function updateDepositCap(uint256 newDepositCap) external onlyOwner {
         depositCap = newDepositCap;
     }
 
+    /// @notice Deposit asset into the vault
+    /// @dev Checks the deposit cap and the deposit amount
+    /// @param amount The amount to deposit in asset amount
+    /// @param to The address to deposit to
     function deposit(uint256 amount, address to) public virtual override returns (uint256 shares) {
+        //TODO: Please fix this, cap should check the final amount after deposit and not the amount being deposited
         if (amount > depositCap) revert BV_DepositCap(depositCap, amount);
 
         return super.deposit(amount, to);
     }
 
+    /// @notice grants relevant allowances
     function grantAllowances() external virtual {
         _grantBaseAllowances();
     }
 
-    function _grantBaseAllowances() internal {
-        rageCollateralToken.approve(address(rageClearingHouse), type(uint256).max);
-        rageBaseToken.approve(address(rageClearingHouse), type(uint256).max);
+    /// @notice Rebalance the vault assets
+    function rebalance() public onlyKeeper {
+        if (!_isValidRebalance()) {
+            revert BV_InvalidRebalance();
+        }
+        // Rebalance ranges based on the parameters passed
+        IClearingHouse.CollateralDepositView[] memory deposits;
+        IClearingHouse.VTokenPositionView[] memory vTokenPositions;
+        // Step-0 Check if the rebalance can go through (time and threshold based checks)
+        // TODO getAccountInfo CALL may be optimised using extsload
+        (, , deposits, vTokenPositions) = rageClearingHouse.getAccountInfo(rageAccountNo);
+        // (, uint256 virtualPriceX128) = rageClearingHouse.getTwapSqrtPricesForSetDuration(IVToken(VWETH_ADDRESS));
+        int256 vaultMarketValue = getMarketValue(asset.balanceOf(address(this))).toInt256();
+
+        _rebalanceProfitAndCollateral(deposits, vTokenPositions, vaultMarketValue);
+
+        // Step-4 Find the ranges and amount of liquidity to put in each
+        _rebalanceRanges(vTokenPositions[0], vaultMarketValue);
+
+        // Step-5 Rebalance
     }
 
+    /// @notice closes remaining token position (To be used when reset condition is hit)
+    function closeTokenPosition() public onlyKeeper {
+        //TODO: Check if isReset check needs to be added
+        IClearingHouse.VTokenPositionView[] memory vTokenPositions;
+        // Step-0 Check if the rebalance can go through (time and threshold based checks)
+        (, , , vTokenPositions) = rageClearingHouse.getAccountInfo(rageAccountNo);
+
+        _closeTokenPosition(vTokenPositions[0]);
+    }
+
+    /// @notice returns the total vault asset balance + staked balance
+    function totalAssets() public view override returns (uint256) {
+        return asset.balanceOf(address(this)) + _stakedAssetBalance();
+    }
+
+    // TODO: Add handling for unrealized fees
+    /// @notice Returns account market value of vault in USDC (settlement token)
     function getVaultMarketValue() public view returns (int256 vaultMarketValue) {
         vaultMarketValue = rageClearingHouse.getAccountNetProfit(rageAccountNo);
-        vaultMarketValue += (getMarketValue(asset.balanceOf(address(this)))).toInt256();
+        vaultMarketValue += (getMarketValue(totalAssets())).toInt256();
     }
 
+    /// @notice grants allowances for base vault
+    function _grantBaseAllowances() internal {
+        rageCollateralToken.approve(address(rageClearingHouse), type(uint256).max);
+        rageSettlementToken.approve(address(rageClearingHouse), type(uint256).max);
+    }
+
+    /// @notice settles profit and collateral for the vault
+    /// @param deposits The amount of collateral deposited to rage core
+    /// @param vaultMarketValue The market value of the vault in USDC
     function _settleProfitAndCollateral(IClearingHouse.CollateralDepositView[] memory deposits, int256 vaultMarketValue)
         internal
     {
@@ -138,7 +189,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
             vaultMarketValueDiff =
                 vaultMarketValue -
                 stablecoinDeposit.balance.toInt256().mulDiv(
-                    10**rageBaseToken.decimals(),
+                    10**rageSettlementToken.decimals(),
                     10**rageCollateralToken.decimals()
                 );
         } else {
@@ -148,10 +199,13 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         _settleCollateral(vaultMarketValueDiff);
     }
 
+    /// @notice settles collateral for the vault
+    /// @dev to be called after settle profits only (since vaultMarketValue if after settlement of profits)
+    /// @param vaultMarketValueDiff The difference in current and previous market value of the vault in USDC
     function _settleCollateral(int256 vaultMarketValueDiff) internal {
         int256 normalizedVaultMarketValueDiff = vaultMarketValueDiff.mulDiv(
             10**rageCollateralToken.decimals(),
-            10**rageBaseToken.decimals()
+            10**rageSettlementToken.decimals()
         );
         uint256 normalizedVaultMarketValueDiffAbs = normalizedVaultMarketValueDiff.absUint();
 
@@ -174,41 +228,14 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         }
     }
 
-    function rebalance() public onlyKeeper {
-        if (!_isValidRebalance()) {
-            revert BV_InvalidRebalance();
-        }
-        // Rebalance ranges based on the parameters passed
-        IClearingHouse.CollateralDepositView[] memory deposits;
-        IClearingHouse.VTokenPositionView[] memory vTokenPositions;
-        // Step-0 Check if the rebalance can go through (time and threshold based checks)
-        // TODO getAccountInfo CALL may be optimised using extsload
-        (, , deposits, vTokenPositions) = rageClearingHouse.getAccountInfo(rageAccountNo);
-        // (, uint256 virtualPriceX128) = rageClearingHouse.getTwapSqrtPricesForSetDuration(IVToken(VWETH_ADDRESS));
-        int256 vaultMarketValue = getMarketValue(asset.balanceOf(address(this))).toInt256();
-
-        _rebalanceProfitAndCollateral(deposits, vTokenPositions, vaultMarketValue);
-
-        // Step-4 Find the ranges and amount of liquidity to put in each
-        _rebalanceRanges(vTokenPositions[0], vaultMarketValue);
-
-        // Step-5 Rebalance
-    }
-
-    function closeTokenPosition() public onlyKeeper {
-        //TODO: Check if isReset check needs to be added
-        IClearingHouse.VTokenPositionView[] memory vTokenPositions;
-        // Step-0 Check if the rebalance can go through (time and threshold based checks)
-        (, , , vTokenPositions) = rageClearingHouse.getAccountInfo(rageAccountNo);
-
-        _closeTokenPosition(vTokenPositions[0]);
-    }
-
+    /// @notice Checks if the rebalance is valid or not
     function _isValidRebalance() internal view returns (bool isValid) {
         //TODO: make rebalance period variable
         if (_blockTimestamp() - lastRebalanceTS > 1 days || _isValidRebalanceRange()) isValid = true;
     }
 
+    /// @notice Rebalances the pnl on rage trade and converts profit into asset tokens and covers losses using asset tokens
+    /// @notice Rebalances collateral based on the updated market value of vault assets
     function _rebalanceProfitAndCollateral() internal {
         // Rebalance collateral and dummy stable coins representing the collateral
         // Update protocol and management fee accumulated
@@ -223,6 +250,11 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         _rebalanceProfitAndCollateral(deposits, vTokenPositions, vaultMarketValue);
     }
 
+    /// @notice Rebalances the pnl on rage trade and converts profit into asset tokens and covers losses using asset tokens
+    /// @notice Rebalances collateral based on the updated market value of vault assets
+    /// @param deposits The amount of collateral deposited to rage core
+    /// @param vTokenPositions The token positions of the vault
+    /// @param vaultMarketValue The market value of the vault in USDC
     function _rebalanceProfitAndCollateral(
         IClearingHouse.CollateralDepositView[] memory deposits,
         IClearingHouse.VTokenPositionView[] memory vTokenPositions,
@@ -233,27 +265,19 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         _harvestFees();
 
         _settleProfitAndCollateral(deposits, vaultMarketValue);
-
         // stake the remaining LP tokens
         _stake(asset.balanceOf(address(this)));
     }
 
-    function _unrealizedBalance() internal pure returns (uint256) {
-        // Returns the unrealized pnl which includes pnl from ranges (FP+Fee+RangeIL) and Yield from the yield protocol
-        // This is divided by the asset value to arrive at the number of unrealized asset tokens
-        // This might be away from the actual value
-        return 0;
-    }
-
+    // TODO: check if caching is required for this function
+    /// @notice returns twap price X96 from rage trade
     function _getTwapSqrtPriceX96() internal view returns (uint160 twapSqrtPriceX96) {
         twapSqrtPriceX96 = rageTradePool.vPool.twapSqrtPrice(rageTradePool.settings.twapDuration);
     }
 
-    function totalAssets() public view override returns (uint256) {
-        return asset.balanceOf(address(this)) + _stakedAssetBalance();
-    }
-
-    function _beforeShareTransfer() internal virtual override {
+    /// @notice converts all non-asset balances into asset
+    /// @dev to be called before functions which allocate and deallocate shares (deposit, withdraw, mint and burn)
+    function _beforeShareAllocation() internal virtual override {
         _rebalanceProfitAndCollateral();
     }
 
@@ -279,21 +303,23 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     /*
         YIELD STRATEGY
     */
+    function getPriceX128() public view virtual returns (uint256 priceX128);
+
+    function getMarketValue(uint256 amount) public view virtual returns (uint256 marketValue);
 
     function _stake(uint256 amount) internal virtual;
 
     function _harvestFees() internal virtual;
 
-    function getPriceX128() public view virtual returns (uint256 priceX128);
-
-    function getMarketValue(uint256 amount) public view virtual returns (uint256 marketValue);
-
-    // To convert yield token into USDC to cover loss on rage trade
+    /// @notice converts given amount of settlement token from asset token
+    /// @param amount The amount of settlement token to created from asset token
     function _withdrawBase(uint256 amount) internal virtual;
 
-    // To deposit the USDC profit made from rage trade into yield protocol
+    /// @notice converts given amount of settlement token to asset token
+    /// @param amount The amount of settlement token to converted to asset token
     function _depositBase(uint256 amount) internal virtual;
 
+    /// @notice amount of asset tokens staked
     function _stakedAssetBalance() internal view virtual returns (uint256);
 
     function _afterDepositYield(uint256 amount) internal virtual;
@@ -304,10 +330,14 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         RANGE STRATEGY
     */
 
+    /// @notice rebalance range added to rage trade
+    /// @param vTokenPosition The token position of the vault of eth pool
+    /// @param vaultMarketValue The market value of the vault in USDC
     function _rebalanceRanges(IClearingHouse.VTokenPositionView memory vTokenPosition, int256 vaultMarketValue)
         internal
         virtual;
 
+    /// @notice closes token position
     function _closeTokenPosition(IClearingHouse.VTokenPositionView memory vTokenPosition) internal virtual;
 
     function _afterDepositRanges(uint256 amountAfterDeposit, uint256 amountDeposited) internal virtual;
