@@ -148,14 +148,22 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     function _harvestFees() internal override {
-        uint256 claimable = gauge.claimable_reward(address(this), address(lpToken));
+        uint256 claimable = gauge.claimable_reward(address(this), address(crvToken));
         console.log('fees claimable from gauge: ', claimable);
 
         if (claimable > 0) {
             uint256 afterDeductions = claimable - ((claimable * FEE) / MAX_BPS);
             gauge.claim_rewards(address(this));
 
-            bytes memory path = abi.encodePacked(weth, uint256(500), usdt, uint256(3000), address(crvToken));
+            crvToken.approve(address(uniV3Router), afterDeductions);
+
+            bytes memory path = abi.encodePacked(
+                address(crvToken),
+                uint24(3000),
+                address(weth),
+                uint24(500),
+                address(usdt)
+            );
 
             ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
                 path: path,
@@ -165,8 +173,13 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
                 deadline: _blockTimestamp()
             });
 
-            uint256 amountOut = uniV3Router.exactInput(params);
-            _stake(amountOut);
+            uint256 usdtOut = uniV3Router.exactInput(params);
+
+            usdt.approve(address(triCryptoPool), usdtOut);
+            uint256[3] memory amounts = [usdtOut, uint256(0), uint256(0)];
+            triCryptoPool.add_liquidity(amounts, 0);
+
+            _stake(usdtOut);
         }
     }
 
