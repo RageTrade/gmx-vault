@@ -253,16 +253,16 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         return asset.balanceOf(address(this)) + _stakedAssetBalance();
     }
 
-    function _beforeShareTransfer() internal override {
+    function _beforeShareTransfer() internal virtual override {
         _rebalanceProfitAndCollateral();
     }
 
-    function afterDeposit(uint256 amount) internal virtual override {
+    function afterDeposit(uint256 amount, uint256 shares) internal virtual override {
         _afterDepositYield(amount);
         _afterDepositRanges(totalAssets(), amount);
     }
 
-    function beforeWithdraw(uint256 amount) internal virtual override {
+    function beforeWithdraw(uint256 amount, uint256 shares) internal virtual override {
         _beforeWithdrawRanges(totalAssets(), amount);
         _beforeWithdrawYield(amount);
     }
