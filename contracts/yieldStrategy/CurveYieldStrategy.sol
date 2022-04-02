@@ -17,9 +17,6 @@ import { ISwapRouter } from '@uniswap/v3-periphery/contracts/interfaces/ISwapRou
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
 
-import { console } from 'hardhat/console.sol';
-
-// TODO: remove abstract after fixing constructor
 contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     using FullMath for uint256;
 
@@ -111,10 +108,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     function _afterDepositYield(uint256 amount) internal override {
-        // asset.transferFrom(msg.sender, address(this), amount);
-        console.log('before stake');
         _stake(amount);
-        console.log('after stake');
     }
 
     function _beforeWithdrawYield(uint256 amount) internal override {
@@ -127,8 +121,6 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         usdc.approve(address(uniV3Router), amount);
         bytes memory path = abi.encodePacked(usdc, uint24(500), usdt);
 
-        console.log('mid');
-
         ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
             path: path,
             amountIn: amount,
@@ -138,7 +130,6 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         });
 
         uint256 usdtOut = uniV3Router.exactInput(params);
-        console.log(usdtOut);
 
         // USDT, WBTC, WETH
         usdt.approve(address(triCryptoPool), usdtOut);
@@ -150,7 +141,6 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
     function _harvestFees() internal override {
         uint256 claimable = gauge.claimable_reward(address(this), address(crvToken));
-        console.log('fees claimable from gauge: ', claimable);
 
         if (claimable > 0) {
             uint256 afterDeductions = claimable - ((claimable * FEE) / MAX_BPS);
@@ -185,9 +175,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     function _stake(uint256 amount) internal override {
-        console.log('amount', amount);
         asset.approve(address(gauge), amount);
-        console.log('gauge address', address(gauge));
         gauge.deposit(amount);
     }
 
@@ -197,16 +185,11 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
     function _withdrawBase(uint256 amount) internal override {
         uint256 pricePerLP = lpPriceHolder.lp_price();
-        console.log('LP PRICE: ', pricePerLP);
         uint256 lpToWithdraw = ((amount * (10**12)) * (10**18)) / pricePerLP;
-        console.log('LP TO WITHDRAW:', lpToWithdraw);
-        console.log('IN GAUGE', gauge.balanceOf(address(this)));
 
         gauge.withdraw(lpToWithdraw);
         triCryptoPool.remove_liquidity_one_coin(lpToWithdraw, 0, 0);
-        console.log('BAL: ', asset.balanceOf(address(this)));
 
-        console.log('USDT', usdt.balanceOf(address(this)));
         usdt.approve(address(uniV3Router), amount * (10**12));
 
         bytes memory path = abi.encodePacked(usdt, uint24(500), usdc);
@@ -226,8 +209,6 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         marketValue = amount.mulDiv(getPriceX128(), FixedPoint128.Q128);
     }
 
-    //TODO: Add test case for this in unit tests.
-    //TODO: Current impl assumes that that lpPrice has a scale of 10**18 and lp tokens has decimals of 10**18 - check if correct
     function getPriceX128() public view override returns (uint256 priceX128) {
         uint256 pricePerLP = lpPriceHolder.lp_price();
         return pricePerLP.mulDiv(FixedPoint128.Q128, 10**30); // 10**6 / (10**18*10**18)

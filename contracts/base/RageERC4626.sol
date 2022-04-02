@@ -5,8 +5,6 @@ import { ERC4626 } from '@rari-capital/solmate/src/mixins/ERC4626.sol';
 import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
 import { SafeTransferLib } from '@rari-capital/solmate/src/utils/SafeTransferLib.sol';
 
-import { console } from 'hardhat/console.sol';
-
 abstract contract RageERC4626 is ERC4626 {
     using SafeTransferLib for ERC20;
 
