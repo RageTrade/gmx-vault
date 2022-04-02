@@ -26,8 +26,6 @@ import { UniswapV3PoolHelper } from '@ragetrade/core/contracts/libraries/Uniswap
 
 import { VPoolWrapper } from '@ragetrade/core/contracts/protocol/wrapper/VPoolWrapper.sol';
 
-import { console } from 'hardhat/console.sol';
-
 contract VPoolWrapperMockRealistic is VPoolWrapper {
     uint48 public blockTimestamp;
 

@@ -7,8 +7,6 @@ import { RageERC4626 } from '../base/RageERC4626.sol';
 
 import { CurveYieldStrategy } from '../yieldStrategy/CurveYieldStrategy.sol';
 
-import { console } from 'hardhat/console.sol';
-
 contract CurveYieldStrategyTest is CurveYieldStrategy {
     // solhint-disable-next-line no-empty-blocks
     constructor(ERC20 _lpToken) CurveYieldStrategy(_lpToken, '', '', 0) {}
@@ -31,7 +29,14 @@ contract CurveYieldStrategyTest is CurveYieldStrategy {
 
     function _afterDepositRanges(uint256 amountAfterDeposit, uint256 amountDeposited) internal override {}
 
-    function beforeBurn(uint256 amount) internal override returns (uint256 updatedAmount) {}
+    function beforeBurn(uint256 amount) internal override returns (uint256 updatedAmount) {
+        updatedAmount = amount;
+    }
+
+    function _beforeShareTransfer() internal override {
+        _harvestFees();
+        _stake(asset.balanceOf(address(this)));
+    }
 
     function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal override {}
 }
