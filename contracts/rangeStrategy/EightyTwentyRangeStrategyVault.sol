@@ -3,25 +3,20 @@
 pragma solidity ^0.8.9;
 import { BaseVault } from '../base/BaseVault.sol';
 
+import { IVToken } from '@ragetrade/core/contracts/interfaces/IVToken.sol';
 import { IClearingHouse } from '@ragetrade/core/contracts/interfaces/IClearingHouse.sol';
 import { IClearingHouseStructures } from '@ragetrade/core/contracts/interfaces/clearinghouse/IClearingHouseStructures.sol';
 import { IClearingHouseEnums } from '@ragetrade/core/contracts/interfaces/clearinghouse/IClearingHouseEnums.sol';
 
 import { UniswapV3PoolHelper, IUniswapV3Pool } from '@ragetrade/core/contracts/libraries/UniswapV3PoolHelper.sol';
-import { IVToken } from '@ragetrade/core/contracts/interfaces/IVToken.sol';
-
-import { SignedFullMath } from '@ragetrade/core/contracts/libraries/SignedFullMath.sol';
-import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
-
-import { FixedPoint96 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint96.sol';
-
-import { SafeCast } from '../libraries/SafeCast.sol';
-
-import { SignedMath } from '@ragetrade/core/contracts/libraries/SignedMath.sol';
 
 import { TickMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/TickMath.sol';
+import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
+import { SignedMath } from '@ragetrade/core/contracts/libraries/SignedMath.sol';
+import { SignedFullMath } from '@ragetrade/core/contracts/libraries/SignedFullMath.sol';
 
-import { console } from 'hardhat/console.sol';
+import { SafeCast } from '../libraries/SafeCast.sol';
+import { FixedPoint96 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint96.sol';
 
 abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     using SafeCast for uint256;
@@ -113,11 +108,6 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         uint256 tokensToTradeNotionalAbs = _getTokenNotionalAbs(netPosition, sqrtPriceX96);
 
         if (tokensToTradeNotionalAbs > minNotionalPositionToCloseThreshold) {
-            // TODO: Remove after testing
-            // console.log(amountWithdrawn);
-            // console.log(amountBeforeWithdraw);
-            // console.logInt(netPosition);
-            // console.logInt(tokensToTrade);
             (int256 vTokenAmountOut, ) = _closeTokenPosition(
                 tokensToTrade,
                 sqrtPriceX96,
