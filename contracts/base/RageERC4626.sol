@@ -31,9 +31,9 @@ abstract contract RageERC4626 is ERC4626 {
 
         _mint(to, shares);
 
-        emit Deposit(msg.sender, to, amount);
+        emit Deposit(msg.sender, to, amount, shares);
 
-        afterDeposit(amount);
+        afterDeposit(amount, shares);
     }
 
     function withdraw(
@@ -44,23 +44,24 @@ abstract contract RageERC4626 is ERC4626 {
         _beforeShareTransfer();
         shares = previewWithdraw(amount); // No need to check for rounding error, previewWithdraw rounds up.
 
-        uint256 allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.
+        if (msg.sender != from) {
+            uint256 allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.
+            if (allowed != type(uint256).max) allowance[from][msg.sender] = allowed - shares;
+        }
 
-        if (msg.sender != from && allowed != type(uint256).max) allowance[from][msg.sender] = allowed - shares;
-
-        //Additional cap on withdraw to ensure the position closed does not breach slippage tolerance
-        //In case tolerance is reached only partial withdraw is executed
+        // Additional cap on withdraw to ensure the position closed does not breach slippage tolerance
+        // In case tolerance is reached only partial withdraw is executed
         uint256 updatedAmount = beforeBurn(amount);
         if (updatedAmount != amount) {
             amount = updatedAmount;
             shares = previewWithdraw(updatedAmount);
         }
 
+        beforeWithdraw(amount, shares);
+
         _burn(from, shares);
 
-        emit Withdraw(from, to, amount);
-
-        beforeWithdraw(amount);
+        emit Withdraw(msg.sender, to, from, amount, shares);
 
         asset.safeTransfer(to, amount);
     }
@@ -71,9 +72,11 @@ abstract contract RageERC4626 is ERC4626 {
         address from
     ) public override returns (uint256 amount) {
         _beforeShareTransfer();
-        uint256 allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.
 
-        if (msg.sender != from && allowed != type(uint256).max) allowance[from][msg.sender] = allowed - shares;
+        if (msg.sender != from) {
+            uint256 allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.
+            if (allowed != type(uint256).max) allowance[from][msg.sender] = allowed - shares;
+        }
 
         // Check for rounding error since we round down in previewRedeem.
         require((amount = previewRedeem(shares)) != 0, 'ZERO_ASSETS');
@@ -86,11 +89,11 @@ abstract contract RageERC4626 is ERC4626 {
             shares = previewWithdraw(updatedAmount);
         }
 
+        beforeWithdraw(amount, shares);
+
         _burn(from, shares);
 
-        emit Withdraw(from, to, amount);
-
-        beforeWithdraw(amount);
+        emit Withdraw(msg.sender, to, from, amount, shares);
 
         asset.safeTransfer(to, amount);
     }
