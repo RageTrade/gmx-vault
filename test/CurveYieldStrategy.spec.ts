@@ -162,40 +162,96 @@ describe('CurveYieldStrategy', () => {
     });
   });
 
-  describe('#internal', () => {
-    it('should deposit usdc', async () => {
-      const [, user] = await hre.ethers.getSigners();
-      const { usdc, curveYieldStrategyTest } = await curveYieldStrategyFixture();
-      const curveYieldStrategy = curveYieldStrategyTest.connect(user);
+  describe('#collateral-shifting', () => {
+    it('should deposit & withdraw usdc', async () => {
+      const [, user1, user2] = await hre.ethers.getSigners();
+      const { usdc, gauge, lpToken, curveYieldStrategyTest: curveYieldStrategy } = await curveYieldStrategyFixture();
 
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
         params: [addresses.USDC_WHALE],
       });
+
       const whale = await ethers.getSigner(addresses.USDC_WHALE);
-      const amount = BigNumber.from(10).pow(6).mul(1000);
 
-      await usdc.connect(whale).transfer(user.address, amount);
+      const amount1 = BigNumber.from(10).pow(6).mul(600);
+      const amount2 = BigNumber.from(10).pow(6).mul(400);
+      const amount = amount1.add(amount2);
 
-      await usdc.connect(user).approve(curveYieldStrategy.address, amount);
+      await usdc.connect(whale).transfer(user1.address, amount1);
+      await usdc.connect(whale).transfer(user2.address, amount2);
 
-      await curveYieldStrategy.depositUsdc(amount);
+      await usdc.connect(user1).approve(curveYieldStrategy.address, amount1);
+      await usdc.connect(user2).approve(curveYieldStrategy.address, amount2);
 
-      await curveYieldStrategy.withdrawUsdc(BigNumber.from(990000000));
-    });
+      const [user1UsdcBalBefore, user2UsdcBalBefore, vaultUsdcBalBefore, gaugeLpBalBefore, vaultLpBalBefore] =
+        await Promise.all([
+          usdc.balanceOf(user1.address),
+          usdc.balanceOf(user2.address),
+          usdc.balanceOf(curveYieldStrategy.address),
+          lpToken.balanceOf(gauge.address),
+          lpToken.balanceOf(curveYieldStrategy.address),
+        ]);
 
-    it('should withdraw usdc', async () => {
-      const [admin, user] = await hre.ethers.getSigners();
-      const { crv, usdt, usdc, lpToken, curveYieldStrategyTest } = await curveYieldStrategyFixture();
-      const curveYieldStrategy = curveYieldStrategyTest.connect(user);
+      await curveYieldStrategy.connect(user1).depositUsdc(amount1);
+
+      const [
+        user1UsdcBalAfterFirstDeposit,
+        user2UsdcBalAfterFirstDeposit,
+        vaultUsdcBalAfterFirstDeposit,
+        gaugeLpBalAfterFirstDeposit,
+        vaultLpBalAfterFirstDeposit,
+      ] = await Promise.all([
+        usdc.balanceOf(user1.address),
+        usdc.balanceOf(user2.address),
+        usdc.balanceOf(curveYieldStrategy.address),
+        lpToken.balanceOf(gauge.address),
+        lpToken.balanceOf(curveYieldStrategy.address),
+      ]);
+
+      await curveYieldStrategy.connect(user2).depositUsdc(amount2);
+
+      const [
+        user1UsdcBalAfterSecondDeposit,
+        user2UsdcBalAfterSecondDeposit,
+        vaultUsdcBalAfterSecondDeposit,
+        gaugeLpBalAfterSecondDeposit,
+        vaultLpBalAfterSecondDeposit,
+      ] = await Promise.all([
+        usdc.balanceOf(user1.address),
+        usdc.balanceOf(user2.address),
+        usdc.balanceOf(curveYieldStrategy.address),
+        lpToken.balanceOf(gauge.address),
+        lpToken.balanceOf(curveYieldStrategy.address),
+      ]);
+
+      expect(user1UsdcBalBefore).to.be.eq(amount1);
+      expect(user2UsdcBalBefore).to.be.eq(amount2);
+      expect(vaultUsdcBalBefore).to.be.eq(0);
+
+      expect(gaugeLpBalBefore).to.be.gt(0);
+      expect(vaultLpBalBefore).to.be.eq(0);
+
+      expect(user1UsdcBalAfterFirstDeposit).to.be.eq(0);
+      expect(user2UsdcBalAfterFirstDeposit).to.be.eq(amount2);
+      expect(vaultUsdcBalAfterFirstDeposit).to.be.eq(0);
+
+      expect(gaugeLpBalAfterFirstDeposit).to.be.gt(gaugeLpBalBefore);
+      expect(vaultLpBalAfterFirstDeposit).to.be.eq(0);
+
+      expect(user1UsdcBalAfterSecondDeposit).to.be.eq(user1UsdcBalAfterFirstDeposit);
+      expect(user2UsdcBalAfterSecondDeposit).to.be.eq(0);
+      expect(vaultUsdcBalAfterSecondDeposit).to.be.eq(0);
+
+      expect(gaugeLpBalAfterSecondDeposit).to.be.gt(gaugeLpBalAfterFirstDeposit);
+      expect(vaultLpBalAfterSecondDeposit).to.be.eq(0);
     });
   });
 
   describe('#withdraw', () => {
     it('should pull LP from pool', async () => {
-      const [admin, user] = await hre.ethers.getSigners();
-      const { crv, usdt, lpToken, curveYieldStrategyTest } = await curveYieldStrategyFixture();
-      const curveYieldStrategy = curveYieldStrategyTest.connect(user);
+      const [admin, user1, user2] = await hre.ethers.getSigners();
+      const { gauge, lpToken, curveYieldStrategyTest: curveYieldStrategy } = await curveYieldStrategyFixture();
 
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
@@ -203,19 +259,137 @@ describe('CurveYieldStrategy', () => {
       });
 
       const whale = await ethers.getSigner(addresses.LP_TOKEN_WHALE);
-      const amount = BigNumber.from(10).pow(18).mul(50);
+
+      const amount1 = BigNumber.from(10).pow(18).mul(25);
+      const amount2 = BigNumber.from(10).pow(18).mul(25);
+      const amount = amount1.add(amount2);
 
       await curveYieldStrategy.connect(admin).updateDepositCap(amount);
 
-      const before = await lpToken.balanceOf(curveYieldStrategy.address);
+      await lpToken.connect(whale).transfer(user1.address, amount1);
+      await lpToken.connect(whale).transfer(user2.address, amount2);
 
-      await lpToken.connect(whale).transfer(user.address, amount);
+      await lpToken.connect(user1).approve(curveYieldStrategy.address, amount1);
+      await lpToken.connect(user2).approve(curveYieldStrategy.address, amount2);
 
-      await lpToken.connect(user).approve(curveYieldStrategy.address, amount);
+      await curveYieldStrategy.connect(user1).deposit(amount1, user1.address);
+      await hre.network.provider.send('evm_increaseTime', [1_000_000]);
+      await hre.network.provider.send('evm_mine', []);
 
-      await curveYieldStrategy.deposit(amount, user.address);
+      await curveYieldStrategy.connect(user2).deposit(amount2, user2.address);
+      await hre.network.provider.send('evm_increaseTime', [1_000_000]);
+      await hre.network.provider.send('evm_mine', []);
 
-      await curveYieldStrategy.withdraw(amount, user.address, user.address);
+      const [
+        user1LpBalBefore,
+        user2LpBalBefore,
+        gaugeLpBalBefore,
+        vaultLpBalBefore,
+        user1SharesBalBefore,
+        user2SharesBalBefore,
+        totalSharesMintedBefore,
+        totalAssetvalueBefore,
+      ] = await Promise.all([
+        lpToken.balanceOf(user1.address),
+        lpToken.balanceOf(user2.address),
+        lpToken.balanceOf(gauge.address),
+        lpToken.balanceOf(curveYieldStrategy.address),
+        curveYieldStrategy.balanceOf(user1.address),
+        curveYieldStrategy.balanceOf(user2.address),
+        curveYieldStrategy.totalSupply(),
+        curveYieldStrategy.totalAssets(),
+      ])
+
+      await curveYieldStrategy.connect(user1).withdraw(amount1, user1.address, user1.address);
+      await hre.network.provider.send('evm_increaseTime', [1_000_000]);
+      await hre.network.provider.send('evm_mine', []);
+
+      const pricePerShareBefore = 
+        (await curveYieldStrategy.totalAssets()).div(await curveYieldStrategy.totalSupply())
+
+      const [
+        user1LpBalAfterFirstWithdraw,
+        user2LpBalAfterFirstWithdraw,
+        gaugeLpBalAfterFirstWithdraw,
+        vaultLpBalAfterFirstWithdraw,
+        user1SharesBalAfterFirstWithdraw,
+        user2SharesBalAfterFirstWithdraw,
+        totalAssetvalueAfterFirstWithdraw,
+        totalSharesMintedAfterFirstWithdraw,
+      ] = await Promise.all([
+        lpToken.balanceOf(user1.address),
+        lpToken.balanceOf(user2.address),
+        lpToken.balanceOf(gauge.address),
+        lpToken.balanceOf(curveYieldStrategy.address),
+        curveYieldStrategy.balanceOf(user1.address),
+        curveYieldStrategy.balanceOf(user2.address),
+        curveYieldStrategy.totalSupply(),
+        curveYieldStrategy.totalAssets(),
+      ])
+
+      const pricePerShareAfterFirstWithdraw = 
+      (await curveYieldStrategy.totalAssets()).div(await curveYieldStrategy.totalSupply())
+
+      await curveYieldStrategy.connect(user2).withdraw(amount2, user2.address, user2.address);
+      await hre.network.provider.send('evm_increaseTime', [1_000_000]);
+      await hre.network.provider.send('evm_mine', []);
+
+      const [
+        user1LpBalAfterSecondWithdraw,
+        user2LpBalAfterSecondWithdraw,
+        gaugeLpBalAfterSecondWithdraw,
+        vaultLpBalAfterSecondWithdraw,
+        user1SharesBalAfterSecondWithdraw,
+        user2SharesBalAfterSecondWithdraw,
+        totalAssetvalueAfterSecondWithdraw,
+        totalSharesMintedAfterSecondWithdraw,
+      ] = await Promise.all([
+        lpToken.balanceOf(user1.address),
+        lpToken.balanceOf(user2.address),
+        lpToken.balanceOf(gauge.address),
+        lpToken.balanceOf(curveYieldStrategy.address),
+        curveYieldStrategy.balanceOf(user1.address),
+        curveYieldStrategy.balanceOf(user2.address),
+        curveYieldStrategy.totalSupply(),
+        curveYieldStrategy.totalAssets(),
+      ])
+
+      expect(user1LpBalBefore).to.be.eq(0);
+      expect(user2LpBalBefore).to.be.eq(0);
+
+      expect(vaultLpBalBefore).to.be.eq(0);
+      expect(gaugeLpBalBefore).to.be.gt(totalAssetvalueBefore);
+
+      expect(user1SharesBalBefore).to.be.eq(amount1);
+      expect(user2SharesBalBefore).to.be.eq(amount2);
+
+      expect(totalAssetvalueBefore).to.be.gte(amount1.add(amount2));
+      expect(totalSharesMintedBefore).to.be.eq(user1SharesBalBefore.add(user2SharesBalBefore));
+
+      // expect(user1LpBalAfterFirstWithdraw).to.be.gt(pricePerShareBefore.mul(user1SharesBalBefore));
+      // expect(user2LpBalAfterFirstWithdraw).to.be.eq(0);
+
+      // expect(vaultLpBalAfterFirstWithdraw).to.be.eq(0);
+      // expect(gaugeLpBalAfterFirstWithdraw).to.be.lt(gaugeLpBalBefore);
+
+      // expect(user1SharesBalAfterFirstWithdraw).to.be.eq(0);
+      // expect(user2SharesBalAfterFirstWithdraw).to.be.eq(user2SharesBalBefore);
+
+      // expect(totalAssetvalueAfterFirstWithdraw).to.be.lt(totalAssetvalueBefore);
+      // expect(totalSharesMintedAfterFirstWithdraw).to.be.lt(user2SharesBalAfterFirstWithdraw);
+
+      // expect(user1LpBalAfterSecondWithdraw).to.be.eq(user1LpBalAfterFirstWithdraw);
+      // expect(user2LpBalAfterSecondWithdraw).to.be.eq(pricePerShareAfterFirstWithdraw.mul(user2SharesBalAfterFirstWithdraw));
+
+      // expect(gaugeLpBalAfterSecondWithdraw).to.be.lt(gaugeLpBalAfterFirstWithdraw);
+      // expect(vaultLpBalAfterSecondWithdraw).to.be.eq(0);
+
+      // expect(user1SharesBalAfterSecondWithdraw).to.be.eq(user1SharesBalAfterFirstWithdraw);
+      // expect(user2SharesBalAfterSecondWithdraw).to.be.eq(0);
+
+      // expect(totalAssetvalueAfterSecondWithdraw).to.be.eq(0);
+      // expect(totalSharesMintedAfterSecondWithdraw).to.be.eq(0);
+
     });
 
     it('should claim fees from LP', async () => {
@@ -283,7 +457,6 @@ describe('CurveYieldStrategy', () => {
       await curveYieldStrategy.deposit(amount, user.address);
 
       const output = await curveYieldStrategy.getVaultMarketValue();
-      console.log(output);
     });
   });
 
