@@ -49,7 +49,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     uint64 public lastRebalanceTS;
     uint16 public rebalancePriceThresholdBps;
 
-    uint256 public depositCap;
+    uint256 public depositCap; // in vault shares
 
     address public keeper;
 
@@ -99,10 +99,11 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     /// @param amount The amount to deposit in asset amount
     /// @param to The address to deposit to
     function deposit(uint256 amount, address to) public virtual override returns (uint256 shares) {
-        //TODO: Please fix this, cap should check the final amount after deposit and not the amount being deposited
-        if (amount > depositCap) revert BV_DepositCap(depositCap, amount);
+        // let the deposit be processed
+        shares = super.deposit(amount, to);
 
-        return super.deposit(amount, to);
+        // after deposit, if the total supply is greater than the deposit cap, then revert
+        if (totalSupply > depositCap) revert BV_DepositCap(depositCap, totalSupply);
     }
 
     /// @notice grants relevant allowances
