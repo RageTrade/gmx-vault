@@ -11,7 +11,7 @@ describe('CurveYieldStrategy', () => {
   });
 
   describe('#deposit', () => {
-    it('should perform approvals', async () => {
+    it('should perform approvals by vault', async () => {
       const [admin] = await hre.ethers.getSigners();
       const { crv, usdt, lpToken, curveYieldStrategyTest } = await curveYieldStrategyFixture();
       const curveYieldStrategy = curveYieldStrategyTest.connect(admin);
@@ -22,8 +22,6 @@ describe('CurveYieldStrategy', () => {
         lpToken.allowance(curveYieldStrategy.address, addresses.TRICRYPTO_POOL),
       ]);
 
-      expect(before).to.be.eql([BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
-
       await curveYieldStrategy.grantAllowances();
 
       const after = await Promise.all([
@@ -32,13 +30,13 @@ describe('CurveYieldStrategy', () => {
         lpToken.allowance(curveYieldStrategy.address, addresses.TRICRYPTO_POOL),
       ]);
 
+      expect(before).to.be.eql([BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
       expect(after).to.be.eql([ethers.constants.MaxUint256, ethers.constants.MaxUint256, ethers.constants.MaxUint256]);
     });
 
-    it('should transfer tokens', async () => {
-      const [admin, user] = await hre.ethers.getSigners();
-      const { crv, usdt, lpToken, curveYieldStrategyTest } = await curveYieldStrategyFixture();
-      const curveYieldStrategy = curveYieldStrategyTest.connect(user);
+    it('should transfer lp tokens & mint shares', async () => {
+      const [admin, user1, user2] = await hre.ethers.getSigners();
+      const { gauge, lpToken, curveYieldStrategyTest: curveYieldStrategy } = await curveYieldStrategyFixture();
 
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
@@ -46,33 +44,128 @@ describe('CurveYieldStrategy', () => {
       });
 
       const whale = await ethers.getSigner(addresses.LP_TOKEN_WHALE);
-      const amount = BigNumber.from(10).pow(18).mul(50);
+
+      const amount1 = BigNumber.from(10).pow(18).mul(40);
+      const amount2 = BigNumber.from(10).pow(18).mul(10);
+      const amount = amount1.add(amount2);
 
       await curveYieldStrategy.connect(admin).updateDepositCap(amount);
 
-      const before = await lpToken.balanceOf(curveYieldStrategy.address);
+      await lpToken.connect(whale).transfer(user1.address, amount1);
+      await lpToken.connect(whale).transfer(user2.address, amount2);
 
-      await lpToken.connect(whale).transfer(user.address, amount);
+      await lpToken.connect(user1).approve(curveYieldStrategy.address, amount1);
+      await lpToken.connect(user2).approve(curveYieldStrategy.address, amount2);
 
-      await lpToken.connect(user).approve(curveYieldStrategy.address, amount);
+      const [
+        user1LpBalBefore,
+        user2LpBalBefore,
+        gaugeLpBalBefore,
+        vaultLpBalBefore,
+        user1SharesBalBefore,
+        user2SharesBalBefore,
+        totalAssetvalueBefore,
+        totalSharesMintedBefore,
+      ] = await Promise.all([
+        lpToken.balanceOf(user1.address),
+        lpToken.balanceOf(user2.address),
+        lpToken.balanceOf(gauge.address),
+        lpToken.balanceOf(curveYieldStrategy.address),
+        curveYieldStrategy.balanceOf(user1.address),
+        curveYieldStrategy.balanceOf(user2.address),
+        curveYieldStrategy.totalSupply(),
+        curveYieldStrategy.totalAssets(),
+      ]);
 
-      await curveYieldStrategy.deposit(amount, user.address);
+      await curveYieldStrategy.connect(user1).deposit(amount1, user1.address);
 
-      const after = await lpToken.balanceOf(curveYieldStrategy.address);
+      const [
+        user1LpBalAfterFirstDeposit,
+        user2LpBalAfterFirstDeposit,
+        gaugeLpBalAfterFirstDeposit,
+        vaultLpBalAfterFirstDeposit,
+        user1SharesBalAfterFirstDeposit,
+        user2SharesBalAfterFirstDeposit,
+        totalAssetvalueAfterFirstDeposit,
+        totalSharesMintedAfterFirstDeposit,
+      ] = await Promise.all([
+        lpToken.balanceOf(user1.address),
+        lpToken.balanceOf(user2.address),
+        lpToken.balanceOf(gauge.address),
+        lpToken.balanceOf(curveYieldStrategy.address),
+        curveYieldStrategy.balanceOf(user1.address),
+        curveYieldStrategy.balanceOf(user2.address),
+        curveYieldStrategy.totalSupply(),
+        curveYieldStrategy.totalAssets(),
+      ]);
 
-      expect(before).to.be.equal(BigNumber.from(0));
-      expect(after).to.be.equal(BigNumber.from(0));
+      await hre.network.provider.send('evm_increaseTime', [1_000_000]);
+      await hre.network.provider.send('evm_mine', []);
 
-      expect(await curveYieldStrategy.balanceOf(user.address)).to.be.eq(amount);
+      await curveYieldStrategy.connect(user2).deposit(amount2, user2.address);
+
+      const [
+        user1LpBalAfterSecondDeposit,
+        user2LpBalAfterSecondDeposit,
+        gaugeLpBalAfterSecondDeposit,
+        vaultLpBalAfterSecondDeposit,
+        user1SharesBalAfterSecondDeposit,
+        user2SharesBalAfterSecondDeposit,
+        totalAssetvalueAfterSecondDeposit,
+        totalSharesMintedAfterSecondDeposit,
+      ] = await Promise.all([
+        lpToken.balanceOf(user1.address),
+        lpToken.balanceOf(user2.address),
+        lpToken.balanceOf(gauge.address),
+        lpToken.balanceOf(curveYieldStrategy.address),
+        curveYieldStrategy.balanceOf(user1.address),
+        curveYieldStrategy.balanceOf(user2.address),
+        curveYieldStrategy.totalSupply(),
+        curveYieldStrategy.totalAssets(),
+      ]);
+
+      expect(user1LpBalBefore).to.be.eq(amount1);
+      expect(user2LpBalBefore).to.be.eq(amount2);
+
+      expect(vaultLpBalBefore).to.be.eq(0);
+      expect(gaugeLpBalBefore).to.be.gt(0);
+
+      expect(user1SharesBalBefore).to.be.eq(0);
+      expect(user2SharesBalBefore).to.be.eq(0);
+
+      expect(totalAssetvalueBefore).to.be.eq(0);
+      expect(totalSharesMintedBefore).to.be.eq(0);
+
+      expect(user1LpBalBefore.sub(user1LpBalAfterFirstDeposit)).to.be.eq(user1LpBalBefore);
+      expect(user2LpBalBefore.sub(user2LpBalAfterFirstDeposit)).to.be.eq(0);
+
+      expect(vaultLpBalAfterFirstDeposit).to.be.eq(0);
+      expect(gaugeLpBalAfterFirstDeposit).to.be.eq(gaugeLpBalBefore.add(amount1));
+
+      expect(user1SharesBalAfterFirstDeposit).to.be.eq(amount1);
+      expect(user2SharesBalAfterFirstDeposit).to.be.eq(0);
+
+      expect(totalAssetvalueAfterFirstDeposit).to.be.eq(amount1);
+      expect(totalSharesMintedAfterFirstDeposit).to.be.eq(amount1);
+
+      expect(user1LpBalAfterFirstDeposit.sub(user1LpBalAfterSecondDeposit)).to.be.eq(0);
+      expect(user2LpBalAfterFirstDeposit.sub(user2LpBalAfterSecondDeposit)).to.be.eq(amount2);
+
+      expect(vaultLpBalAfterSecondDeposit).to.be.eq(0);
+      expect(gaugeLpBalAfterSecondDeposit).to.be.eq(gaugeLpBalAfterFirstDeposit.add(amount2));
+
+      expect(user1SharesBalAfterSecondDeposit).to.be.eq(amount1);
+      expect(user2SharesBalAfterSecondDeposit).to.be.eq(amount2);
+
+      expect(totalAssetvalueAfterSecondDeposit).to.be.eq(amount1.add(amount2));
+      expect(totalSharesMintedAfterSecondDeposit).to.be.eq(amount1.add(amount2));
     });
-
-    it('should add liquidity', async () => {});
   });
 
   describe('#internal', () => {
     it('should deposit usdc', async () => {
-      const [admin, user] = await hre.ethers.getSigners();
-      const { crv, usdt, usdc, lpToken, curveYieldStrategyTest } = await curveYieldStrategyFixture();
+      const [, user] = await hre.ethers.getSigners();
+      const { usdc, curveYieldStrategyTest } = await curveYieldStrategyFixture();
       const curveYieldStrategy = curveYieldStrategyTest.connect(user);
 
       await hre.network.provider.request({
@@ -95,8 +188,6 @@ describe('CurveYieldStrategy', () => {
       const [admin, user] = await hre.ethers.getSigners();
       const { crv, usdt, usdc, lpToken, curveYieldStrategyTest } = await curveYieldStrategyFixture();
       const curveYieldStrategy = curveYieldStrategyTest.connect(user);
-
-      // covered above
     });
   });
 
@@ -138,9 +229,9 @@ describe('CurveYieldStrategy', () => {
       });
 
       const whale = await ethers.getSigner(addresses.LP_TOKEN_WHALE);
+
       const amount1 = BigNumber.from(10).pow(18).mul(40);
       const amount2 = BigNumber.from(10).pow(18).mul(10);
-
       const amount = amount1.add(amount2);
 
       await curveYieldStrategy.connect(admin).updateDepositCap(amount);
@@ -149,7 +240,8 @@ describe('CurveYieldStrategy', () => {
       await lpToken.connect(user).approve(curveYieldStrategy.address, amount);
 
       await curveYieldStrategy.deposit(amount, user.address);
-      await hre.network.provider.send('evm_increaseTime', [7_890_000]);
+
+      await hre.network.provider.send('evm_increaseTime', [1_000_000]);
       await hre.network.provider.send('evm_mine', []);
 
       await gauge.claimable_reward_write(curveYieldStrategy.address, addresses.CRV);
