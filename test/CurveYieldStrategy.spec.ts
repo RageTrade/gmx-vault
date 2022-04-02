@@ -298,14 +298,13 @@ describe('CurveYieldStrategy', () => {
         curveYieldStrategy.balanceOf(user2.address),
         curveYieldStrategy.totalSupply(),
         curveYieldStrategy.totalAssets(),
-      ])
+      ]);
 
       await curveYieldStrategy.connect(user1).withdraw(amount1, user1.address, user1.address);
       await hre.network.provider.send('evm_increaseTime', [1_000_000]);
       await hre.network.provider.send('evm_mine', []);
 
-      const pricePerShareBefore = 
-        (await curveYieldStrategy.totalAssets()).div(await curveYieldStrategy.totalSupply())
+      const pricePerShareBefore = (await curveYieldStrategy.totalAssets()).div(await curveYieldStrategy.totalSupply());
 
       const [
         user1LpBalAfterFirstWithdraw,
@@ -325,10 +324,11 @@ describe('CurveYieldStrategy', () => {
         curveYieldStrategy.balanceOf(user2.address),
         curveYieldStrategy.totalSupply(),
         curveYieldStrategy.totalAssets(),
-      ])
+      ]);
 
-      const pricePerShareAfterFirstWithdraw = 
-      (await curveYieldStrategy.totalAssets()).div(await curveYieldStrategy.totalSupply())
+      const pricePerShareAfterFirstWithdraw = (await curveYieldStrategy.totalAssets()).div(
+        await curveYieldStrategy.totalSupply(),
+      );
 
       await curveYieldStrategy.connect(user2).withdraw(amount2, user2.address, user2.address);
       await hre.network.provider.send('evm_increaseTime', [1_000_000]);
@@ -352,7 +352,7 @@ describe('CurveYieldStrategy', () => {
         curveYieldStrategy.balanceOf(user2.address),
         curveYieldStrategy.totalSupply(),
         curveYieldStrategy.totalAssets(),
-      ])
+      ]);
 
       expect(user1LpBalBefore).to.be.eq(0);
       expect(user2LpBalBefore).to.be.eq(0);
@@ -389,7 +389,6 @@ describe('CurveYieldStrategy', () => {
 
       // expect(totalAssetvalueAfterSecondWithdraw).to.be.eq(0);
       // expect(totalSharesMintedAfterSecondWithdraw).to.be.eq(0);
-
     });
 
     it('should claim fees from LP', async () => {
