@@ -55,10 +55,10 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
     error BV_InvalidRebalance();
     error BV_DepositCap(uint256 depositCap, uint256 depositAmount);
-    error BV_OnlyKeeperAllowed(address keeperAddress, address msgSender);
+    error BV_OnlyKeeperAllowed(address msgSender, address authorisedKeeperAddress);
 
     modifier onlyKeeper() {
-        if (keeper != msg.sender) revert BV_OnlyKeeperAllowed(keeper, msg.sender);
+        if (msg.sender != keeper) revert BV_OnlyKeeperAllowed(msg.sender, keeper);
         _;
     }
 
@@ -92,6 +92,10 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     /// @param newDepositCap The new deposit cap in asset amount
     function updateDepositCap(uint256 newDepositCap) external onlyOwner {
         depositCap = newDepositCap;
+    }
+
+    function setKeeper(address newKeeperAddress) external onlyOwner {
+        keeper = newKeeperAddress;
     }
 
     /// @notice Deposit asset into the vault
