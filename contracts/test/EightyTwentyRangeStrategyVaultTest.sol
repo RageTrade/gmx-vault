@@ -13,7 +13,6 @@ import { EightyTwentyRangeStrategyVault } from '../rangeStrategy/EightyTwentyRan
 import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
 
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
-import { console } from 'hardhat/console.sol';
 
 contract EightyTwentyRangeStrategyVaultTest is EightyTwentyRangeStrategyVault {
     using FullMath for uint256;
