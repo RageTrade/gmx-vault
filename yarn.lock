@@ -748,9 +748,9 @@
     ethers "^5.6.2"
     ethers-repl "^1.0.3"
 
-"@rari-capital/solmate@https://github.com/Rari-Capital/solmate.git#32edfe8cf8e163515a30b1214d0480029f6094cd":
+"@rari-capital/solmate@https://github.com/Rari-Capital/solmate.git#25015a1d18e75921f8cb1bacd4beb9f364e788a9":
   version "6.2.0"
-  resolved "https://github.com/Rari-Capital/solmate.git#32edfe8cf8e163515a30b1214d0480029f6094cd"
+  resolved "https://github.com/Rari-Capital/solmate.git#25015a1d18e75921f8cb1bacd4beb9f364e788a9"
 
 "@resolver-engine/core@^0.3.3":
   version "0.3.3"

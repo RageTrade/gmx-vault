@@ -26,7 +26,7 @@
     "@openzeppelin/contracts": "^4.0.0",
     "@openzeppelin/contracts-upgradeable": "^4.1.0",
     "@ragetrade/core": "^1.0.0",
-    "@rari-capital/solmate": "https://github.com/Rari-Capital/solmate.git#32edfe8cf8e163515a30b1214d0480029f6094cd",
+    "@rari-capital/solmate": "https://github.com/Rari-Capital/solmate.git#25015a1d18e75921f8cb1bacd4beb9f364e788a9",
     "@uniswap/v2-core": "^1.0.1",
     "@uniswap/v2-periphery": "^1.1.0-beta.0",
     "@uniswap/v3-periphery": "^1.4.0",
