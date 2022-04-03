@@ -243,12 +243,13 @@ describe('EightyTwentyRangeStrategyVault', () => {
       await ethPool.oracle.setPriceX128(await priceToPriceX128(4500.67224272213, 6, 18));
       await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 7151872310113270000n, 0, false, false);
       // TODO: Fix the check - expected = -1811804020n
-      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -1811804020n);
 
       const priceX128 = await priceToPriceX128(1.08094471200314, 6, 18);
       await eightyTwentyRangeStrategyVaultTest.setYieldTokenPriceX128(priceX128);
 
       await increaseBlockTimestamp(60000);
+      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -1811804019n);
+
       await eightyTwentyRangeStrategyVaultTest.connect(user1).deposit(parseTokenAmount(10n ** 6n, 18), user1.address);
 
       await checkTotalAssetsApproximate(eightyTwentyRangeStrategyVaultTest, 1998323869852000000000000n);
@@ -293,12 +294,12 @@ describe('EightyTwentyRangeStrategyVault', () => {
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(4500.67224272213, 6, 18));
       await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 7151872310113270000n, 0, false, false);
-      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -1811804020n);
 
       const priceX128 = await priceToPriceX128(1.08094471200314, 6, 18);
       await eightyTwentyRangeStrategyVaultTest.setYieldTokenPriceX128(priceX128);
 
       await increaseBlockTimestamp(60000);
+      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -1811804019n);
 
       await eightyTwentyRangeStrategyVaultTest
         .connect(user0)
@@ -691,7 +692,6 @@ describe('EightyTwentyRangeStrategyVault', () => {
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(4500.67224272213, 6, 18));
       await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 7151872310113270000n, 0, false, false);
-      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -1811804020n);
 
       const priceX128 = await priceToPriceX128(1.08094471200314, 6, 18);
       await eightyTwentyRangeStrategyVaultTest.setYieldTokenPriceX128(priceX128);
@@ -700,6 +700,7 @@ describe('EightyTwentyRangeStrategyVault', () => {
       // await logRageParams("Swap1 - trader0",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
 
       await increaseBlockTimestamp(10000);
+      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -1811804019n);
 
       await eightyTwentyRangeStrategyVaultTest
         .connect(user0)
