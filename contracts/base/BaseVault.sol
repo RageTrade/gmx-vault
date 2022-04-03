@@ -28,6 +28,8 @@ import { UniswapV3PoolHelper, IUniswapV3Pool } from '@ragetrade/core/contracts/l
 
 import { SafeCast } from '../libraries/SafeCast.sol';
 
+import { console } from 'hardhat/console.sol';
+
 abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, OwnableUpgradeable {
     using AddressHelper for address;
     using AddressHelper for IVToken;
@@ -48,6 +50,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     IClearingHouse.Pool public rageTradePool;
     uint64 public lastRebalanceTS;
     uint16 public rebalancePriceThresholdBps;
+    uint32 public rebalanceTimeThreshold; // seconds
 
     uint256 public depositCap; // in vault shares
 
@@ -85,7 +88,12 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         rageCollateralToken = CollateralToken(_rageCollateralToken);
         rageSettlementToken = IERC20Metadata(_rageSettlementToken);
         rageTradePool = rageClearingHouse.getPoolInfo(ethPoolId);
+        rebalanceTimeThreshold = 1 days;
         // Give rageClearingHouse full allowance of rageCollateralToken and usdc
+    }
+
+    function setRebalanceTimeThreshold(uint32 _rebalanceTimeThreshold) external onlyOwner {
+        rebalanceTimeThreshold = _rebalanceTimeThreshold;
     }
 
     /// @notice Set the deposit cap for the vault in asset amount
@@ -116,8 +124,8 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     }
 
     /// @notice Rebalance the vault assets
-    function rebalance() public onlyKeeper {
-        if (!_isValidRebalance()) {
+    function rebalance() public virtual onlyKeeper {
+        if (!isValidRebalance()) {
             revert BV_InvalidRebalance();
         }
         // Rebalance ranges based on the parameters passed
@@ -133,6 +141,9 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
         // Step-4 Rebalance
         _rebalanceRanges(vTokenPositions[0], vaultMarketValue);
+
+        // Post rebalance
+        lastRebalanceTS = uint64(_blockTimestamp());
     }
 
     /// @notice closes remaining token position (To be used when reset condition is hit)
@@ -234,10 +245,12 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         }
     }
 
-    /// @notice Checks if the rebalance is valid or not
-    function _isValidRebalance() internal view returns (bool isValid) {
-        //TODO: make rebalance period variable
-        if (_blockTimestamp() - lastRebalanceTS > 1 days || _isValidRebalanceRange()) isValid = true;
+    function _isValidRebalanceTime() internal view returns (bool) {
+        return _blockTimestamp() - lastRebalanceTS > rebalanceTimeThreshold;
+    }
+
+    function isValidRebalance() public view returns (bool isValid) {
+        return _isValidRebalanceTime() || _isValidRebalanceRange();
     }
 
     /// @notice Rebalances the pnl on rage trade and converts profit into asset tokens and covers losses using asset tokens
@@ -301,7 +314,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         return _beforeWithdrawClosePositionRanges(totalAssets(), amount);
     }
 
-    function _blockTimestamp() internal view returns (uint256) {
+    function _blockTimestamp() internal view virtual returns (uint256) {
         // solhint-disable-next-line not-rely-on-time
         return block.timestamp;
     }
