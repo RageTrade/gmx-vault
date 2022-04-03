@@ -8,6 +8,8 @@ import { IClearingHouse } from '@ragetrade/core/contracts/interfaces/IClearingHo
 import { BaseVault } from '../base/BaseVault.sol';
 
 contract BaseVaultTest is BaseVault {
+    uint64 blockTimestamp_ = uint64(block.timestamp);
+
     constructor(ERC20 token, address rageClearingHouse) BaseVault(token, 'name', 'symbol', 0) initializer {
         __BaseVault_init({
             _owner: msg.sender,
@@ -15,6 +17,27 @@ contract BaseVaultTest is BaseVault {
             _rageCollateralToken: address(token),
             _rageSettlementToken: address(token)
         });
+    }
+
+    function isValidRebalanceTime() public view returns (bool) {
+        return _isValidRebalanceTime();
+    }
+
+    function rebalance() public override onlyKeeper {
+        if (!isValidRebalance()) {
+            revert BV_InvalidRebalance();
+        }
+
+        // Post rebalance
+        lastRebalanceTS = uint64(_blockTimestamp());
+    }
+
+    function _blockTimestamp() internal view override returns (uint256) {
+        return blockTimestamp_;
+    }
+
+    function setBlockTimestamp(uint64 bt) public {
+        blockTimestamp_ = bt;
     }
 
     function _stake(uint256 amount) internal virtual override {}
