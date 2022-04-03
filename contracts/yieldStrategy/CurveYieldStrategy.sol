@@ -14,6 +14,8 @@ import { ICurveStableSwap } from '../interfaces/curve/ICurveStableSwap.sol';
 
 import { ISwapRouter } from '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
 
+import { AggregatorV3Interface } from '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol';
+
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
 
@@ -29,6 +31,11 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     ISwapRouter public uniV3Router;
     ILPPriceGetter public lpPriceHolder;
     ICurveStableSwap public triCryptoPool;
+
+    AggregatorV3Interface public crvOracle;
+
+    uint256 crvSwapSlippageTolerance;
+    uint256 notionalCrvHarvestThreshold;
 
     /* solhint-enable const-name-snakecase */
 
@@ -90,6 +97,18 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         );
     }
 
+    function setCrvOracle(AggregatorV3Interface _crvOracle) external onlyOwner {
+        crvOracle = _crvOracle;
+    }
+
+    function setCrvSwapSlippageTolerance(uint256 _slippageTolerance) external onlyOwner {
+        crvSwapSlippageTolerance = _slippageTolerance;
+    }
+
+    function setNotionalCrvHarvestThreshold(uint256 _notionalCrvHarvestThreshold) external onlyOwner {
+        notionalCrvHarvestThreshold = _notionalCrvHarvestThreshold;
+    }
+
     function grantAllowances() public override {
         _grantBaseAllowances();
         usdt.approve(address(triCryptoPool), type(uint256).max);
@@ -105,6 +124,12 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     function withdrawFees() external onlyOwner {
         uint256 bal = crvToken.balanceOf(address(this));
         crvToken.transfer(owner(), bal);
+    }
+
+    function _getCrvPrice() internal view returns (uint256) {
+        (, int256 answer, , , ) = crvOracle.latestRoundData();
+        require(uint256(answer) > uint256(0), 'NEGATIVE_CRV_PRICE');
+        return (uint256(answer));
     }
 
     function _afterDepositYield(uint256 amount) internal override {
