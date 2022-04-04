@@ -44,7 +44,7 @@ export default {
     hardhat: {
       forking: {
         url: `https://arb-mainnet.alchemyapi.io/v2/${ALCHEMY_KEY}`,
-        blockNumber: 8937642,
+        blockNumber: 9257637,
       },
       blockGasLimit: 0x1fffffffffff,
       gasPrice: 0,
@@ -94,6 +94,7 @@ export default {
   },
   dependencyCompiler: {
     paths: [
+      '@uniswap/v3-periphery/contracts/interfaces/IQuoterV2.sol',
       '@ragetrade/core/contracts/protocol/clearinghouse/ClearingHouse.sol',
       '@ragetrade/core/contracts/protocol/RageTradeFactory.sol',
       '@ragetrade/core/contracts/protocol/wrapper/VPoolWrapper.sol',
@@ -107,6 +108,7 @@ export default {
     target: 'ethers-v5',
     alwaysGenerateOverloads: false,
     externalArtifacts: [
+      'node_modules/@uniswap/v3-periphery/artifacts/contracts/interfaces/IQuoterV2.sol/IQuoterV2.json',
       'node_modules/@uniswap/v3-core/artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json',
       'node_modules/@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3PoolDeployer.sol/IUniswapV3PoolDeployer.json',
       'node_modules/@uniswap/v2-core/build/IUniswapV2Factory.json',
