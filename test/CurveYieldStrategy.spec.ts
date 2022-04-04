@@ -203,6 +203,7 @@ describe('CurveYieldStrategy', () => {
           lpToken.balanceOf(curveYieldStrategy.address),
         ]);
 
+      await usdc.connect(user1).transfer(curveYieldStrategy.address, amount1);
       await curveYieldStrategy.connect(user1).depositUsdc(amount1);
 
       const [
@@ -218,7 +219,7 @@ describe('CurveYieldStrategy', () => {
         lpToken.balanceOf(gauge.address),
         lpToken.balanceOf(curveYieldStrategy.address),
       ]);
-
+      await usdc.connect(user2).transfer(curveYieldStrategy.address, amount2);
       await curveYieldStrategy.connect(user2).depositUsdc(amount2);
 
       const [
