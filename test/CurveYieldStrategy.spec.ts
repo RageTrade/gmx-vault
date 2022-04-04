@@ -10,6 +10,11 @@ const within = (value: BigNumber, start: BigNumber, end: BigNumber): Boolean => 
   return false;
 };
 
+// remove when https://github.com/NomicFoundation/hardhat/issues/2234 is closed
+function revertReason(reason: string) {
+  return `Error: VM Exception while processing transaction: reverted with reason string ${reason}`
+}
+
 describe('CurveYieldStrategy', () => {
   beforeEach(async () => {
     await curveYieldStrategyFixture();
@@ -431,10 +436,67 @@ describe('CurveYieldStrategy', () => {
       ).to.be.true;
     });
 
-    it('should claim fees from LP', async () => {
+    it('should harvest & compound CRV from gauge', async () => {
       const [admin, user] = await hre.ethers.getSigners();
-      const { crv, usdt, lpToken, curveYieldStrategyTest, gauge } = await curveYieldStrategyFixture();
-      const curveYieldStrategy = curveYieldStrategyTest.connect(user);
+      const { gauge, lpToken, curveYieldStrategyTest: curveYieldStrategy } = await curveYieldStrategyFixture();
+
+      await hre.network.provider.request({
+        method: 'hardhat_impersonateAccount',
+        params: [addresses.LP_TOKEN_WHALE],
+      });
+
+      const whale = await ethers.getSigner(addresses.LP_TOKEN_WHALE);
+
+      const amount = BigNumber.from(10).pow(18).mul(50);
+
+      await curveYieldStrategy.connect(admin).updateDepositCap(amount);
+
+      await lpToken.connect(whale).transfer(user.address, amount);
+      await lpToken.connect(user).approve(curveYieldStrategy.address, amount);
+
+      await curveYieldStrategy.connect(user).deposit(amount, user.address);
+
+      const gaugeLpBalBefore = await lpToken.balanceOf(gauge.address);
+      const pricePerShareBefore = (await curveYieldStrategy.totalAssets()).div(await curveYieldStrategy.totalSupply());
+
+      await hre.network.provider.send('evm_increaseTime', [10_000_000]);
+      await hre.network.provider.send('evm_mine', []);
+
+      await gauge.claimable_reward_write(curveYieldStrategy.address, addresses.CRV);
+      await curveYieldStrategy.harvestFees();
+
+      const gaugeLpBalAfter = await lpToken.balanceOf(gauge.address);
+      const pricePerShareAfter = await curveYieldStrategy.convertToAssets(BigNumber.from(10).pow(18));
+
+      expect(gaugeLpBalAfter.sub(gaugeLpBalBefore)).to.be.gt(0);
+      expect(pricePerShareAfter.sub(pricePerShareBefore)).to.be.gt(0);
+
+      const lpTokenGains = gaugeLpBalAfter.sub(gaugeLpBalBefore);
+      const totalLpTokens = amount.add(lpTokenGains);
+
+      expect(
+        within(
+          pricePerShareAfter
+            .mul(amount)
+            .div(BigNumber.from(10).pow(18))
+            .sub(await curveYieldStrategy.totalAssets()),
+          BigNumber.from(-1).mul(10 ** 2),
+          BigNumber.from(10 ** 2),
+        ),
+      ).to.be.true;
+    });
+
+    it('should deduct rage fee (10% which can be changed)', async () => {
+      const [admin, user1, user2] = await hre.ethers.getSigners();
+      const {
+        crv,
+        gauge,
+        lpToken,
+        lpOracle,
+        crvOracle,
+        uniswapQuoter,
+        curveYieldStrategyTest: curveYieldStrategy,
+      } = await curveYieldStrategyFixture();
 
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
@@ -449,33 +511,92 @@ describe('CurveYieldStrategy', () => {
 
       await curveYieldStrategy.connect(admin).updateDepositCap(amount);
 
-      await lpToken.connect(whale).transfer(user.address, amount);
-      await lpToken.connect(user).approve(curveYieldStrategy.address, amount);
+      await lpToken.connect(whale).transfer(user1.address, amount1);
+      await lpToken.connect(whale).transfer(user2.address, amount2);
 
-      await curveYieldStrategy.deposit(amount, user.address);
+      await lpToken.connect(user1).approve(curveYieldStrategy.address, amount1);
+      await lpToken.connect(user2).approve(curveYieldStrategy.address, amount2);
 
-      await hre.network.provider.send('evm_increaseTime', [1_000_000]);
+      await curveYieldStrategy.connect(user1).deposit(amount1, user1.address);
+      await curveYieldStrategy.connect(user2).deposit(amount2, user1.address);
+
+      const [totalAssetsBefore, crvBalanceBefore] = await Promise.all([
+        curveYieldStrategy.convertToAssets(amount),
+        crv.balanceOf(curveYieldStrategy.address),
+      ]);
+
+      await hre.network.provider.send('evm_increaseTime', [10_000_000]);
       await hre.network.provider.send('evm_mine', []);
 
       await gauge.claimable_reward_write(curveYieldStrategy.address, addresses.CRV);
-
+      const claimableReward = await gauge.claimable_reward(curveYieldStrategy.address, addresses.CRV);
       await curveYieldStrategy.harvestFees();
-    });
 
-    it('should deduct rage fee (10% which can be changed)', async () => {
-      const [admin, user] = await hre.ethers.getSigners();
-      const { crv, usdt, lpToken, curveYieldStrategyTest, triCrypto } = await curveYieldStrategyFixture();
-      const curveYieldStrategy = curveYieldStrategyTest.connect(admin);
+      const [totalAssetsAfterHarvest, crvBalanceAfterHarvest] = await Promise.all([
+        curveYieldStrategy.convertToAssets(amount),
+        crv.balanceOf(curveYieldStrategy.address),
+      ]);
+
+      // const out = await uniswapQuoter.quoteExactInput(
+      //   '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978000bb882af49447d8a07e3bd95bd0d56f35241523fbab10001f4fd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9',
+      //   claimableReward.mul(BigNumber.from(9)).div(10)
+      // )
 
       await curveYieldStrategy.withdrawFees();
+
+      const [totalAssetsAfterWithdrawFees, crvBalanceAfterWithdrawFees] = await Promise.all([
+        curveYieldStrategy.convertToAssets(amount),
+        crv.balanceOf(curveYieldStrategy.address),
+      ]);
+
+      expect(totalAssetsAfterHarvest).to.be.gt(totalAssetsBefore);
+      expect(totalAssetsAfterHarvest).to.be.eq(totalAssetsAfterWithdrawFees);
+
+      expect(crvBalanceBefore).to.be.eq(BigNumber.from(0));
+      expect(crvBalanceAfterWithdrawFees).to.be.eq(BigNumber.from(0));
+
+      // admin fees : 0.1 * total crv rewards
+      // total crv rewards : admin fees + converted into LP
+      // therefore, converted into LP : 9 * admin fees
+
+      // total crv rewards : increase in value of shares
+
+      // total earned : total crv * price of crv
+      // total fees : total earned * 0.1
+      // total increase in value of shares : total earned * 0.9
+      // total value of shares : old value of shares + new value of shares
+
+      const pricePerLP = await lpOracle.lp_price();
+      // console.log('PRICE PER LP : ', pricePerLP);
+
+      const { answer } = await crvOracle.latestRoundData();
+      // console.log('PRICE PER CRV : ', answer.div(10 ** 8));
+
+      const fees = crvBalanceAfterHarvest.mul(answer).div(BigNumber.from(10).pow(8));
+      // console.log('FEES : ', fees);
+
+      const convertedToLp = BigNumber.from(9).mul(fees);
+      // console.log('CONVERTED TO LP : ', convertedToLp);
+
+      const increaseInvalueOfShares = totalAssetsAfterHarvest.sub(totalAssetsBefore);
+      // console.log('INCREASE IN VALUE OF SHARES : ', increaseInvalueOfShares);
+
+      // expect(convertedToLp.mul(10).div(11)).to.be.eq(
+      //   increaseInvalueOfShares.mul(pricePerLP).div(BigNumber.from(10).pow(18)),
+      // );
+
+      // const notionalIncrease = totalAssetsAfterHarvest.sub(totalAssetsBefore).mul(pricePerLP);
+
+      // const netCrvValue = answer.div().mul(crvBalanceAfterHarvest);
+
+      // expect(notionalIncrease).to.be.eq(netCrvValue.mul(11));
     });
   });
 
-  describe('#lpPrice', () => {
-    it('should calculate TVL of vault', async () => {
-      const [admin, user] = await hre.ethers.getSigners();
-      const { crv, usdt, lpToken, curveYieldStrategyTest } = await curveYieldStrategyFixture();
-      const curveYieldStrategy = curveYieldStrategyTest.connect(user);
+  describe('#price-and-value-getters', () => {
+    it('should calculate total assets exclusive of fees', async () => {
+      const [admin, user1, user2] = await hre.ethers.getSigners();
+      const { gauge, lpToken, curveYieldStrategyTest: curveYieldStrategy } = await curveYieldStrategyFixture();
 
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
@@ -483,29 +604,98 @@ describe('CurveYieldStrategy', () => {
       });
 
       const whale = await ethers.getSigner(addresses.LP_TOKEN_WHALE);
-      const amount = BigNumber.from(10).pow(18).mul(50);
+
+      const amount1 = BigNumber.from(10).pow(18).mul(40);
+      const amount2 = BigNumber.from(10).pow(18).mul(10);
+      const amount = amount1.add(amount2);
 
       await curveYieldStrategy.connect(admin).updateDepositCap(amount);
 
-      const before = await lpToken.balanceOf(curveYieldStrategy.address);
+      await lpToken.connect(whale).transfer(user1.address, amount1);
+      await lpToken.connect(whale).transfer(user2.address, amount2);
 
-      await lpToken.connect(whale).transfer(user.address, amount);
+      await lpToken.connect(user1).approve(curveYieldStrategy.address, amount1);
+      await lpToken.connect(user2).approve(curveYieldStrategy.address, amount2);
 
-      await lpToken.connect(user).approve(curveYieldStrategy.address, amount);
+      await curveYieldStrategy.connect(user1).deposit(amount1, user1.address);
+      await hre.network.provider.send('evm_increaseTime', [10_000_000]);
+      await hre.network.provider.send('evm_mine', []);
 
-      await curveYieldStrategy.deposit(amount, user.address);
+      await curveYieldStrategy.connect(user2).deposit(amount2, user2.address);
+      await hre.network.provider.send('evm_increaseTime', [10_000_000]);
+      await hre.network.provider.send('evm_mine', []);
 
-      const output = await curveYieldStrategy.getVaultMarketValue();
+      await gauge.claimable_reward_write(curveYieldStrategy.address, addresses.CRV);
+      await curveYieldStrategy.harvestFees();
+
+      const before = await curveYieldStrategy.totalAssets();
+
+      await curveYieldStrategy.withdrawFees();
+
+      const after = await curveYieldStrategy.totalAssets();
+
+      expect(after).to.be.eq(before);
     });
+
+    it('getPriceX128', async () => {
+      const [admin, user1] = await hre.ethers.getSigners();
+      const {
+        gauge,
+        lpToken,
+        lpOracle,
+        curveYieldStrategyTest: curveYieldStrategy,
+      } = await curveYieldStrategyFixture();
+
+      await hre.network.provider.request({
+        method: 'hardhat_impersonateAccount',
+        params: [addresses.LP_TOKEN_WHALE],
+      });
+
+      const whale = await ethers.getSigner(addresses.LP_TOKEN_WHALE);
+
+      const amount = BigNumber.from(10).pow(18).mul(40);
+
+      await curveYieldStrategy.connect(admin).updateDepositCap(amount);
+
+      await lpToken.connect(whale).transfer(user1.address, amount);
+
+      await lpToken.connect(user1).approve(curveYieldStrategy.address, amount);
+
+      await curveYieldStrategy.connect(user1).deposit(amount, user1.address);
+      await hre.network.provider.send('evm_increaseTime', [10_000_000]);
+      await hre.network.provider.send('evm_mine', []);
+
+      await gauge.claimable_reward_write(curveYieldStrategy.address, addresses.CRV);
+      await curveYieldStrategy.harvestFees();
+
+      const price = (await curveYieldStrategy.getPriceX128()).toBigInt();
+      const lpPrice = (await lpOracle.lp_price()).toBigInt();
+
+      const diff = lpPrice - ((price * 10n ** 30n) >> 128n);
+      expect(Number(diff)).to.be.oneOf([-1, 0, 1]);
+    });
+
+    it('total market value', async () => {});
   });
 
   describe('#fee', () => {
-    it('should handle fee changes', async () => {
-      const [admin, user] = await hre.ethers.getSigners();
-      const { crv, usdt, lpToken, curveYieldStrategyTest, triCrypto } = await curveYieldStrategyFixture();
+    it('should change fee within threshold', async () => {
+      const [admin] = await hre.ethers.getSigners();
+      const { curveYieldStrategyTest } = await curveYieldStrategyFixture();
       const curveYieldStrategy = curveYieldStrategyTest.connect(admin);
 
       await curveYieldStrategy.changeFee(2000);
+      expect(await curveYieldStrategy.FEE()).to.be.eq(BigNumber.from(2000));
     });
+
+    // uncomment when fixed from hardhat
+
+    // it('should fail outside of threshold', async () => {
+    //   const [admin] = await hre.ethers.getSigners();
+    //   const { curveYieldStrategyTest } = await curveYieldStrategyFixture();
+    //   const curveYieldStrategy = curveYieldStrategyTest.connect(admin);
+
+    //   expect(await curveYieldStrategy.changeFee(10001)).to.be.revertedWith(revertReason('fee out of bounds'));
+    // });
   });
 });
