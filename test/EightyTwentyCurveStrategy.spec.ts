@@ -11,7 +11,7 @@ describe('EightyTwentyCurveStrategy', () => {
   });
 
   describe('No Price Movement', () => {
-    it.skip('Deposit - should transfer lp tokens & mint shares', async () => {
+    it.only('Deposit - should transfer lp tokens & mint shares', async () => {
       const [admin, user1, user2] = await hre.ethers.getSigners();
       const { gauge, lpToken, curveYieldStrategyTest: curveYieldStrategy } = await eightyTwentyCurveStrategyFixture();
 
