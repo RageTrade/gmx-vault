@@ -51,7 +51,7 @@ abstract contract RageERC4626 is ERC4626 {
 
         // Additional cap on withdraw to ensure the position closed does not breach slippage tolerance
         // In case tolerance is reached only partial withdraw is executed
-        uint256 updatedAmount = beforeBurn(amount);
+        uint256 updatedAmount = beforeWithdrawClosePosition(amount);
         if (updatedAmount != amount) {
             amount = updatedAmount;
             shares = previewWithdraw(updatedAmount);
@@ -83,7 +83,7 @@ abstract contract RageERC4626 is ERC4626 {
 
         //Additional cap on withdraw to ensure the position closed does not breach slippage tolerance
         //In case tolerance is reached only partial withdraw is executed
-        uint256 updatedAmount = beforeBurn(amount);
+        uint256 updatedAmount = beforeWithdrawClosePosition(amount);
         if (updatedAmount != amount) {
             amount = updatedAmount;
             shares = previewWithdraw(updatedAmount);
@@ -100,5 +100,5 @@ abstract contract RageERC4626 is ERC4626 {
 
     function _beforeShareAllocation() internal virtual;
 
-    function beforeBurn(uint256 amount) internal virtual returns (uint256 updatedAmount);
+    function beforeWithdrawClosePosition(uint256 amount) internal virtual returns (uint256 updatedAmount);
 }

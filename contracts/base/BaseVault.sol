@@ -126,10 +126,8 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
         _rebalanceProfitAndCollateral(deposits, vTokenPositions, vaultMarketValue);
 
-        // Step-4 Find the ranges and amount of liquidity to put in each
+        // Step-4 Rebalance
         _rebalanceRanges(vTokenPositions[0], vaultMarketValue);
-
-        // Step-5 Rebalance
     }
 
     /// @notice closes remaining token position (To be used when reset condition is hit)
@@ -291,8 +289,8 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         _beforeWithdrawYield(amount);
     }
 
-    function beforeBurn(uint256 amount) internal virtual override returns (uint256 updatedAmount) {
-        return _beforeBurnRanges(totalAssets(), amount);
+    function beforeWithdrawClosePosition(uint256 amount) internal virtual override returns (uint256 updatedAmount) {
+        return _beforeWithdrawClosePositionRanges(totalAssets(), amount);
     }
 
     function _blockTimestamp() internal view returns (uint256) {
@@ -340,14 +338,24 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     /// @notice closes token position
     function _closeTokenPosition(IClearingHouse.VTokenPositionView memory vTokenPosition) internal virtual;
 
+    /// @notice Updates liquidity position and collateral in rage core after deposit
+    /// @param amountAfterDeposit The amount of asset tokens after deposit
+    /// @param amountDeposited The amount of asset tokens deposited
     function _afterDepositRanges(uint256 amountAfterDeposit, uint256 amountDeposited) internal virtual;
 
-    function _beforeBurnRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn)
+    /// @notice Closes net token position before withdrawal
+    /// @param amountBeforeWithdraw The amount of asset tokens before withdrawal
+    /// @param amountWithdrawn The amount of asset tokens withdrawn
+    function _beforeWithdrawClosePositionRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn)
         internal
         virtual
         returns (uint256 updatedAmountWithdrawn);
 
+    /// @notice Updates liquidity position and collateral in rage core before withdrawal
+    /// @param amountBeforeWithdraw The amount of asset tokens before withdrawal
+    /// @param amountWithdrawn The amount of asset tokens withdrawn
     function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal virtual;
 
+    /// @notice Checks if rebalance is valid based on range
     function _isValidRebalanceRange() internal view virtual returns (bool isValid);
 }

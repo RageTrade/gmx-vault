@@ -29,7 +29,7 @@ contract CurveYieldStrategyTest is CurveYieldStrategy {
 
     function _afterDepositRanges(uint256 amountAfterDeposit, uint256 amountDeposited) internal override {}
 
-    function beforeBurn(uint256 amount) internal override returns (uint256 updatedAmount) {
+    function beforeWithdrawClosePosition(uint256 amount) internal override returns (uint256 updatedAmount) {
         updatedAmount = amount;
     }
 

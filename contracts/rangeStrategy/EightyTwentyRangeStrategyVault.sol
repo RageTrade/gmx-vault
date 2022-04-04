@@ -51,6 +51,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         RANGE STRATEGY
     */
 
+    /// @inheritdoc BaseVault
     function _isValidRebalanceRange() internal view override returns (bool isValid) {
         uint256 twapSqrtPriceX96 = uint256(_getTwapSqrtPriceX96());
         uint256 twapSqrtPriceX96Delta = twapSqrtPriceX96.mulDiv(rebalancePriceThresholdBps, 1e4);
@@ -60,11 +61,17 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         ) isValid = true;
     }
 
+    /// @inheritdoc BaseVault
+
     function _afterDepositRanges(uint256 amountAfterDeposit, uint256 amountDeposited) internal virtual override {
         int256 depositMarketValue = getMarketValue(amountDeposited).toInt256();
+
+        // add collateral token based on updated market value - so that adding more liquidity does not cause issues
         _settleCollateral(depositMarketValue);
+
         IClearingHouseStructures.LiquidityChangeParams memory liquidityChangeParam;
         if (baseLiquidity == 0 && amountAfterDeposit == amountDeposited) {
+            // No range present - calculate range params and add new range
             uint160 twapSqrtPriceX96 = _getTwapSqrtPriceX96();
             (baseTickLower, baseTickUpper, baseLiquidity) = _getUpdatedBaseRangeParams(
                 twapSqrtPriceX96,
@@ -72,14 +79,17 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
             );
             liquidityChangeParam = _getLiquidityChangeParams(baseTickLower, baseTickUpper, baseLiquidity.toInt128());
         } else {
-            // Add to base range based on the additional collateral
+            // Range Present - Add to base range based on the additional assets deposited
             liquidityChangeParam = _getLiquidityChangeParamsAfterDeposit(amountAfterDeposit, amountDeposited);
             assert(liquidityChangeParam.liquidityDelta > 0);
 
             baseLiquidity += uint128(liquidityChangeParam.liquidityDelta);
         }
+        //Update range on rage core
         rageClearingHouse.updateRangeOrder(rageAccountNo, ethPoolId, liquidityChangeParam);
     }
+
+    /// @inheritdoc BaseVault
 
     function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal virtual override {
         // Remove from base range based on the collateral removal
@@ -90,14 +100,20 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
             );
         assert(liquidityChangeParam.liquidityDelta < 0);
         baseLiquidity -= uint128(-liquidityChangeParam.liquidityDelta);
+
+        //In case liquidity is becoming 0 then remove the remaining position
+        //Remaining position should not lead to high slippage since threshold check is done before withdrawal
         if (baseLiquidity == 0) liquidityChangeParam.closeTokenPosition = true;
         rageClearingHouse.updateRangeOrder(rageAccountNo, ethPoolId, liquidityChangeParam);
-        // Settle collateral based on updated value
+
+        // Settle collateral based on updated market value of assets
         int256 depositMarketValue = getMarketValue(amountWithdrawn).toInt256();
         _settleCollateral(-depositMarketValue);
     }
 
-    function _beforeBurnRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn)
+    /// @inheritdoc BaseVault
+
+    function _beforeWithdrawClosePositionRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn)
         internal
         override
         returns (uint256 updatedAmountWithdrawn)
@@ -128,6 +144,8 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         }
     }
 
+    /// @inheritdoc BaseVault
+
     function _rebalanceRanges(IClearingHouse.VTokenPositionView memory vTokenPosition, int256 vaultMarketValue)
         internal
         override
@@ -143,6 +161,8 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         if (isReset) _closeTokenPosition(vTokenPosition);
     }
 
+    /// @inheritdoc BaseVault
+
     function _closeTokenPosition(IClearingHouse.VTokenPositionView memory vTokenPosition) internal override {
         int256 tokensToTrade = -vTokenPosition.netTraderPosition;
         uint160 sqrtTwapPriceX96 = _getTwapSqrtPriceX96();
@@ -153,20 +173,27 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
             closePositionSlippageSqrtToleranceBps
         );
 
+        //If whole position is closed then reset is done
         if (tokensToTrade == vTokenAmountOut) isReset = false;
     }
 
+    /// @notice Close position on rage clearing house
+    /// @param tokensToTrade Amount of tokens to trade
+    /// @param sqrtPriceX96 Sqrt of price in X96
+    /// @param slippageSqrtToleranceBps Slippage tolerance of sqrt price
+    /// @return vTokenAmountOut amount of tokens on close
+    /// @return vQuoteAmountOut amount of quote on close
     function _closeTokenPosition(
         int256 tokensToTrade,
         uint160 sqrtPriceX96,
-        uint16 slippageToleranceBps
+        uint16 slippageSqrtToleranceBps
     ) internal returns (int256 vTokenAmountOut, int256 vQuoteAmountOut) {
         uint160 sqrtPriceLimitX96;
 
         if (tokensToTrade > 0) {
-            sqrtPriceLimitX96 = uint256(sqrtPriceX96).mulDiv(1e4 + slippageToleranceBps, 1e4).toUint160();
+            sqrtPriceLimitX96 = uint256(sqrtPriceX96).mulDiv(1e4 + slippageSqrtToleranceBps, 1e4).toUint160();
         } else {
-            sqrtPriceLimitX96 = uint256(sqrtPriceX96).mulDiv(1e4 - slippageToleranceBps, 1e4).toUint160();
+            sqrtPriceLimitX96 = uint256(sqrtPriceX96).mulDiv(1e4 - slippageSqrtToleranceBps, 1e4).toUint160();
         }
         IClearingHouseStructures.SwapParams memory swapParams = IClearingHouseStructures.SwapParams(
             tokensToTrade,
@@ -177,6 +204,9 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         (vTokenAmountOut, vQuoteAmountOut) = rageClearingHouse.swapToken(rageAccountNo, ethPoolId, swapParams);
     }
 
+    /// @notice Get liquidity change params on rebalance
+    /// @param vaultMarketValue Market value of vault in USDC
+    /// @return liquidityChangeParamList Liquidity change params
     function _getLiquidityChangeParamsOnRebalance(int256 vaultMarketValue)
         internal
         returns (IClearingHouseStructures.LiquidityChangeParams[2] memory liquidityChangeParamList)
@@ -228,6 +258,9 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         liqCount++;
     }
 
+    /// @notice Get liquidity change params on deposit
+    /// @param amountAfterDeposit Amount of asset tokens after deposit
+    /// @param amountDeposited Amount of asset tokens deposited
     function _getLiquidityChangeParamsAfterDeposit(uint256 amountAfterDeposit, uint256 amountDeposited)
         internal
         view
@@ -238,6 +271,9 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         liquidityChangeParam = _getLiquidityChangeParams(baseTickLower, baseTickUpper, liquidityDelta);
     }
 
+    /// @notice Get liquidity change params on withdraw
+    /// @param amountBeforeWithdraw Amount of asset tokens after withdraw
+    /// @param amountWithdrawn Amount of asset tokens withdrawn
     function _getLiquidityChangeParamsBeforeWithdraw(uint256 amountBeforeWithdraw, uint256 amountWithdrawn)
         internal
         view
@@ -247,6 +283,10 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         liquidityChangeParam = _getLiquidityChangeParams(baseTickLower, baseTickUpper, liquidityDelta);
     }
 
+    /// @notice Get liquidity change params struct
+    /// @param tickLower Lower tick of range
+    /// @param tickUpper Upper tick of range
+    /// @param liquidityDelta Liquidity delta of range
     function _getLiquidityChangeParams(
         int24 tickLower,
         int24 tickUpper,
@@ -263,6 +303,9 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         );
     }
 
+    /// @notice Get updated base range params
+    /// @param sqrtPriceX96 Sqrt of price in X96
+    /// @param vaultMarketValue Market value of vault in USDC
     function _getUpdatedBaseRangeParams(uint160 sqrtPriceX96, int256 vaultMarketValue)
         internal
         pure
@@ -288,6 +331,9 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         ).toUint128();
     }
 
+    /// @notice Get token notional absolute
+    /// @param tokenAmount Token amount
+    /// @param sqrtPriceX96 Sqrt of price in X96
     function _getTokenNotionalAbs(int256 tokenAmount, uint160 sqrtPriceX96)
         internal
         pure
@@ -300,6 +346,9 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     }
 
     // TODO can be moved to library
+    /// @notice convert sqrt price in X96 to initializable tick
+    /// @param sqrtPriceX96 Sqrt of price in X96
+    /// @param isTickUpper true if price represents upper tick and false if price represents lower tick
     function _sqrtPriceX96ToValidTick(uint160 sqrtPriceX96, bool isTickUpper)
         internal
         pure
