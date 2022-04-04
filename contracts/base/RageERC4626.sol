@@ -1,19 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.8.0;
 
-import { ERC4626 } from '@rari-capital/solmate/src/mixins/ERC4626.sol';
-import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
-import { SafeTransferLib } from '@rari-capital/solmate/src/utils/SafeTransferLib.sol';
+import { IERC20Metadata } from '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
+import { SafeERC20 } from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
-abstract contract RageERC4626 is ERC4626 {
-    using SafeTransferLib for ERC20;
+import { ERC4626Upgradeable } from '../utils/ERC4626Upgradeable.sol';
 
-    constructor(
-        ERC20 _asset,
-        string memory _name,
-        string memory _symbol
-    ) ERC4626(_asset, _name, _symbol) {
-        // solhint-disable-previous-line no-empty-blocks
+abstract contract RageERC4626 is ERC4626Upgradeable {
+    using SafeERC20 for IERC20Metadata;
+
+    struct RageERC4626InitParams {
+        IERC20Metadata asset;
+        string name;
+        string symbol;
+    }
+
+    function __RageERC4626_init(RageERC4626InitParams memory params) internal {
+        __ERC4626Upgradeable_init(params.asset, params.name, params.symbol);
     }
 
     function deposit(uint256 amount, address to) public virtual override returns (uint256 shares) {
@@ -45,8 +48,8 @@ abstract contract RageERC4626 is ERC4626 {
         shares = previewWithdraw(amount); // No need to check for rounding error, previewWithdraw rounds up.
 
         if (msg.sender != from) {
-            uint256 allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.
-            if (allowed != type(uint256).max) allowance[from][msg.sender] = allowed - shares;
+            uint256 allowed = allowance(from, msg.sender); // Saves gas for limited approvals.
+            if (allowed != type(uint256).max) _approve(from, msg.sender, allowed - shares);
         }
 
         // Additional cap on withdraw to ensure the position closed does not breach slippage tolerance
@@ -74,8 +77,8 @@ abstract contract RageERC4626 is ERC4626 {
         _beforeShareAllocation();
 
         if (msg.sender != from) {
-            uint256 allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.
-            if (allowed != type(uint256).max) allowance[from][msg.sender] = allowed - shares;
+            uint256 allowed = allowance(from, msg.sender); // Saves gas for limited approvals.
+            if (allowed != type(uint256).max) _approve(from, msg.sender, allowed - shares);
         }
 
         // Check for rounding error since we round down in previewRedeem.

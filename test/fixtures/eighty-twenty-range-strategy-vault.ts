@@ -4,6 +4,7 @@ import { parseTokenAmount, priceToPriceX128, truncate } from '@ragetrade/sdk';
 
 import { updateSettlementTokenMargin } from '../utils/rage-helpers';
 import { rageTradeFixture } from './ragetrade-core';
+import { ethers } from 'ethers';
 
 export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async hre => {
   const { clearingHouse, settlementToken, pool0 } = await rageTradeFixture();
@@ -18,30 +19,51 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
   const yieldToken = await tokenFactory.deploy();
   await yieldToken.initialize('Yield Token', 'YT');
 
-  const eightyTwentyRangeStrategyVaultTest = await (
-    await hre.ethers.getContractFactory('EightyTwentyRangeStrategyVaultTest')
-  ).deploy(yieldToken.address, 'Vault Token', 'VT', truncate(pool0.vToken.address));
+  const [admin, user0, user1, trader0, settlementTokenTreasury] = await hre.ethers.getSigners();
 
   const ethPoolId = truncate(pool0.vToken.address);
   const pool = await clearingHouse.getPoolInfo(truncate(pool0.vToken.address));
 
-  const [admin, user0, user1, trader0, settlementTokenTreasury] = await hre.ethers.getSigners();
-
-  const closePositionToleranceBps = 500; //5%
+  const closePositionSlippageSqrtToleranceBps = 500; //5%
   const resetPositionThresholdBps = 2000; //20%
   const minNotionalPositionToCloseThreshold = parseTokenAmount(100, 6);
   const collateralTokenPriceX128 = await priceToPriceX128(1, 6, 18);
-  await eightyTwentyRangeStrategyVaultTest.initialize(
-    admin.address,
-    clearingHouse.address,
-    collateralToken.address,
-    settlementToken.address,
-    closePositionToleranceBps,
-    resetPositionThresholdBps,
-    collateralTokenPriceX128,
-    settlementTokenTreasury.address,
-    minNotionalPositionToCloseThreshold,
+  // await eightyTwentyRangeStrategyVaultTest.initialize(
+  //   admin.address,
+  //   clearingHouse.address,
+  //   collateralToken.address,
+  //   settlementToken.address,
+  //   closePositionToleranceBps,
+  //   resetPositionThresholdBps,
+  //   collateralTokenPriceX128,
+  //   settlementTokenTreasury.address,
+  //   minNotionalPositionToCloseThreshold,
+  // );
+
+  const eightyTwentyRangeStrategyVaultTest = await (
+    await hre.ethers.getContractFactory('EightyTwentyRangeStrategyVaultTest')
+  ).deploy(
+    {
+      baseVaultInitParams: {
+        rageErc4626InitParams: {
+          asset: yieldToken.address,
+          name: 'Vault Token',
+          symbol: 'VT',
+        },
+        ethPoolId,
+        // owner: admin.address,
+        rageClearingHouse: clearingHouse.address,
+        rageCollateralToken: collateralToken.address,
+        rageSettlementToken: settlementToken.address,
+      },
+      closePositionSlippageSqrtToleranceBps,
+      resetPositionThresholdBps,
+      minNotionalPositionToCloseThreshold,
+    },
+    0,
+    ethers.constants.AddressZero,
   );
+
   eightyTwentyRangeStrategyVaultTest.setKeeper(admin.address);
   await eightyTwentyRangeStrategyVaultTest.grantAllowances();
   collateralToken.grantRole(await collateralToken.MINTER_ROLE(), eightyTwentyRangeStrategyVaultTest.address);

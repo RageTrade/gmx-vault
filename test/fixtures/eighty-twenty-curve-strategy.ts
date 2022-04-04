@@ -132,9 +132,7 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
     '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6',
   )) as IQuoterV2;
 
-  const curveYieldStrategyTest = await (
-    await hre.ethers.getContractFactory('CurveYieldStrategy')
-  ).deploy(lpToken.address, 'TriCrypto Shares', 'TCS', ethPoolId);
+  const curveYieldStrategyTest = await (await hre.ethers.getContractFactory('CurveYieldStrategy')).deploy();
 
   await collateralToken.grantRole(await collateralToken.MINTER_ROLE(), curveYieldStrategyTest.address);
 
@@ -150,20 +148,32 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
 
   await settlementToken.approve(clearingHouse.address, parseTokenAmount(10n ** 5n, 6));
 
-  await curveYieldStrategyTest.initialize(
-    admin.address,
-    clearingHouse.address,
-    collateralToken.address,
-    settlementToken.address,
-    addresses.USDT,
-    addresses.USDC,
-    addresses.WETH,
-    addresses.CRV,
-    addresses.GAUGE,
-    addresses.ROUTER,
-    addresses.QUOTER,
-    addresses.TRICRYPTO_POOL,
-  );
+  await curveYieldStrategyTest.initialize({
+    eightyTwentyRangeStrategyVaultInitParams: {
+      baseVaultInitParams: {
+        rageErc4626InitParams: {
+          asset: lpToken.address,
+          name: 'TriCrypto Shares',
+          symbol: 'TCS',
+        },
+        ethPoolId,
+        rageClearingHouse: clearingHouse.address,
+        rageCollateralToken: collateralToken.address,
+        rageSettlementToken: settlementToken.address,
+      },
+      closePositionSlippageSqrtToleranceBps: 0,
+      resetPositionThresholdBps: 0,
+      minNotionalPositionToCloseThreshold: 0,
+    },
+    usdt: addresses.USDT,
+    usdc: addresses.USDC,
+    weth: addresses.WETH,
+    crvToken: addresses.CRV,
+    gauge: addresses.GAUGE,
+    uniV3Router: addresses.ROUTER,
+    lpPriceHolder: addresses.QUOTER,
+    tricryptoPool: addresses.TRICRYPTO_POOL,
+  });
 
   await curveYieldStrategyTest.grantAllowances();
   await curveYieldStrategyTest.setCrvOracle(addresses.CRV_ORACLE);

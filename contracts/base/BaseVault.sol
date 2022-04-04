@@ -46,7 +46,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     CollateralToken public rageCollateralToken;
 
     uint256 public rageAccountNo;
-    uint32 public immutable ethPoolId;
+    uint32 public ethPoolId;
     IClearingHouse.Pool public rageTradePool;
     uint64 public lastRebalanceTS;
     uint16 public rebalancePriceThresholdBps;
@@ -65,28 +65,24 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         _;
     }
 
-    constructor(
-        ERC20 _asset,
-        string memory _name,
-        string memory _symbol,
-        uint32 _ethPoolId
-    ) RageERC4626(_asset, _name, _symbol) {
-        ethPoolId = _ethPoolId;
+    struct BaseVaultInitParams {
+        RageERC4626InitParams rageErc4626InitParams;
+        uint32 ethPoolId;
+        address rageClearingHouse;
+        address rageCollateralToken;
+        address rageSettlementToken;
     }
 
     // solhint-disable-next-line func-name-mixedcase
-    function __BaseVault_init(
-        address _owner,
-        address _rageClearingHouse,
-        address _rageCollateralToken,
-        address _rageSettlementToken
-    ) internal onlyInitializing {
+    function __BaseVault_init(BaseVaultInitParams memory params) internal onlyInitializing {
         __Ownable_init();
-        transferOwnership(_owner);
-        rageClearingHouse = IClearingHouse(_rageClearingHouse);
+        // transferOwnership(params.owner); // TODO i think this is not needed, check it
+        __RageERC4626_init(params.rageErc4626InitParams);
+        ethPoolId = params.ethPoolId;
+        rageClearingHouse = IClearingHouse(params.rageClearingHouse);
         rageAccountNo = rageClearingHouse.createAccount();
-        rageCollateralToken = CollateralToken(_rageCollateralToken);
-        rageSettlementToken = IERC20Metadata(_rageSettlementToken);
+        rageCollateralToken = CollateralToken(params.rageCollateralToken);
+        rageSettlementToken = IERC20Metadata(params.rageSettlementToken);
         rageTradePool = rageClearingHouse.getPoolInfo(ethPoolId);
         rebalanceTimeThreshold = 1 days;
         // Give rageClearingHouse full allowance of rageCollateralToken and usdc
@@ -115,7 +111,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         shares = super.deposit(amount, to);
 
         // after deposit, if the total supply is greater than the deposit cap, then revert
-        if (totalSupply > depositCap) revert BV_DepositCap(depositCap, totalSupply);
+        if (totalSupply() > depositCap) revert BV_DepositCap(depositCap, totalSupply());
     }
 
     /// @notice grants relevant allowances

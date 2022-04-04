@@ -27,13 +27,13 @@ describe('Base Vault', () => {
 
       await baseVaultTest.updateDepositCap(10);
 
-      const [admin] = await hre.ethers.getSigners();
+      const [admin, user] = await hre.ethers.getSigners();
 
       await asset.mint(admin.address, 20);
       await asset.approve(baseVaultTest.address, 20);
 
-      await baseVaultTest.deposit(9, ethers.constants.AddressZero); // success
-      await expect(baseVaultTest.deposit(2, ethers.constants.AddressZero)).to.be.reverted;
+      await baseVaultTest.deposit(9, admin.address); // success
+      await expect(baseVaultTest.deposit(2, admin.address)).to.be.reverted;
     });
   });
 

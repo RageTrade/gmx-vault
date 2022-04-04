@@ -3,6 +3,8 @@
 pragma solidity ^0.8.9;
 
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadata.sol';
+
 import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
 
 import { BaseVault } from '../base/BaseVault.sol';
@@ -45,59 +47,33 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     uint256 public constant MAX_BPS = 10_000;
     uint256 public FEE = 1000;
 
-    constructor(
-        ERC20 _asset,
-        string memory _name,
-        string memory _symbol,
-        uint32 _ethPoolId
-    ) BaseVault(_asset, _name, _symbol, _ethPoolId) {}
-
-    // solhint-disable-next-line func-name-mixedcase
-    function __CurveYieldStratergy__init(
-        IERC20 _usdt,
-        IERC20 _usdc,
-        IERC20 _weth,
-        IERC20 _crvToken,
-        ICurveGauge _gauge,
-        ISwapRouter _uniV3Router,
-        ILPPriceGetter _lpPriceHolder,
-        ICurveStableSwap _tricryptoPool
-    ) internal onlyInitializing {
-        usdt = _usdt;
-        usdc = _usdc;
-        weth = _weth;
-        gauge = _gauge;
-        crvToken = _crvToken;
-        uniV3Router = _uniV3Router;
-        triCryptoPool = _tricryptoPool;
-        lpPriceHolder = _lpPriceHolder;
+    function initialize(CurveYieldStrategyInitParams memory curveYieldStrategyInitParams) external initializer {
+        __CurveYieldStrategy_init(curveYieldStrategyInitParams);
     }
 
-    function initialize(
-        address _owner,
-        address _rageClearingHouse,
-        address _rageCollateralToken,
-        address _rageSettlementToken,
-        IERC20 _usdt,
-        IERC20 _usdc,
-        IERC20 _weth,
-        IERC20 _crvToken,
-        ICurveGauge _gauge,
-        ISwapRouter _uniV3Router,
-        ILPPriceGetter _lpPriceHolder,
-        ICurveStableSwap _tricryptoPool
-    ) external initializer {
-        __BaseVault_init(_owner, _rageClearingHouse, _rageCollateralToken, _rageSettlementToken);
-        __CurveYieldStratergy__init(
-            _usdt,
-            _usdc,
-            _weth,
-            _crvToken,
-            _gauge,
-            _uniV3Router,
-            _lpPriceHolder,
-            _tricryptoPool
-        );
+    struct CurveYieldStrategyInitParams {
+        EightyTwentyRangeStrategyVaultInitParams eightyTwentyRangeStrategyVaultInitParams;
+        IERC20 usdt;
+        IERC20 usdc;
+        IERC20 weth;
+        IERC20 crvToken;
+        ICurveGauge gauge;
+        ISwapRouter uniV3Router;
+        ILPPriceGetter lpPriceHolder;
+        ICurveStableSwap tricryptoPool;
+    }
+
+    // solhint-disable-next-line func-name-mixedcase
+    function __CurveYieldStrategy_init(CurveYieldStrategyInitParams memory params) internal onlyInitializing {
+        __EightyTwentyRangeStrategyVault_init(params.eightyTwentyRangeStrategyVaultInitParams);
+        usdt = params.usdt;
+        usdc = params.usdc;
+        weth = params.weth;
+        gauge = params.gauge;
+        crvToken = params.crvToken;
+        uniV3Router = params.uniV3Router;
+        triCryptoPool = params.tricryptoPool;
+        lpPriceHolder = params.lpPriceHolder;
     }
 
     function setCrvOracle(AggregatorV3Interface _crvOracle) external onlyOwner {
