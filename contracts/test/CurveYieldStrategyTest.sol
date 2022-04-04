@@ -12,11 +12,11 @@ contract CurveYieldStrategyTest is CurveYieldStrategy {
     constructor(ERC20 _lpToken) CurveYieldStrategy(_lpToken, '', '', 0) {}
 
     function depositUsdc(uint256 amount) external {
-        super._depositBase(amount);
+        super._convertSettlementTokenToAsset(amount);
     }
 
     function withdrawUsdc(uint256 amount) external {
-        super._withdrawBase(amount);
+        super._convertAssetToSettlementToken(amount);
     }
 
     function stake(uint256 amount) external {

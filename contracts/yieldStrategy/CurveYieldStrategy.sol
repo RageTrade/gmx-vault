@@ -144,7 +144,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         _harvestFees();
     }
 
-    function _depositBase(uint256 amount) internal override {
+    function _convertSettlementTokenToAsset(uint256 amount) internal override {
         usdc.transferFrom(msg.sender, address(this), amount);
         usdc.approve(address(uniV3Router), amount);
         bytes memory path = abi.encodePacked(usdc, uint24(500), usdt);
@@ -215,7 +215,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         return gauge.balanceOf(address(this));
     }
 
-    function _withdrawBase(uint256 amount) internal override {
+    function _convertAssetToSettlementToken(uint256 amount) internal override {
         uint256 pricePerLP = lpPriceHolder.lp_price();
         uint256 lpToWithdraw = ((amount * (10**12)) * (10**18)) / pricePerLP;
 
