@@ -12,7 +12,7 @@ const within = (value: BigNumber, start: BigNumber, end: BigNumber): Boolean => 
 
 // remove when https://github.com/NomicFoundation/hardhat/issues/2234 is closed
 function revertReason(reason: string) {
-  return `Error: VM Exception while processing transaction: reverted with reason string ${reason}`
+  return `Error: VM Exception while processing transaction: reverted with reason string ${reason}`;
 }
 
 describe('CurveYieldStrategy', () => {
