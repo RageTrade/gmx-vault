@@ -34,7 +34,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
     AggregatorV3Interface public crvOracle;
 
-    uint256 crvSwapSlippageTolerance;
+    uint256 crvSwapSlippageTolerance; // in bps, 10**4
     uint256 notionalCrvHarvestThreshold;
 
     /* solhint-enable const-name-snakecase */
@@ -109,7 +109,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         notionalCrvHarvestThreshold = _notionalCrvHarvestThreshold;
     }
 
-    function grantAllowances() public override {
+    function grantAllowances() public override onlyOwner {
         _grantBaseAllowances();
         usdt.approve(address(triCryptoPool), type(uint256).max);
         crvToken.approve(address(uniV3Router), type(uint256).max);
@@ -167,8 +167,9 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     function _harvestFees() internal override {
         uint256 claimable = gauge.claimable_reward(address(this), address(crvToken));
 
-        if (claimable > 0) {
+        if (claimable > notionalCrvHarvestThreshold) {
             uint256 afterDeductions = claimable - ((claimable * FEE) / MAX_BPS);
+
             gauge.claim_rewards(address(this));
 
             crvToken.approve(address(uniV3Router), afterDeductions);
@@ -181,10 +182,13 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
                 address(usdt)
             );
 
+            // 1 CRV (scaled 18 decimals) = x$ (scaled to 8 decimals)
+            uint256 minOut = (_getCrvPrice() * afterDeductions * crvSwapSlippageTolerance) / MAX_BPS / 10**8;
+
             ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
                 path: path,
                 amountIn: afterDeductions,
-                amountOutMinimum: 0,
+                amountOutMinimum: minOut,
                 recipient: address(this),
                 deadline: _blockTimestamp()
             });
@@ -195,7 +199,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
             uint256[3] memory amounts = [usdtOut, uint256(0), uint256(0)];
             triCryptoPool.add_liquidity(amounts, 0);
 
-            _stake(usdtOut);
+            _stake(asset.balanceOf(address(this)));
         }
     }
 
