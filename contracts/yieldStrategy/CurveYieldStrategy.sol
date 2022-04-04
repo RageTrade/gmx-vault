@@ -215,7 +215,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         return gauge.balanceOf(address(this));
     }
 
-    function _convertAssetToSettlementToken(uint256 amount) internal override {
+    function _convertAssetToSettlementToken(uint256 amount) internal override returns (uint256 usdcAmount) {
         uint256 pricePerLP = lpPriceHolder.lp_price();
         uint256 lpToWithdraw = ((amount * (10**12)) * (10**18)) / pricePerLP;
 
@@ -234,7 +234,9 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
             deadline: _blockTimestamp()
         });
 
-        uniV3Router.exactInput(params);
+        usdcAmount = uniV3Router.exactInput(params);
+
+        return usdcAmount;
     }
 
     function getMarketValue(uint256 amount) public view override returns (uint256 marketValue) {
