@@ -60,8 +60,8 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
       resetPositionThresholdBps,
       minNotionalPositionToCloseThreshold,
     },
-    0,
-    ethers.constants.AddressZero,
+    collateralTokenPriceX128,
+    settlementTokenTreasury.address,
   );
 
   eightyTwentyRangeStrategyVaultTest.setKeeper(admin.address);
