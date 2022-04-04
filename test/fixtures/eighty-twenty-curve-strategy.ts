@@ -1,8 +1,8 @@
 import { deployments, ethers } from 'hardhat';
 import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
-import { ICurveGauge, ICurveStableSwap } from '../../typechain-types';
+import { ICurveGauge, ICurveStableSwap, ILPPriceGetter, IQuoterV2 } from '../../typechain-types';
 
-import { parseTokenAmount, priceToPriceX128, truncate } from '@ragetrade/sdk';
+import { AggregatorV3Interface, parseTokenAmount, priceToPriceX128, truncate } from '@ragetrade/sdk';
 
 import addresses from './addresses';
 import { updateSettlementTokenMargin } from '../utils/rage-helpers';
@@ -117,6 +117,21 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
     addresses.GAUGE,
   )) as ICurveGauge;
 
+  const crvOracle = (await hre.ethers.getContractAt(
+    '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface',
+    addresses.CRV_ORACLE,
+  )) as AggregatorV3Interface;
+
+  const lpOracle = (await hre.ethers.getContractAt(
+    'contracts/interfaces/curve/ILPPriceGetter.sol:ILPPriceGetter',
+    addresses.QUOTER,
+  )) as ILPPriceGetter;
+
+  const uniswapQuoter = (await hre.ethers.getContractAt(
+    '@uniswap/v3-periphery/contracts/interfaces/IQuoterV2.sol:IQuoterV2',
+    '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6',
+  )) as IQuoterV2;
+
   const curveYieldStrategyTest = await (
     await hre.ethers.getContractFactory('CurveYieldStrategy')
   ).deploy(lpToken.address, 'TriCrypto Shares', 'TCS', ethPoolId);
@@ -151,6 +166,7 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
   );
 
   await curveYieldStrategyTest.grantAllowances();
+  await curveYieldStrategyTest.setCrvOracle(addresses.CRV_ORACLE);
 
   // curveYieldStrategyTest.setKeeper(admin.address);
   collateralToken.grantRole(await collateralToken.MINTER_ROLE(), curveYieldStrategyTest.address);
@@ -177,7 +193,11 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
     weth,
     gauge,
     lpToken,
+    lpOracle,
     triCrypto,
+    crvOracle,
+    // crvWethPool,
+    uniswapQuoter,
     curveYieldStrategyTest,
     clearingHouse,
     collateralToken,
