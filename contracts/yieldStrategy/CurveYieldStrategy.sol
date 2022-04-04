@@ -145,7 +145,6 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     function _convertSettlementTokenToAsset(uint256 amount) internal override {
-        usdc.transferFrom(msg.sender, address(this), amount);
         usdc.approve(address(uniV3Router), amount);
         bytes memory path = abi.encodePacked(usdc, uint24(500), usdt);
 
