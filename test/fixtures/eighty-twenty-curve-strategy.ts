@@ -2,14 +2,85 @@ import { deployments, ethers } from 'hardhat';
 import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
 import { ICurveGauge, ICurveStableSwap } from '../../typechain-types';
 
-import { parseTokenAmount } from '@ragetrade/sdk';
+import { parseTokenAmount, priceToPriceX128, truncate } from '@ragetrade/sdk';
 
 import addresses from './addresses';
-import { eightyTwentyRangeStrategyFixture } from './eighty-twenty-range-strategy-vault';
+import { updateSettlementTokenMargin } from '../utils/rage-helpers';
+import { stealFunds } from '../utils/steal-funds';
+import { rageTradeFixture } from './ragetrade-core-integration';
 
 export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async hre => {
-  const { clearingHouse, collateralToken, settlementToken, ethPoolId, ethPool, settlementTokenTreasury } =
-    await eightyTwentyRangeStrategyFixture();
+  const { clearingHouse, settlementToken, pool0 } = await rageTradeFixture();
+
+  // set price in pool0 @leaddev - setting price here would not change the price in vpool so moving it back into ragetrade-core
+  // const initialPriceX128 = await priceToPriceX128(4000, 6, 18);
+  // await pool0.oracle.setPriceX128(initialPriceX128);
+
+  const tokenFactory = await hre.ethers.getContractFactory('ERC20PresetMinterPauserUpgradeable');
+  const collateralToken = await tokenFactory.deploy();
+  await collateralToken.initialize('Collateral Token', 'CT');
+  const yieldToken = await tokenFactory.deploy();
+  await yieldToken.initialize('Yield Token', 'YT');
+
+  const ethPoolId = truncate(pool0.vToken.address);
+  const pool = await clearingHouse.getPoolInfo(truncate(pool0.vToken.address));
+
+  const [admin, user0, user1, trader0, settlementTokenTreasury] = await hre.ethers.getSigners();
+
+  const closePositionToleranceBps = 500; //5%
+  const resetPositionThresholdBps = 2000; //20%
+  const minNotionalPositionToCloseThreshold = parseTokenAmount(100, 6);
+  const collateralTokenPriceX128 = await priceToPriceX128(1, 6, 18);
+
+  const collateralTokenOracle = await (await hre.ethers.getContractFactory('OracleMock')).deploy();
+
+  await clearingHouse.updateCollateralSettings(collateralToken.address, {
+    oracle: collateralTokenOracle.address,
+    twapDuration: 300,
+    isAllowedForDeposit: true,
+  });
+
+  await stealFunds(
+    settlementToken.address,
+    await settlementToken.decimals(),
+    settlementTokenTreasury.address,
+    10n ** 7n,
+    addresses.USDC_WHALE,
+  );
+  await yieldToken.mint(settlementTokenTreasury.address, parseTokenAmount(10n ** 20n, 18));
+
+  await stealFunds(
+    settlementToken.address,
+    await settlementToken.decimals(),
+    admin.address,
+    10n ** 7n,
+    addresses.USDC_WHALE,
+  );
+
+  await clearingHouse.createAccount();
+  const adminAccountNo = (await clearingHouse.numAccounts()).sub(1);
+
+  await clearingHouse.connect(trader0).createAccount();
+  const trader0AccountNo = (await clearingHouse.numAccounts()).sub(1);
+
+  await stealFunds(
+    settlementToken.address,
+    await settlementToken.decimals(),
+    trader0.address,
+    10n ** 7n,
+    addresses.USDC_WHALE,
+  );
+
+  await updateSettlementTokenMargin(
+    clearingHouse,
+    settlementToken,
+    trader0,
+    trader0AccountNo,
+    parseTokenAmount(10n ** 7n, 6),
+  );
+
+  await settlementToken.approve(clearingHouse.address, parseTokenAmount(10n ** 5n, 6));
+  await clearingHouse.updateMargin(adminAccountNo, truncate(settlementToken.address), parseTokenAmount(10n ** 5n, 6));
 
   const lpToken = (await hre.ethers.getContractAt(
     '@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20',
@@ -64,10 +135,8 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
 
   await settlementToken.approve(clearingHouse.address, parseTokenAmount(10n ** 5n, 6));
 
-  const [signer, user1, user2] = await hre.ethers.getSigners();
-
   await curveYieldStrategyTest.initialize(
-    signer.address,
+    admin.address,
     clearingHouse.address,
     collateralToken.address,
     settlementToken.address,
@@ -83,6 +152,24 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
 
   await curveYieldStrategyTest.grantAllowances();
 
+  // curveYieldStrategyTest.setKeeper(admin.address);
+  collateralToken.grantRole(await collateralToken.MINTER_ROLE(), curveYieldStrategyTest.address);
+  const vaultAccountNo = await curveYieldStrategyTest.rageAccountNo();
+  await yieldToken.mint(user0.address, parseTokenAmount(10n ** 10n, 18));
+  await yieldToken.connect(user0).approve(curveYieldStrategyTest.address, parseTokenAmount(10n ** 10n, 18));
+
+  await yieldToken.mint(user1.address, parseTokenAmount(10n ** 10n, 18));
+  await yieldToken.connect(user1).approve(curveYieldStrategyTest.address, parseTokenAmount(10n ** 10n, 18));
+  await settlementToken
+    .connect(settlementTokenTreasury)
+    .approve(curveYieldStrategyTest.address, parseTokenAmount(10n ** 20n, 18));
+
+  await yieldToken
+    .connect(settlementTokenTreasury)
+    .approve(curveYieldStrategyTest.address, parseTokenAmount(10n ** 20n, 18));
+
+  await curveYieldStrategyTest.updateDepositCap(parseTokenAmount(10n ** 10n, 18));
+
   return {
     crv,
     usdt,
@@ -92,5 +179,20 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
     lpToken,
     triCrypto,
     curveYieldStrategyTest,
+    clearingHouse,
+    collateralToken,
+    collateralTokenOracle,
+    yieldToken,
+    settlementToken,
+    vaultAccountNo,
+    settlementTokenTreasury,
+    ethPoolId,
+    ethPool: pool0,
+    user0,
+    user1,
+    trader0,
+    trader0AccountNo,
+    admin,
+    adminAccountNo,
   };
 });

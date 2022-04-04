@@ -12,10 +12,11 @@ import {
 } from '@ragetrade/sdk';
 
 import { IClearingHouseStructures } from '../../typechain-types/artifacts/@ragetrade/core/contracts/interfaces/IClearingHouse';
+import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
 
 export async function updateSettlementTokenMargin(
   clearingHouse: ClearingHouse,
-  settlementToken: SettlementTokenMock,
+  settlementToken: ERC20,
   user: SignerWithAddress,
   userAccountNo: BigNumberish,
   vTokenAmount: BigNumberish,
