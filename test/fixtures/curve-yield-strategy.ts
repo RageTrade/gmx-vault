@@ -1,6 +1,6 @@
 import { deployments } from 'hardhat';
 import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
-import { ICurveGauge, ICurveStableSwap } from '../../typechain-types';
+import { AggregatorV3Interface, ICurveGauge, ICurveStableSwap, ILPPriceGetter, IQuoterV2 } from '../../typechain-types';
 
 import { parseTokenAmount } from '@ragetrade/sdk';
 
@@ -8,7 +8,7 @@ import addresses from './addresses';
 import { eightyTwentyRangeStrategyFixture } from './eighty-twenty-range-strategy-vault';
 
 export const curveYieldStrategyFixture = deployments.createFixture(async hre => {
-  const { clearingHouse, collateralToken, settlementToken, ethPoolId, settlementTokenTreasury } =
+  const { clearingHouse, collateralToken, settlementToken, settlementTokenTreasury } =
     await eightyTwentyRangeStrategyFixture();
 
   const lpToken = (await hre.ethers.getContractAt(
@@ -46,6 +46,26 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
     addresses.GAUGE,
   )) as ICurveGauge;
 
+  const crvOracle = (await hre.ethers.getContractAt(
+    '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface',
+    addresses.CRV_ORACLE,
+  )) as AggregatorV3Interface;
+
+  const lpOracle = (await hre.ethers.getContractAt(
+    'contracts/interfaces/curve/ILPPriceGetter.sol:ILPPriceGetter',
+    addresses.QUOTER,
+  )) as ILPPriceGetter;
+
+  // const crvWethPool = (await hre.ethers.getContractAt(
+  //   '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol:IUniswapV3Pool',
+  //   '0xa95b0f5a65a769d82ab4f3e82842e45b8bbaf101',
+  // )) as UniswapV3Pool
+
+  const uniswapQuoter = (await hre.ethers.getContractAt(
+    '@uniswap/v3-periphery/contracts/interfaces/IQuoterV2.sol:IQuoterV2',
+    '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6',
+  )) as IQuoterV2;
+
   const curveYieldStrategyTest = await (
     await hre.ethers.getContractFactory('CurveYieldStrategyTest')
   ).deploy(lpToken.address);
@@ -81,6 +101,8 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
     addresses.TRICRYPTO_POOL,
   );
 
+  await curveYieldStrategyTest.setCrvOracle(addresses.CRV_ORACLE);
+
   return {
     crv,
     usdt,
@@ -88,7 +110,11 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
     weth,
     gauge,
     lpToken,
+    lpOracle,
     triCrypto,
+    crvOracle,
+    // crvWethPool,
+    uniswapQuoter,
     curveYieldStrategyTest,
   };
 });
