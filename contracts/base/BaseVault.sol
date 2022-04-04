@@ -122,7 +122,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         // TODO getAccountInfo CALL may be optimised using extsload
         (, , deposits, vTokenPositions) = rageClearingHouse.getAccountInfo(rageAccountNo);
         // (, uint256 virtualPriceX128) = rageClearingHouse.getTwapSqrtPricesForSetDuration(IVToken(VWETH_ADDRESS));
-        int256 vaultMarketValue = getMarketValue(asset.balanceOf(address(this))).toInt256();
+        int256 vaultMarketValue = getVaultMarketValue();
 
         _rebalanceProfitAndCollateral(deposits, vTokenPositions, vaultMarketValue);
 
@@ -172,9 +172,11 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
             _convertSettlementTokenToAsset(uint256(netProfit));
         } else if (netProfit < 0) {
             // If net profit > 0 convert LP tokens into USDC and deposit USDC to cover loss
-            _convertAssetToSettlementToken(uint256(-1 * netProfit));
+            uint256 settlementTokenOutput = _convertAssetToSettlementToken(uint256(-1 * netProfit));
 
-            rageClearingHouse.updateProfit(rageAccountNo, -1 * netProfit);
+            if (settlementTokenOutput > 0) {
+                rageClearingHouse.updateProfit(rageAccountNo, settlementTokenOutput.toInt256());
+            }
         }
 
         // Settle net change in market value and deposit/withdraw collateral tokens
@@ -244,7 +246,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         // Step-0 Check if the rebalance can go through (time and threshold based checks)
         (, , deposits, vTokenPositions) = rageClearingHouse.getAccountInfo(rageAccountNo);
         // #Token position = 0 or (1 and token should be VWETH)
-        int256 vaultMarketValue = getMarketValue(asset.balanceOf(address(this))).toInt256();
+        int256 vaultMarketValue = getVaultMarketValue();
 
         _rebalanceProfitAndCollateral(deposits, vTokenPositions, vaultMarketValue);
     }
@@ -312,7 +314,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
     /// @notice converts given amount of settlement token from asset token
     /// @param amount The amount of settlement token to created from asset token
-    function _convertAssetToSettlementToken(uint256 amount) internal virtual;
+    function _convertAssetToSettlementToken(uint256 amount) internal virtual returns (uint256 usdcAmount);
 
     /// @notice converts given amount of settlement token to asset token
     /// @param amount The amount of settlement token to be converted to asset token
