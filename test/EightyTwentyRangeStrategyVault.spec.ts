@@ -112,12 +112,13 @@ describe('EightyTwentyRangeStrategyVault', () => {
       await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, finalLiquidity);
       await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -1n);
 
+      //Initial loss due to precision errors
       await checkRealTokenBalances(
         clearingHouse,
         vaultAccountNo,
         collateralToken.address,
         settlementToken.address,
-        parseTokenAmount(900n, 18),
+        parseTokenAmount(900n, 18).sub(parseTokenAmount(3n, 12)),
         0n,
       );
     });
@@ -158,13 +159,12 @@ describe('EightyTwentyRangeStrategyVault', () => {
       await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 0);
       await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, 0n);
 
-      //Initial loss due to precision errors
       await checkRealTokenBalances(
         clearingHouse,
         vaultAccountNo,
         collateralToken.address,
         settlementToken.address,
-        parseTokenAmount(3n, 12),
+        0n,
         0n,
       );
     });
@@ -200,11 +200,11 @@ describe('EightyTwentyRangeStrategyVault', () => {
       await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 7151872310113270000n, 0, false, false);
 
       // TODO: Fix the check - expected = -1811804020n
-      // await checkAccountNetProfit(clearingHouse,vaultAccountNo,-1811821349n);
 
       const priceX128 = await priceToPriceX128(1.08094471200314, 6, 18);
       await eightyTwentyRangeStrategyVaultTest.setYieldTokenPriceX128(priceX128);
       await increaseBlockTimestamp(86400);
+      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -1811804019n);
       await eightyTwentyRangeStrategyVaultTest.rebalance();
       await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
       await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -196670, -187730, 7895036065743972n);
@@ -352,6 +352,7 @@ describe('EightyTwentyRangeStrategyVault', () => {
 
       // Partial Deposit - user1
       await increaseBlockTimestamp(10000);
+      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -1811804019n);
       await eightyTwentyRangeStrategyVaultTest.connect(user1).deposit(parseTokenAmount(10n ** 6n, 18), user1.address);
       // await logVaultParams("Partial Deposit - user1",eightyTwentyRangeStrategyVaultTest);
       // await logRageParams("Partial Deposit - user1",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
@@ -381,6 +382,7 @@ describe('EightyTwentyRangeStrategyVault', () => {
 
       // Partial Deposit - user0
       await increaseBlockTimestamp(10000);
+      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -6211083017n);
       await eightyTwentyRangeStrategyVaultTest
         .connect(user0)
         .deposit(parseTokenAmount(5n * 10n ** 5n, 18), user0.address);
@@ -413,6 +415,7 @@ describe('EightyTwentyRangeStrategyVault', () => {
 
       // 24hr Rebalance
       await increaseBlockTimestamp(36400);
+      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -15296175235n);
       await eightyTwentyRangeStrategyVaultTest.rebalance();
 
       // await logVaultParams("24hr Rebalance",eightyTwentyRangeStrategyVaultTest);
@@ -443,6 +446,7 @@ describe('EightyTwentyRangeStrategyVault', () => {
 
       // Partial Withdraw - user0
       await increaseBlockTimestamp(10000);
+      await checkAccountNetProfit(clearingHouse, vaultAccountNo, 13913475181n);
       await eightyTwentyRangeStrategyVaultTest
         .connect(user0)
         .withdraw(parseTokenAmount(10n ** 6n, 18), user0.address, user0.address);
@@ -476,6 +480,7 @@ describe('EightyTwentyRangeStrategyVault', () => {
 
       // Partial Withdraw - user1
       await increaseBlockTimestamp(10000);
+      await checkAccountNetProfit(clearingHouse, vaultAccountNo, 569949073n);
       await eightyTwentyRangeStrategyVaultTest
         .connect(user1)
         .withdraw(parseTokenAmount(5n * 10n ** 5n, 18), user1.address, user1.address);
@@ -541,6 +546,7 @@ describe('EightyTwentyRangeStrategyVault', () => {
 
       // Rebalance
       await increaseBlockTimestamp(86400);
+      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -29795804009n);
       await eightyTwentyRangeStrategyVaultTest.rebalance();
       // await logVaultParams("Rebalance",eightyTwentyRangeStrategyVaultTest);
       // await logRageParams("Rebalance",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
@@ -564,13 +570,14 @@ describe('EightyTwentyRangeStrategyVault', () => {
 
       //Reset
       await increaseBlockTimestamp(10000);
+      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -64836248327n);
       await eightyTwentyRangeStrategyVaultTest.rebalance();
       // await logVaultParams("Reset",eightyTwentyRangeStrategyVaultTest);
       // await logRageParams("Reset",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
 
       await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -190470, -181530, 8685873252516370n + 1n);
-      await checkVaultRangeParams(eightyTwentyRangeStrategyVaultTest, -190470, -181530, 8685873252516370n + 1n);
+      await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -190470, -181530, 8331936759293308n);
+      await checkVaultRangeParams(eightyTwentyRangeStrategyVaultTest, -190470, -181530, 8331936759293308n);
       await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -38519418704839000000n);
       await checkTotalSupply(eightyTwentyRangeStrategyVaultTest, parseTokenAmount(10n ** 6n, 18));
       await checkTotalAssetsApproximate(eightyTwentyRangeStrategyVaultTest, 937843991116229000000000n);
