@@ -38,15 +38,22 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     uint64 public minNotionalPositionToCloseThreshold;
     uint64 public constant SQRT_PRICE_FACTOR_PIPS = 800000; // scaled by 1e6
 
+    struct EightyTwentyRangeStrategyVaultInitParams {
+        BaseVaultInitParams baseVaultInitParams;
+        uint16 closePositionSlippageSqrtToleranceBps;
+        uint16 resetPositionThresholdBps;
+        uint64 minNotionalPositionToCloseThreshold;
+    }
+
     // solhint-disable-next-line func-name-mixedcase
-    function __EightyTwentyRangeStrategyVault_init(
-        uint16 _closePositionSlippageSqrtToleranceBps,
-        uint16 _resetPositionThresholdBps,
-        uint64 _minNotionalPositionToCloseThreshold
-    ) internal onlyInitializing {
-        closePositionSlippageSqrtToleranceBps = _closePositionSlippageSqrtToleranceBps;
-        resetPositionThresholdBps = _resetPositionThresholdBps;
-        minNotionalPositionToCloseThreshold = _minNotionalPositionToCloseThreshold;
+    function __EightyTwentyRangeStrategyVault_init(EightyTwentyRangeStrategyVaultInitParams memory params)
+        internal
+        onlyInitializing
+    {
+        __BaseVault_init(params.baseVaultInitParams);
+        closePositionSlippageSqrtToleranceBps = params.closePositionSlippageSqrtToleranceBps;
+        resetPositionThresholdBps = params.resetPositionThresholdBps;
+        minNotionalPositionToCloseThreshold = params.minNotionalPositionToCloseThreshold;
     }
 
     /*
