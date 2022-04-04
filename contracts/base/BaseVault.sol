@@ -169,10 +169,11 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         if (netProfit > 0) {
             // If net profit > 0 withdraw USDC and convert USDC into LP tokens
             rageClearingHouse.updateProfit(rageAccountNo, -1 * netProfit);
-            _depositBase(uint256(netProfit));
+            _convertSettlementTokenToAsset(uint256(netProfit));
         } else if (netProfit < 0) {
             // If net profit > 0 convert LP tokens into USDC and deposit USDC to cover loss
-            _withdrawBase(uint256(-1 * netProfit));
+            _convertAssetToSettlementToken(uint256(-1 * netProfit));
+
             rageClearingHouse.updateProfit(rageAccountNo, -1 * netProfit);
         }
 
@@ -311,11 +312,11 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
     /// @notice converts given amount of settlement token from asset token
     /// @param amount The amount of settlement token to created from asset token
-    function _withdrawBase(uint256 amount) internal virtual;
+    function _convertAssetToSettlementToken(uint256 amount) internal virtual;
 
     /// @notice converts given amount of settlement token to asset token
-    /// @param amount The amount of settlement token to converted to asset token
-    function _depositBase(uint256 amount) internal virtual;
+    /// @param amount The amount of settlement token to be converted to asset token
+    function _convertSettlementTokenToAsset(uint256 amount) internal virtual;
 
     /// @notice amount of asset tokens staked
     function _stakedAssetBalance() internal view virtual returns (uint256);
