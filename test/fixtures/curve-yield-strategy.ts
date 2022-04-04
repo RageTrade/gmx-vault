@@ -68,7 +68,33 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
 
   const curveYieldStrategyTest = await (
     await hre.ethers.getContractFactory('CurveYieldStrategyTest')
-  ).deploy(lpToken.address);
+  ).deploy({
+    eightyTwentyRangeStrategyVaultInitParams: {
+      baseVaultInitParams: {
+        rageErc4626InitParams: {
+          asset: lpToken.address,
+          name: 'TriCrypto Shares',
+          symbol: 'TCS',
+        },
+        ethPoolId,
+        // owner: signer.address,
+        rageClearingHouse: clearingHouse.address,
+        rageCollateralToken: collateralToken.address,
+        rageSettlementToken: settlementToken.address,
+      },
+      closePositionSlippageSqrtToleranceBps: 0,
+      resetPositionThresholdBps: 0,
+      minNotionalPositionToCloseThreshold: 0,
+    },
+    usdt: addresses.USDT,
+    usdc: addresses.USDC,
+    weth: addresses.WETH,
+    crvToken: addresses.CRV,
+    gauge: addresses.GAUGE,
+    uniV3Router: addresses.ROUTER,
+    lpPriceHolder: addresses.QUOTER,
+    tricryptoPool: addresses.TRICRYPTO_POOL,
+  });
 
   await collateralToken.grantRole(await collateralToken.MINTER_ROLE(), curveYieldStrategyTest.address);
 
@@ -86,20 +112,33 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
 
   const [signer, user1, user2] = await hre.ethers.getSigners();
 
-  await curveYieldStrategyTest.initialize(
-    signer.address,
-    clearingHouse.address,
-    collateralToken.address,
-    settlementToken.address,
-    addresses.USDT,
-    addresses.USDC,
-    addresses.WETH,
-    addresses.CRV,
-    addresses.GAUGE,
-    addresses.ROUTER,
-    addresses.QUOTER,
-    addresses.TRICRYPTO_POOL,
-  );
+  // await curveYieldStrategyTest.initialize({
+  //   eightyTwentyRangeStrategyVaultInitParams: {
+  //     baseVaultInitParams: {
+  //       rageErc4626InitParams: {
+  //         asset: lpToken.address,
+  //         name: '',
+  //         symbol: '',
+  //       },
+  //       ethPoolId,
+  //       // owner: signer.address,
+  //       rageClearingHouse: clearingHouse.address,
+  //       rageCollateralToken: collateralToken.address,
+  //       rageBaseToken: settlementToken.address,
+  //     },
+  //     closePositionSlippageSqrtToleranceBps: 0,
+  //     resetPositionThresholdBps: 0,
+  //     minNotionalPositionToCloseThreshold: 0,
+  //   },
+  //   usdt: addresses.USDT,
+  //   usdc: addresses.USDC,
+  //   weth: addresses.WETH,
+  //   crvToken: addresses.CRV,
+  //   gauge: addresses.GAUGE,
+  //   uniV3Router: addresses.ROUTER,
+  //   lpPriceHolder: addresses.QUOTER,
+  //   tricryptoPool: addresses.TRICRYPTO_POOL,
+  // });
 
   await curveYieldStrategyTest.setCrvOracle(addresses.CRV_ORACLE);
 

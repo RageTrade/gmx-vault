@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import { IClearingHouse } from '@ragetrade/core/contracts/interfaces/IClearingHouse.sol';
 import { IClearingHouseStructures } from '@ragetrade/core/contracts/interfaces/clearinghouse/IClearingHouseStructures.sol';
 
-import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
+import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadata.sol';
 
 import { BaseVault } from '../base/BaseVault.sol';
 import { EightyTwentyRangeStrategyVault } from '../rangeStrategy/EightyTwentyRangeStrategyVault.sol';
@@ -22,34 +22,37 @@ contract EightyTwentyRangeStrategyVaultTest is EightyTwentyRangeStrategyVault {
     address public tokenTreasury;
 
     constructor(
-        ERC20 _asset,
-        string memory _name,
-        string memory _symbol,
-        uint32 _ethPoolId
-    ) BaseVault(_asset, _name, _symbol, _ethPoolId) {}
-
-    function _stake(uint256 amount) internal virtual override {}
-
-    function initialize(
-        address _owner,
-        address _rageClearingHouse,
-        address _rageCollateralToken,
-        address _rageSettlementToken,
-        uint16 _closePositionSlippageSqrtToleranceBps,
-        uint16 _resetPositionThresholdBps,
+        EightyTwentyRangeStrategyVaultInitParams memory eightyTwentyRangeStrategyVaultInitParams,
         uint256 _priceX128,
-        address _tokenTreasury,
-        uint64 _minNotionalPositionToCloseThreshold
-    ) external initializer {
-        __BaseVault_init(_owner, _rageClearingHouse, _rageCollateralToken, _rageSettlementToken);
-        __EightyTwentyRangeStrategyVault_init(
-            _closePositionSlippageSqrtToleranceBps,
-            _resetPositionThresholdBps,
-            _minNotionalPositionToCloseThreshold
-        );
+        address _tokenTreasury
+    ) initializer {
+        __EightyTwentyRangeStrategyVault_init(eightyTwentyRangeStrategyVaultInitParams);
         priceX128 = _priceX128;
         tokenTreasury = _tokenTreasury;
     }
+
+    function _stake(uint256 amount) internal virtual override {}
+
+    // function initialize(
+    //     address _owner,
+    //     address _rageClearingHouse,
+    //     address _rageCollateralToken,
+    //     address _rageBaseToken,
+    //     uint16 _closePositionSlippageSqrtToleranceBps,
+    //     uint16 _resetPositionThresholdBps,
+    //     uint256 _priceX128,
+    //     address _tokenTreasury,
+    //     uint64 _minNotionalPositionToCloseThreshold
+    // ) external initializer {
+    //     __BaseVault_init(_owner, _rageClearingHouse, _rageCollateralToken, _rageBaseToken);
+    //     __EightyTwentyRangeStrategyVault_init(
+    //         _closePositionSlippageSqrtToleranceBps,
+    //         _resetPositionThresholdBps,
+    //         _minNotionalPositionToCloseThreshold
+    //     );
+    //     priceX128 = _priceX128;
+    //     tokenTreasury = _tokenTreasury;
+    // }
 
     function _harvestFees() internal virtual override {}
 

@@ -2,7 +2,8 @@
 
 pragma solidity ^0.8.0;
 
-import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
+import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadata.sol';
+
 import { IClearingHouse } from '@ragetrade/core/contracts/interfaces/IClearingHouse.sol';
 
 import { BaseVault } from '../base/BaseVault.sol';
@@ -10,13 +11,16 @@ import { BaseVault } from '../base/BaseVault.sol';
 contract BaseVaultTest is BaseVault {
     uint64 blockTimestamp_ = uint64(block.timestamp);
 
-    constructor(ERC20 token, address rageClearingHouse) BaseVault(token, 'name', 'symbol', 0) initializer {
-        __BaseVault_init({
-            _owner: msg.sender,
-            _rageClearingHouse: rageClearingHouse,
-            _rageCollateralToken: address(token),
-            _rageSettlementToken: address(token)
-        });
+    constructor(IERC20Metadata token, address rageClearingHouse) initializer {
+        __BaseVault_init(
+            BaseVaultInitParams({
+                rageErc4626InitParams: RageERC4626InitParams({ asset: token, name: 'name', symbol: 'symbol' }),
+                ethPoolId: 0,
+                rageClearingHouse: rageClearingHouse,
+                rageCollateralToken: address(token),
+                rageSettlementToken: address(token)
+            })
+        );
     }
 
     function isValidRebalanceTime() public view returns (bool) {
