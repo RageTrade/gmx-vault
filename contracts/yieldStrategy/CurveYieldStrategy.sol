@@ -22,6 +22,9 @@ import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/
 contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     using FullMath for uint256;
 
+    error CYS_INVALID_FEES();
+    error CYS_NEGATIVE_CRV_PRICE();
+
     IERC20 public usdt;
     IERC20 public weth;
     IERC20 public usdc;
@@ -117,7 +120,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     function changeFee(uint256 bps) external onlyOwner {
-        require(bps < MAX_BPS, 'fee out of bounds');
+        if (bps > MAX_BPS) revert CYS_INVALID_FEES();
         FEE = bps;
     }
 
@@ -128,7 +131,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
     function _getCrvPrice() internal view returns (uint256) {
         (, int256 answer, , , ) = crvOracle.latestRoundData();
-        require(uint256(answer) > uint256(0), 'NEGATIVE_CRV_PRICE');
+        if (answer < 0) revert CYS_NEGATIVE_CRV_PRICE();
         return (uint256(answer));
     }
 
