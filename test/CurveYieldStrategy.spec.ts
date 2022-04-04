@@ -16,7 +16,7 @@ function revertReason(reason: string) {
 }
 
 describe('CurveYieldStrategy', () => {
-  beforeEach(async () => {
+  before(async () => {
     await curveYieldStrategyFixture();
   });
 
@@ -688,14 +688,12 @@ describe('CurveYieldStrategy', () => {
       expect(await curveYieldStrategy.FEE()).to.be.eq(BigNumber.from(2000));
     });
 
-    // uncomment when fixed from hardhat
+    it('should fail outside of threshold', async () => {
+      const [admin] = await hre.ethers.getSigners();
+      const { curveYieldStrategyTest } = await curveYieldStrategyFixture();
+      const curveYieldStrategy = curveYieldStrategyTest.connect(admin);
 
-    // it('should fail outside of threshold', async () => {
-    //   const [admin] = await hre.ethers.getSigners();
-    //   const { curveYieldStrategyTest } = await curveYieldStrategyFixture();
-    //   const curveYieldStrategy = curveYieldStrategyTest.connect(admin);
-
-    //   expect(await curveYieldStrategy.changeFee(10001)).to.be.revertedWith(revertReason('fee out of bounds'));
-    // });
+      await expect(curveYieldStrategy.changeFee(10001)).to.be.revertedWith('CYS_INVALID_FEES');
+    });
   });
 });
