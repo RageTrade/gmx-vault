@@ -17,8 +17,14 @@ describe('EightyTwentyCurveStrategy', () => {
 
   describe('No Price Movement', () => {
     it.skip('Deposit - should transfer lp tokens & mint shares', async () => {
-      const [admin, user1, user2] = await hre.ethers.getSigners();
-      const { gauge, lpToken, curveYieldStrategyTest: curveYieldStrategy } = await eightyTwentyCurveStrategyFixture();
+      const {
+        gauge,
+        lpToken,
+        curveYieldStrategyTest: curveYieldStrategy,
+        admin,
+        user1,
+        user2,
+      } = await eightyTwentyCurveStrategyFixture();
 
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
@@ -144,8 +150,14 @@ describe('EightyTwentyCurveStrategy', () => {
     });
 
     it.skip('Withdraw - should pull LP from pool', async () => {
-      const [admin, user1, user2] = await hre.ethers.getSigners();
-      const { gauge, lpToken, curveYieldStrategyTest: curveYieldStrategy } = await eightyTwentyCurveStrategyFixture();
+      const {
+        gauge,
+        lpToken,
+        curveYieldStrategyTest: curveYieldStrategy,
+        admin,
+        user1,
+        user2,
+      } = await eightyTwentyCurveStrategyFixture();
 
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',

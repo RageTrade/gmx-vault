@@ -25,7 +25,7 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
   const ethPoolId = truncate(pool0.vToken.address);
   const pool = await clearingHouse.getPoolInfo(truncate(pool0.vToken.address));
 
-  const [admin, user0, user1, trader0, settlementTokenTreasury] = await hre.ethers.getSigners();
+  const [admin, user1, user2, trader0, settlementTokenTreasury] = await hre.ethers.getSigners();
 
   const closePositionToleranceBps = 500; //5%
   const resetPositionThresholdBps = 2000; //20%
@@ -155,11 +155,11 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
   // curveYieldStrategyTest.setKeeper(admin.address);
   collateralToken.grantRole(await collateralToken.MINTER_ROLE(), curveYieldStrategyTest.address);
   const vaultAccountNo = await curveYieldStrategyTest.rageAccountNo();
-  await yieldToken.mint(user0.address, parseTokenAmount(10n ** 10n, 18));
-  await yieldToken.connect(user0).approve(curveYieldStrategyTest.address, parseTokenAmount(10n ** 10n, 18));
-
   await yieldToken.mint(user1.address, parseTokenAmount(10n ** 10n, 18));
   await yieldToken.connect(user1).approve(curveYieldStrategyTest.address, parseTokenAmount(10n ** 10n, 18));
+
+  await yieldToken.mint(user2.address, parseTokenAmount(10n ** 10n, 18));
+  await yieldToken.connect(user2).approve(curveYieldStrategyTest.address, parseTokenAmount(10n ** 10n, 18));
   await settlementToken
     .connect(settlementTokenTreasury)
     .approve(curveYieldStrategyTest.address, parseTokenAmount(10n ** 20n, 18));
@@ -188,8 +188,8 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
     settlementTokenTreasury,
     ethPoolId,
     ethPool: pool0,
-    user0,
     user1,
+    user2,
     trader0,
     trader0AccountNo,
     admin,
