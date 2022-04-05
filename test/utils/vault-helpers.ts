@@ -37,7 +37,11 @@ export async function checkTotalAssetsApproximate(
 }
 
 export async function checkVaultRangeParams(
-  vault: EightyTwentyRangeStrategyVaultTest,
+  vault: {
+    baseTickLower: () => Promise<number>;
+    baseTickUpper: () => Promise<number>;
+    baseLiquidity: () => Promise<BigNumber>;
+  },
   baseTickLower: number,
   baseTickUpper: number,
   baseLiquidity: BigNumberish,
@@ -65,7 +69,16 @@ export async function increaseBlockTimestamp(timestampDelta: number) {
   await network.provider.send('evm_mine');
 }
 
-export async function logVaultParams(title: string, vault: EightyTwentyRangeStrategyVaultTest) {
+export async function logVaultParams(
+  title: string,
+  vault: {
+    totalSupply: () => Promise<BigNumber>;
+    totalAssets: () => Promise<BigNumber>;
+    baseTickLower: () => Promise<number>;
+    baseTickUpper: () => Promise<number>;
+    baseLiquidity: () => Promise<BigNumber>;
+  },
+) {
   console.log('#######', title, '#######');
   console.log('totalAssets', await vault.totalAssets(), 'totalSupply', await vault.totalSupply());
   console.log(
