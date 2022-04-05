@@ -669,6 +669,8 @@ describe('EightyTwentyRangeStrategyVault', () => {
       await ethPool.oracle.setPriceX128(await priceToPriceX128(8366.16650126176, 6, 18));
       await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -2377275516417390000n, 0, false, false);
       await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, 0);
+      expect(await eightyTwentyRangeStrategyVaultTest.isReset()).to.be.false;
+      await expect(eightyTwentyRangeStrategyVaultTest.closeTokenPosition()).to.be.revertedWith('ETRS_INVALID_CLOSE');
     });
     it('Slippage Threshold - Partial Withdraw', async () => {
       const {
