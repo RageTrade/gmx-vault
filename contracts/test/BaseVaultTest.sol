@@ -72,7 +72,11 @@ contract BaseVaultTest is BaseVault {
         override
     {}
 
-    function _closeTokenPosition(IClearingHouse.VTokenPositionView memory vTokenPosition) internal virtual override {}
+    function _closeTokenPositionOnReset(IClearingHouse.VTokenPositionView memory vTokenPosition)
+        internal
+        virtual
+        override
+    {}
 
     function _afterDepositRanges(uint256 amountAfterDeposit, uint256 amountDeposited) internal virtual override {}
 
