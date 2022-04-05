@@ -1,6 +1,6 @@
 import { deployments } from 'hardhat';
 import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
-import { AggregatorV3Interface, ICurveGauge, ICurveStableSwap, ILPPriceGetter, IQuoterV2 } from '../../typechain-types';
+import { AggregatorV3Interface, ICurveGauge, ICurveStableSwap, ILPPriceGetter, IQuoter } from '../../typechain-types';
 
 import { parseTokenAmount } from '@ragetrade/sdk';
 
@@ -59,12 +59,12 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
   // const crvWethPool = (await hre.ethers.getContractAt(
   //   '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol:IUniswapV3Pool',
   //   '0xa95b0f5a65a769d82ab4f3e82842e45b8bbaf101',
-  // )) as UniswapV3Pool
+  // )) as IUniswapV3Pool;
 
   const uniswapQuoter = (await hre.ethers.getContractAt(
-    '@uniswap/v3-periphery/contracts/interfaces/IQuoterV2.sol:IQuoterV2',
+    '@uniswap/v3-periphery/contracts/interfaces/IQuoter.sol:IQuoter',
     '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6',
-  )) as IQuoterV2;
+  )) as IQuoter;
 
   const curveYieldStrategyTest = await (
     await hre.ethers.getContractFactory('CurveYieldStrategyTest')
@@ -110,7 +110,7 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
 
   await settlementToken.approve(clearingHouse.address, parseTokenAmount(10n ** 5n, 6));
 
-  const [signer, user1, user2] = await hre.ethers.getSigners();
+  const [signer] = await hre.ethers.getSigners();
 
   // await curveYieldStrategyTest.initialize({
   //   eightyTwentyRangeStrategyVaultInitParams: {
