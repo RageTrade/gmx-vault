@@ -439,7 +439,7 @@ describe('CurveYieldStrategy', () => {
 
     it('should harvest & compound CRV from gauge', async () => {
       const [admin, user] = await hre.ethers.getSigners();
-      const { gauge, lpToken, curveYieldStrategyTest: curveYieldStrategy } = await curveYieldStrategyFixture();
+      const { gauge, lpToken, crv, curveYieldStrategyTest: curveYieldStrategy } = await curveYieldStrategyFixture();
 
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
@@ -449,6 +449,7 @@ describe('CurveYieldStrategy', () => {
       const whale = await ethers.getSigner(addresses.LP_TOKEN_WHALE);
 
       const amount = BigNumber.from(10).pow(18).mul(50);
+      console.log('AMOUNT OF LP DEPOSITED : ', amount.toBigInt());
 
       await curveYieldStrategy.connect(admin).updateDepositCap(amount);
 
@@ -456,6 +457,7 @@ describe('CurveYieldStrategy', () => {
       await lpToken.connect(user).approve(curveYieldStrategy.address, amount);
 
       await curveYieldStrategy.connect(user).deposit(amount, user.address);
+      console.log('AMOUT OF SHARES RECEIVED : ', (await curveYieldStrategy.balanceOf(user.address)).toBigInt());
 
       const gaugeLpBalBefore = await lpToken.balanceOf(gauge.address);
       const pricePerShareBefore = (await curveYieldStrategy.totalAssets()).div(await curveYieldStrategy.totalSupply());
@@ -464,7 +466,14 @@ describe('CurveYieldStrategy', () => {
       await hre.network.provider.send('evm_mine', []);
 
       await gauge.claimable_reward_write(curveYieldStrategy.address, addresses.CRV);
+      console.log(
+        'CLAIMABLE CRV REWARDS : ',
+        (await gauge.claimable_reward(curveYieldStrategy.address, addresses.CRV)).toBigInt(),
+      );
       await curveYieldStrategy.harvestFees();
+      console.log('LP TOKENS IN VAULT AFTER HARVESTING : ', (await curveYieldStrategy.totalAssets()).toBigInt());
+      console.log('PRICE PER SHARE AFTER HARVESTING : ', (await curveYieldStrategy.previewMint(10n ** 18n)).toBigInt());
+      console.log('CRV TOKENS IN VAULT (FEES) : ', (await crv.balanceOf(curveYieldStrategy.address)).toBigInt());
 
       const gaugeLpBalAfter = await lpToken.balanceOf(gauge.address);
       const pricePerShareAfter = await curveYieldStrategy.convertToAssets(BigNumber.from(10).pow(18));
