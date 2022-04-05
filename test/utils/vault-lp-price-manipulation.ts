@@ -150,10 +150,11 @@ const main = async () => {
   let usdtToSwap = 10_000;
   const POW_SIX = BigNumber.from(6).pow(10);
 
-  console.log(usdt.balanceOf(admin.address))
+  console.log(await usdt.balanceOf(admin.address))
   await usdt.connect(usdtWhale).transfer(admin.address, POW_SIX.mul(usdtToSwap));
   console.log('here')
   await usdt.connect(admin).approve(triCrypto.address, POW_SIX.mul(usdtToSwap));
+  console.log('approve passed')
 
   dy = await triCrypto.get_dy(0, 2, ONE.mul(usdtToSwap));
   console.log('cross dy');
