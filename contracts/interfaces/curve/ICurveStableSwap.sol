@@ -24,5 +24,19 @@ interface ICurveStableSwap {
         uint256 _min_to_amount
     ) external;
 
+    function exchange(
+        uint256,
+        uint256,
+        uint256,
+        uint256,
+        bool
+    ) external;
+
+    function get_dy(
+        uint256,
+        uint256,
+        uint256
+    ) external view returns (uint256);
+
     function balances(uint256) external view returns (uint256);
 }
