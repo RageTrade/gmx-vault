@@ -22,6 +22,12 @@ import {
   logVaultParams,
 } from './utils/vault-helpers';
 
+import {
+  swapEth,
+  swapUsdt,
+  accrueFees
+} from './utils/curve-helper'
+
 const within = (value: BigNumber, start: BigNumber, end: BigNumber): Boolean => {
   if (value.gte(start) && value.lte(end)) return true;
   return false;
@@ -380,6 +386,7 @@ describe('EightyTwentyCurveStrategy', () => {
 
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(4500.67224272213, 6, 18));
+      console.log('before swap');
       await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 595325654093776000n, 0, false, false);
 
       // TODO: Fix the check - expected = -1811804020n
@@ -387,6 +394,12 @@ describe('EightyTwentyCurveStrategy', () => {
 
       //   const priceX128 = await priceToPriceX128(1665.658746887488043886, 6, 18);
       //   await eightyTwentyRangeStrategyVaultTest.setYieldTokenPriceX128(priceX128);
+
+      // merge script here
+      // one swap, swap 10 eth for usdt, same as sent to finquant
+      // write_claim
+      // check _harvestFees
+      // helpers: swapeth(amount of eth = 10, if +ve long, signer), swapUsdt, accrue_fees,
       await increaseBlockTimestamp(86400);
 
       await checkAccountNetProfit(clearingHouse, vaultAccountNo, -150976200n);

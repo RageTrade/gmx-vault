@@ -1,6 +1,6 @@
 import { deployments, ethers } from 'hardhat';
 import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
-import { ICurveGauge, ICurveStableSwap, ILPPriceGetter, IQuoterV2 } from '../../typechain-types';
+import { ICurveGauge, ICurveStableSwap, ILPPriceGetter, IQuoter } from '../../typechain-types';
 
 import { AggregatorV3Interface, parseTokenAmount, priceToPriceX128, truncate } from '@ragetrade/sdk';
 
@@ -128,9 +128,9 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
   )) as ILPPriceGetter;
 
   const uniswapQuoter = (await hre.ethers.getContractAt(
-    '@uniswap/v3-periphery/contracts/interfaces/IQuoterV2.sol:IQuoterV2',
+    '@uniswap/v3-periphery/contracts/interfaces/IQuoter.sol:IQuoter',
     '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6',
-  )) as IQuoterV2;
+  )) as IQuoter;
 
   const curveYieldStrategyTest = await (
     await hre.ethers.getContractFactory('CurveYieldStrategy')
