@@ -27,6 +27,8 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     using FullMath for uint256;
     using UniswapV3PoolHelper for IUniswapV3Pool;
 
+    error ETRS_INVALID_CLOSE();
+
     int24 public baseTickLower;
     int24 public baseTickUpper;
     uint128 public baseLiquidity;
@@ -158,12 +160,13 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
             rageClearingHouse.updateRangeOrder(rageAccountNo, ethPoolId, liquidityChangeParamList[i]);
         }
 
-        if (isReset) _closeTokenPosition(vTokenPosition);
+        if (isReset) _closeTokenPositionOnReset(vTokenPosition);
     }
 
     /// @inheritdoc BaseVault
 
-    function _closeTokenPosition(IClearingHouse.VTokenPositionView memory vTokenPosition) internal override {
+    function _closeTokenPositionOnReset(IClearingHouse.VTokenPositionView memory vTokenPosition) internal override {
+        if (!isReset) revert ETRS_INVALID_CLOSE();
         int256 tokensToTrade = -vTokenPosition.netTraderPosition;
         uint160 sqrtTwapPriceX96 = _getTwapSqrtPriceX96();
 

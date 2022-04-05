@@ -137,7 +137,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         // Step-0 Check if the rebalance can go through (time and threshold based checks)
         (, , , vTokenPositions) = rageClearingHouse.getAccountInfo(rageAccountNo);
 
-        _closeTokenPosition(vTokenPositions[0]);
+        _closeTokenPositionOnReset(vTokenPositions[0]);
     }
 
     /// @notice returns the total vault asset balance + staked balance
@@ -339,7 +339,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         virtual;
 
     /// @notice closes token position
-    function _closeTokenPosition(IClearingHouse.VTokenPositionView memory vTokenPosition) internal virtual;
+    function _closeTokenPositionOnReset(IClearingHouse.VTokenPositionView memory vTokenPosition) internal virtual;
 
     /// @notice Updates liquidity position and collateral in rage core after deposit
     /// @param amountAfterDeposit The amount of asset tokens after deposit
