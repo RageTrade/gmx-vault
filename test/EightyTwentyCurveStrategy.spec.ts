@@ -33,7 +33,7 @@ describe('EightyTwentyCurveStrategy', () => {
   });
 
   describe('No Price Movement', () => {
-    it.skip('Deposit - should transfer lp tokens & mint shares', async () => {
+    it('Deposit - should transfer lp tokens & mint shares', async () => {
       const {
         gauge,
         lpToken,
@@ -166,7 +166,7 @@ describe('EightyTwentyCurveStrategy', () => {
       expect(totalSharesMintedAfterSecondDeposit).to.be.eq(amount1.add(amount2));
     });
 
-    it.skip('Withdraw - should pull LP from pool', async () => {
+    it('Withdraw - should pull LP from pool', async () => {
       const {
         gauge,
         lpToken,
@@ -350,7 +350,7 @@ describe('EightyTwentyCurveStrategy', () => {
     });
   });
   describe('#Scenarios', () => {
-    it.skip('Rebalance', async () => {
+    it('Rebalance', async () => {
       const {
         curveYieldStrategyTest: curveYieldStrategy,
         clearingHouse,
