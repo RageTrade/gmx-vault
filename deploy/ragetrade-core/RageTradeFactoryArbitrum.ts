@@ -14,9 +14,6 @@ import {
 import { IClearingHouseStructures } from '../../typechain-types/artifacts/@ragetrade/core/contracts/protocol/clearinghouse/ClearingHouse';
 import addresses from '../../test/fixtures/addresses';
 
-// Not to be deployed during the deploy task
-export const skip = () => true;
-
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
     deployments: { deploy, get, read, save, execute },
@@ -28,7 +25,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const vPoolWrapperLogic = await get('VPoolWrapperLogic');
   const insuranceFundLogic = await get('InsuranceFundLogic');
 
-  const deployment = await deploy('RageTradeFactory', {
+  const deployment = await deploy('RageTradeFactoryArbitrum', {
+    contract: 'RageTradeFactory',
     from: deployer,
     log: true,
     args: [clearingHouseLogic.address, vPoolWrapperLogic.address, insuranceFundLogic.address, addresses.USDC],
@@ -41,9 +39,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     });
   }
 
-  const vQuoteAddress = await read('RageTradeFactory', 'vQuote');
-  await save('VQuote', { abi: VQuote__factory.abi, address: vQuoteAddress });
-  console.log('saved "VQuote":', vQuoteAddress);
+  const vQuoteAddress = await read('RageTradeFactoryArbitrum', 'vQuote');
+  await save('VQuoteArbitrum', { abi: VQuote__factory.abi, address: vQuoteAddress });
+  console.log('saved "VQuoteArbitrum":', vQuoteAddress);
   if (hre.network.config.chainId !== 31337) {
     await hre.tenderly.push({
       name: 'VQuote',
@@ -51,9 +49,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     });
   }
 
-  const clearingHouseAddress = await read('RageTradeFactory', 'clearingHouse');
-  await save('ClearingHouse', { abi: ClearingHouse__factory.abi, address: clearingHouseAddress });
-  console.log('saved "ClearingHouse":', clearingHouseAddress);
+  const clearingHouseAddress = await read('RageTradeFactoryArbitrum', 'clearingHouse');
+  await save('ClearingHouseArbitrum', { abi: ClearingHouse__factory.abi, address: clearingHouseAddress });
+  console.log('saved "ClearingHouseArbitrum":', clearingHouseAddress);
   if (hre.network.config.chainId !== 31337) {
     await hre.tenderly.push({
       name: 'TransparentUpgradeableProxy',
@@ -62,7 +60,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 
   execute(
-    'ClearingHouse',
+    'ClearingHouseArbitrum',
     { from: deployer },
     'updateProtocolSettings',
     {
@@ -80,9 +78,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     parseUnits('20', 6), // minRequiredMargin
   );
 
-  const proxyAdminAddress = await read('RageTradeFactory', 'proxyAdmin');
-  await save('ProxyAdmin', { abi: ProxyAdmin__factory.abi, address: proxyAdminAddress });
-  console.log('saved "ProxyAdmin":', proxyAdminAddress);
+  const proxyAdminAddress = await read('RageTradeFactoryArbitrum', 'proxyAdmin');
+  await save('ProxyAdminArbitrum', { abi: ProxyAdmin__factory.abi, address: proxyAdminAddress });
+  console.log('saved "ProxyAdminArbitrum":', proxyAdminAddress);
   if (hre.network.config.chainId !== 31337) {
     await hre.tenderly.push({
       name: 'ProxyAdmin',
@@ -90,9 +88,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     });
   }
 
-  const insuranceFundAddress = await read('ClearingHouse', 'insuranceFund');
-  await save('InsuranceFund', { abi: InsuranceFund__factory.abi, address: insuranceFundAddress });
-  console.log('saved "InsuranceFund":', insuranceFundAddress);
+  const insuranceFundAddress = await read('ClearingHouseArbitrum', 'insuranceFund');
+  await save('InsuranceFundArbitrum', { abi: InsuranceFund__factory.abi, address: insuranceFundAddress });
+  console.log('saved "InsuranceFundArbitrum":', insuranceFundAddress);
   if (hre.network.config.chainId !== 31337) {
     await hre.tenderly.push({
       name: 'TransparentUpgradeableProxy',
@@ -100,12 +98,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     });
   }
   const collateralInfo: IClearingHouseStructures.CollateralStruct = await read(
-    'ClearingHouse',
+    'ClearingHouseArbitrum',
     'getCollateralInfo',
     truncate(addresses.USDC),
   );
-  await save('SettlementTokenOracle', { abi: IOracle__factory.abi, address: collateralInfo.settings.oracle });
-  console.log('saved "SettlementTokenOracle":', collateralInfo.settings.oracle);
+  await save('SettlementTokenOracleArbitrum', { abi: IOracle__factory.abi, address: collateralInfo.settings.oracle });
+  console.log('saved "SettlementTokenOracleArbitrum":', collateralInfo.settings.oracle);
   if (hre.network.config.chainId !== 31337) {
     await hre.tenderly.push({
       name: 'SettlementTokenOracle',
@@ -115,6 +113,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
+
+// Only will be deployed on hardhat network
+func.skip = async hre => hre.network.config.chainId !== 31337;
 
 func.tags = ['RageTradeFactoryArbitrum'];
 func.dependencies = ['ClearingHouseLogic', 'VPoolWrapperLogic', 'InsuranceFundLogic', 'SettlementToken'];

@@ -9,15 +9,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const { deployer } = await getNamedAccounts();
 
-  const deployment = await deploy('VPoolWrapperLogic', {
-    contract: 'VPoolWrapper',
+  const deployment = await deploy('DummyCollateralToken', {
+    contract: 'DummyCollateralToken',
     from: deployer,
     log: true,
+    args: ['DummyCollateralToken', 'DCT'],
   });
 
   if (deployment.newlyDeployed && hre.network.config.chainId !== 31337) {
     await hre.tenderly.push({
-      name: 'VPoolWrapper',
+      name: 'DummyCollateralToken',
       address: deployment.address,
     });
   }
@@ -25,7 +26,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
 export default func;
 
-// Only will be deployed on hardhat network
-func.skip = async hre => hre.network.config.chainId !== 31337;
-
-func.tags = ['VPoolWrapperLogic'];
+func.tags = ['DummyCollateralToken'];

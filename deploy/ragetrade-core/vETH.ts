@@ -10,10 +10,7 @@ import {
   RageTradeFactory,
   VTokenDeployer,
 } from '../../typechain-types/artifacts/@ragetrade/core/contracts/protocol/RageTradeFactory';
-import { getNetworkInfo } from './network-info';
-
-// Not to be deployed during the deploy task
-export const skip = () => true;
+import { getNetworkInfo } from '../network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
@@ -117,6 +114,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
+
+// Only will be deployed on hardhat network
+func.skip = async hre => hre.network.config.chainId !== 31337;
 
 func.tags = ['vETH'];
 func.dependencies = ['RageTradeFactory'];

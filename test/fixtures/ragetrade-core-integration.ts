@@ -15,9 +15,12 @@ export const rageTradeFixture = deployments.createFixture(async hre => {
 
   const rageTradeFactory = await hre.ethers.getContractAt(
     'RageTradeFactory',
-    rageTradeDeployments.RageTradeFactory.address,
+    rageTradeDeployments.RageTradeFactoryArbitrum.address,
   );
-  const clearingHouse = await hre.ethers.getContractAt('ClearingHouse', rageTradeDeployments.ClearingHouse.address);
+  const clearingHouse = await hre.ethers.getContractAt(
+    'ClearingHouse',
+    rageTradeDeployments.ClearingHouseArbitrum.address,
+  );
   const settlementToken = (await hre.ethers.getContractAt(
     '@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20',
     addresses.USDC,
