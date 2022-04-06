@@ -361,8 +361,13 @@ describe('EightyTwentyCurveStrategy', () => {
         settlementToken,
         ethPoolId,
         ethPool,
+        weth,
+        usdt,
+        gauge,
         user1,
         trader0,
+        lpOracle,
+        triCrypto,
         trader0AccountNo,
       } = await eightyTwentyCurveStrategyFixture();
 
@@ -391,9 +396,18 @@ describe('EightyTwentyCurveStrategy', () => {
       //   const priceX128 = await priceToPriceX128(1665.658746887488043886, 6, 18);
       //   await eightyTwentyRangeStrategyVaultTest.setYieldTokenPriceX128(priceX128);
 
-      await increaseBlockTimestamp(100);
-      await swapEth(10n, trader0.address);
-      await accrueFees();
+      await increaseBlockTimestamp(1_000_000);
+      await swapEth(
+        10,
+        trader0.address,
+        weth,
+        triCrypto,
+        lpOracle
+        );
+      await accrueFees(
+        curveYieldStrategy.address,
+        gauge
+      );
       // merge script here
       // one swap, swap 10 eth for usdt, same as sent to finquant
       // write_claim
