@@ -104,18 +104,6 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         keeper = newKeeperAddress;
     }
 
-    /// @notice Deposit asset into the vault
-    /// @dev Checks the deposit cap and the deposit amount
-    /// @param amount The amount to deposit in asset amount
-    /// @param to The address to deposit to
-    function deposit(uint256 amount, address to) public virtual override returns (uint256 shares) {
-        // let the deposit be processed
-        shares = super.deposit(amount, to);
-
-        // after deposit, if the total supply is greater than the deposit cap, then revert
-        if (totalSupply() > depositCap) revert BV_DepositCap(depositCap, totalSupply());
-    }
-
     /// @notice grants relevant allowances
     function grantAllowances() external virtual {
         _grantBaseAllowances();
@@ -300,6 +288,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     }
 
     function afterDeposit(uint256 amount, uint256 shares) internal virtual override {
+        if (totalAssets() > depositCap) revert BV_DepositCap(depositCap, totalAssets());
         _afterDepositYield(amount);
         _afterDepositRanges(totalAssets(), amount);
     }
