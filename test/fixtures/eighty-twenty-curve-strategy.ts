@@ -164,10 +164,10 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
   const vaultAccountNo = await curveYieldStrategyTest.rageAccountNo();
 
   const whale = await ethers.getSigner(addresses.LP_TOKEN_WHALE);
-  await lpToken.connect(whale).transfer(user1.address, parseTokenAmount(10n, 18));
+  await lpToken.connect(whale).transfer(user1.address, parseTokenAmount(25n, 18));
   await lpToken.connect(user1).approve(curveYieldStrategyTest.address, parseTokenAmount(50n, 18));
 
-  await lpToken.connect(whale).transfer(user2.address, parseTokenAmount(10n, 18));
+  await lpToken.connect(whale).transfer(user2.address, parseTokenAmount(25n, 18));
   await lpToken.connect(user2).approve(curveYieldStrategyTest.address, parseTokenAmount(50n, 18));
 
   await curveYieldStrategyTest.updateDepositCap(parseTokenAmount(10n ** 10n, 18));

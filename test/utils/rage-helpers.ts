@@ -218,6 +218,8 @@ export async function logRageParams(
     tokenPosition.netTraderPosition,
   );
 
+  console.log("Account Net Profit:", await clearingHouse.getAccountNetProfit(accountNo));
+
   const { sqrtPriceX96 } = await vPool.slot0();
   const amounts = amountsForLiquidity(
     liquidityPosition.tickLower,
