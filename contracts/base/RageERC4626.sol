@@ -21,22 +21,12 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
 
     function deposit(uint256 amount, address to) public virtual override returns (uint256 shares) {
         _beforeShareAllocation();
-        return super.deposit(amount, to);
+        shares = super.deposit(amount, to);
     }
 
     function mint(uint256 shares, address to) public virtual override returns (uint256 amount) {
         _beforeShareAllocation();
-
-        amount = previewMint(shares); // No need to check for rounding error, previewMint rounds up.
-
-        // Need to transfer before minting or ERC777s could reenter.
-        asset.safeTransferFrom(msg.sender, address(this), amount);
-
-        _mint(to, shares);
-
-        emit Deposit(msg.sender, to, amount, shares);
-
-        afterDeposit(amount, shares);
+        amount = super.mint(shares, to);
     }
 
     function withdraw(
@@ -45,28 +35,8 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
         address from
     ) public override returns (uint256 shares) {
         _beforeShareAllocation();
-        shares = previewWithdraw(amount); // No need to check for rounding error, previewWithdraw rounds up.
-
-        if (msg.sender != from) {
-            uint256 allowed = allowance(from, msg.sender); // Saves gas for limited approvals.
-            if (allowed != type(uint256).max) _approve(from, msg.sender, allowed - shares);
-        }
-
-        // Additional cap on withdraw to ensure the position closed does not breach slippage tolerance
-        // In case tolerance is reached only partial withdraw is executed
         uint256 updatedAmount = beforeWithdrawClosePosition(amount);
-        if (updatedAmount != amount) {
-            amount = updatedAmount;
-            shares = previewWithdraw(updatedAmount);
-        }
-
-        beforeWithdraw(amount, shares);
-
-        _burn(from, shares);
-
-        emit Withdraw(msg.sender, to, from, amount, shares);
-
-        asset.safeTransfer(to, amount);
+        shares = super.withdraw(updatedAmount, to, from);
     }
 
     function redeem(
