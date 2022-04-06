@@ -4,31 +4,27 @@ pragma solidity ^0.8.9;
 
 import { ERC20PresetMinterPauserUpgradeable as CollateralToken } from '@openzeppelin/contracts-upgradeable/token/ERC20/presets/ERC20PresetMinterPauserUpgradeable.sol';
 import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
-
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadata.sol';
 
 import { IClearingHouse } from '@ragetrade/core/contracts/interfaces/IClearingHouse.sol';
 import { IClearingHouseStructures } from '@ragetrade/core/contracts/interfaces/clearinghouse/IClearingHouseStructures.sol';
 import { IVToken } from '@ragetrade/core/contracts/interfaces/IVToken.sol';
-
-import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 import { SignedMath } from '@ragetrade/core/contracts/libraries/SignedMath.sol';
 import { SignedFullMath } from '@ragetrade/core/contracts/libraries/SignedFullMath.sol';
-
 import { AddressHelper } from '@ragetrade/core/contracts/libraries/AddressHelper.sol';
+import { UniswapV3PoolHelper, IUniswapV3Pool } from '@ragetrade/core/contracts/libraries/UniswapV3PoolHelper.sol';
+import { ClearingHouseExtsload } from '@ragetrade/core/contracts/extsloads/ClearingHouseExtsload.sol';
+
+import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
+
+import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
+import { FixedPoint96 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint96.sol';
 
 import { IBaseVault } from '../interfaces/IBaseVault.sol';
 import { IBaseYieldStrategy } from '../interfaces/IBaseYieldStrategy.sol';
-
-import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
 import { RageERC4626 } from './RageERC4626.sol';
-
-import { UniswapV3PoolHelper, IUniswapV3Pool } from '@ragetrade/core/contracts/libraries/UniswapV3PoolHelper.sol';
-
 import { SafeCast } from '../libraries/SafeCast.sol';
-
-import { FixedPoint96 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint96.sol';
 
 import { console } from 'hardhat/console.sol';
 
@@ -41,6 +37,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     using SignedMath for int256;
     using SignedFullMath for int256;
     using UniswapV3PoolHelper for IUniswapV3Pool;
+    using ClearingHouseExtsload for IClearingHouse;
 
     // TODO: Make relevant things immutable
     IERC20Metadata public rageSettlementToken;
@@ -49,7 +46,9 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
     uint256 public rageAccountNo;
     uint32 public ethPoolId;
-    IClearingHouse.Pool public rageTradePool;
+    IUniswapV3Pool public rageVPool;
+    uint32 public rageTwapDuration;
+
     uint64 public lastRebalanceTS;
     uint16 public rebalancePriceThresholdBps;
     uint32 public rebalanceTimeThreshold; // seconds
@@ -85,7 +84,11 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         rageAccountNo = rageClearingHouse.createAccount();
         rageCollateralToken = CollateralToken(params.rageCollateralToken);
         rageSettlementToken = IERC20Metadata(params.rageSettlementToken);
-        rageTradePool = rageClearingHouse.getPoolInfo(ethPoolId);
+
+        (address vPool, uint32 twapDuration) = rageClearingHouse.pools_vPool_and_settings_twapDuration(ethPoolId);
+        rageVPool = IUniswapV3Pool(vPool);
+        rageTwapDuration = twapDuration;
+
         rebalanceTimeThreshold = 1 days;
         // Give rageClearingHouse full allowance of rageCollateralToken and usdc
     }
@@ -278,7 +281,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     // TODO: check if caching is required for this function
     /// @notice returns twap price X96 from rage trade
     function _getTwapSqrtPriceX96() internal view returns (uint160 twapSqrtPriceX96) {
-        twapSqrtPriceX96 = rageTradePool.vPool.twapSqrtPrice(rageTradePool.settings.twapDuration);
+        twapSqrtPriceX96 = rageVPool.twapSqrtPrice(rageTwapDuration);
     }
 
     /// @notice converts all non-asset balances into asset
