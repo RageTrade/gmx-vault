@@ -1,6 +1,6 @@
 import addresses from '../fixtures/addresses';
 import hre from 'hardhat';
-import { BigNumber } from 'ethers';
+import { BigNumber, BigNumberish } from 'ethers';
 import { eightyTwentyCurveStrategyFixture } from '../fixtures/eighty-twenty-curve-strategy';
 
 export const unlockWhales = async () => {
@@ -34,7 +34,7 @@ const getReserves = async () => {
   return Promise.all([lpOracle.lp_price(), triCrypto.balances(0), triCrypto.balances(1), triCrypto.balances(2)]);
 };
 
-export const swapEth = async (amount: BigNumber, address: string) => {
+export const swapEth = async (amount: BigNumberish, address: string) => {
   await unlockWhales();
   const signer = await hre.ethers.getSigner(address);
   const { weth, triCrypto: tc } = await eightyTwentyCurveStrategyFixture();
