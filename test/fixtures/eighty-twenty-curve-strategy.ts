@@ -8,6 +8,7 @@ import addresses from './addresses';
 import { updateSettlementTokenMargin } from '../utils/rage-helpers';
 import { stealFunds } from '../utils/steal-funds';
 import { rageTradeFixture } from './ragetrade-core-integration';
+import { unlockWhales } from '../utils/curve-helper';
 
 export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async hre => {
   const { clearingHouse, settlementToken, pool0 } = await rageTradeFixture();
@@ -15,17 +16,16 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
   // set price in pool0 @leaddev - setting price here would not change the price in vpool so moving it back into ragetrade-core
   // const initialPriceX128 = await priceToPriceX128(4000, 6, 18);
   // await pool0.oracle.setPriceX128(initialPriceX128);
-
+  await unlockWhales();
   const tokenFactory = await hre.ethers.getContractFactory('ERC20PresetMinterPauser');
   const collateralToken = await tokenFactory.deploy('Collateral Token', 'CT');
-  const yieldToken = await tokenFactory.deploy('Yield Token', 'YT');
 
   const ethPoolId = truncate(pool0.vToken.address);
   const pool = await clearingHouse.getPoolInfo(truncate(pool0.vToken.address));
 
-  const [admin, user1, user2, trader0, settlementTokenTreasury] = await hre.ethers.getSigners();
+  const [admin, user1, user2, trader0] = await hre.ethers.getSigners();
 
-  const closePositionToleranceBps = 500; //5%
+  const closePositionSlippageSqrtToleranceBps = 500; //5%
   const resetPositionThresholdBps = 2000; //20%
   const minNotionalPositionToCloseThreshold = parseTokenAmount(100, 6);
   const collateralTokenPriceX128 = await priceToPriceX128(1, 6, 18);
@@ -37,15 +37,6 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
     twapDuration: 300,
     isAllowedForDeposit: true,
   });
-
-  await stealFunds(
-    settlementToken.address,
-    await settlementToken.decimals(),
-    settlementTokenTreasury.address,
-    10n ** 7n,
-    addresses.USDC_WHALE,
-  );
-  await yieldToken.mint(settlementTokenTreasury.address, parseTokenAmount(10n ** 20n, 18));
 
   await stealFunds(
     settlementToken.address,
@@ -134,14 +125,6 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
 
   await collateralToken.grantRole(await collateralToken.MINTER_ROLE(), curveYieldStrategyTest.address);
 
-  await settlementToken
-    .connect(settlementTokenTreasury)
-    .approve(curveYieldStrategyTest.address, parseTokenAmount(10n ** 10n, 18));
-
-  await collateralToken
-    .connect(settlementTokenTreasury)
-    .approve(clearingHouse.address, parseTokenAmount(10n ** 10n, 18));
-
   await collateralToken.approve(clearingHouse.address, parseTokenAmount(10n ** 10n, 18));
 
   await settlementToken.approve(clearingHouse.address, parseTokenAmount(10n ** 5n, 6));
@@ -159,9 +142,9 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
         rageCollateralToken: collateralToken.address,
         rageSettlementToken: settlementToken.address,
       },
-      closePositionSlippageSqrtToleranceBps: 0,
-      resetPositionThresholdBps: 0,
-      minNotionalPositionToCloseThreshold: 0,
+      closePositionSlippageSqrtToleranceBps: closePositionSlippageSqrtToleranceBps,
+      resetPositionThresholdBps: resetPositionThresholdBps,
+      minNotionalPositionToCloseThreshold: minNotionalPositionToCloseThreshold,
     },
     usdt: addresses.USDT,
     usdc: addresses.USDC,
@@ -176,21 +159,16 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
   await curveYieldStrategyTest.grantAllowances();
   await curveYieldStrategyTest.setCrvOracle(addresses.CRV_ORACLE);
 
-  // curveYieldStrategyTest.setKeeper(admin.address);
+  curveYieldStrategyTest.setKeeper(admin.address);
   collateralToken.grantRole(await collateralToken.MINTER_ROLE(), curveYieldStrategyTest.address);
   const vaultAccountNo = await curveYieldStrategyTest.rageAccountNo();
-  await yieldToken.mint(user1.address, parseTokenAmount(10n ** 10n, 18));
-  await yieldToken.connect(user1).approve(curveYieldStrategyTest.address, parseTokenAmount(10n ** 10n, 18));
 
-  await yieldToken.mint(user2.address, parseTokenAmount(10n ** 10n, 18));
-  await yieldToken.connect(user2).approve(curveYieldStrategyTest.address, parseTokenAmount(10n ** 10n, 18));
-  await settlementToken
-    .connect(settlementTokenTreasury)
-    .approve(curveYieldStrategyTest.address, parseTokenAmount(10n ** 20n, 18));
+  const whale = await ethers.getSigner(addresses.LP_TOKEN_WHALE);
+  await lpToken.connect(whale).transfer(user1.address, parseTokenAmount(10n, 18));
+  await lpToken.connect(user1).approve(curveYieldStrategyTest.address, parseTokenAmount(50n, 18));
 
-  await yieldToken
-    .connect(settlementTokenTreasury)
-    .approve(curveYieldStrategyTest.address, parseTokenAmount(10n ** 20n, 18));
+  await lpToken.connect(whale).transfer(user2.address, parseTokenAmount(10n, 18));
+  await lpToken.connect(user2).approve(curveYieldStrategyTest.address, parseTokenAmount(50n, 18));
 
   await curveYieldStrategyTest.updateDepositCap(parseTokenAmount(10n ** 10n, 18));
 
@@ -210,10 +188,8 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
     clearingHouse,
     collateralToken,
     collateralTokenOracle,
-    yieldToken,
     settlementToken,
     vaultAccountNo,
-    settlementTokenTreasury,
     ethPoolId,
     ethPool: pool0,
     user1,
