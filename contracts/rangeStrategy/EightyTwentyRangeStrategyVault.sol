@@ -61,13 +61,26 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     */
 
     /// @inheritdoc BaseVault
-    function _isValidRebalanceRange() internal view override returns (bool isValid) {
+    function _isValidRebalanceRange(int256 vaultMarketValue) internal view override returns (bool isValid) {
         uint256 twapSqrtPriceX96 = uint256(_getTwapSqrtPriceX96());
         uint256 twapSqrtPriceX96Delta = twapSqrtPriceX96.mulDiv(rebalancePriceThresholdBps, 1e4);
         if (
             TickMath.getTickAtSqrtRatio((twapSqrtPriceX96 + twapSqrtPriceX96Delta).toUint160()) > baseTickUpper ||
             TickMath.getTickAtSqrtRatio((twapSqrtPriceX96 - twapSqrtPriceX96Delta).toUint160()) < baseTickLower
         ) isValid = true;
+
+        if (!isValid) {
+            isValid = checkIsReset(vaultMarketValue);
+        }
+    }
+
+    function checkIsReset(int256 vaultMarketValue) internal view returns (bool _isReset) {
+        //TODO: should we take netPosition from outside
+        int256 netPosition = rageClearingHouse.getAccountNetTokenPosition(rageAccountNo, ethPoolId);
+
+        uint256 netPositionNotional = _getTokenNotionalAbs(netPosition, _getTwapSqrtPriceX96());
+        //To Reset if netPositionNotional > 20% of vaultMarketValue
+        _isReset = netPositionNotional > vaultMarketValue.absUint().mulDiv(resetPositionThresholdBps, 1e4);
     }
 
     /// @inheritdoc BaseVault
@@ -159,6 +172,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         internal
         override
     {
+        isReset = checkIsReset(vaultMarketValue);
         IClearingHouseStructures.LiquidityChangeParams[2]
             memory liquidityChangeParamList = _getLiquidityChangeParamsOnRebalance(vaultMarketValue);
 
@@ -240,13 +254,6 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
             liqCount++;
         }
         uint160 twapSqrtPriceX96 = _getTwapSqrtPriceX96();
-
-        //TODO: should we take netPosition from outside
-        int256 netPosition = rageClearingHouse.getAccountNetTokenPosition(rageAccountNo, ethPoolId);
-
-        uint256 netPositionNotional = _getTokenNotionalAbs(netPosition, twapSqrtPriceX96);
-        //To Reset if netPositionNotional > 20% of vaultMarketValue
-        isReset = netPositionNotional > vaultMarketValue.absUint().mulDiv(resetPositionThresholdBps, 1e4);
 
         uint128 baseLiquidityUpdate;
         (baseTickLower, baseTickUpper, baseLiquidityUpdate) = _getUpdatedBaseRangeParams(
@@ -339,20 +346,6 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         baseLiquidityUpdate = (
             uint256(vaultMarketValue).mulDiv(FixedPoint96.Q96 / 10, (sqrtPriceX96 - updatedSqrtPriceLowerX96))
         ).toUint128();
-    }
-
-    /// @notice Get token notional absolute
-    /// @param tokenAmount Token amount
-    /// @param sqrtPriceX96 Sqrt of price in X96
-    function _getTokenNotionalAbs(int256 tokenAmount, uint160 sqrtPriceX96)
-        internal
-        pure
-        returns (uint256 tokenNotionalAbs)
-    {
-        tokenNotionalAbs = tokenAmount
-            .mulDiv(sqrtPriceX96, FixedPoint96.Q96)
-            .mulDiv(sqrtPriceX96, FixedPoint96.Q96)
-            .absUint();
     }
 
     // TODO can be moved to library
