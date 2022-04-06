@@ -21,8 +21,6 @@ import { AggregatorV3Interface } from '@chainlink/contracts/src/v0.8/interfaces/
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
 
-import {console} from 'hardhat/console.sol';
-
 contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     using FullMath for uint256;
 
@@ -198,7 +196,9 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
         gauge.withdraw(lpToWithdraw);
         triCryptoPool.remove_liquidity_one_coin(lpToWithdraw, 0, 0);
-        usdt.approve(address(uniV3Router), amusdt.balanceOf(address(this))ount);
+
+        uint256 balance = usdt.balanceOf(address(this));
+        usdt.approve(address(uniV3Router), balance);
 
         bytes memory path = abi.encodePacked(usdt, uint24(500), usdc);
 

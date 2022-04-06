@@ -39,4 +39,6 @@ interface ICurveStableSwap {
     ) external view returns (uint256);
 
     function balances(uint256) external view returns (uint256);
+
+    function calc_token_amount(uint256[3] memory amounts, bool deposit) external view returns (uint256);
 }
