@@ -28,7 +28,7 @@ contract BaseVaultTest is BaseVault {
     }
 
     function rebalance() public override onlyKeeper {
-        if (!isValidRebalance()) {
+        if (!isValidRebalance(0)) {
             revert BV_InvalidRebalance();
         }
 
@@ -89,5 +89,5 @@ contract BaseVaultTest is BaseVault {
 
     function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal virtual override {}
 
-    function _isValidRebalanceRange() internal view virtual override returns (bool isValid) {}
+    function _isValidRebalanceRange(int256 vaultMarketValue) internal view virtual override returns (bool isValid) {}
 }

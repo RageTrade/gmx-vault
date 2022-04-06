@@ -28,6 +28,8 @@ import { UniswapV3PoolHelper, IUniswapV3Pool } from '@ragetrade/core/contracts/l
 
 import { SafeCast } from '../libraries/SafeCast.sol';
 
+import { FixedPoint96 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint96.sol';
+
 import { console } from 'hardhat/console.sol';
 
 abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, OwnableUpgradeable {
@@ -121,7 +123,9 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
     /// @notice Rebalance the vault assets
     function rebalance() public virtual onlyKeeper {
-        if (!isValidRebalance()) {
+        int256 vaultMarketValue = getVaultMarketValue();
+
+        if (!isValidRebalance(vaultMarketValue)) {
             revert BV_InvalidRebalance();
         }
         // Rebalance ranges based on the parameters passed
@@ -131,7 +135,6 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         // TODO getAccountInfo CALL may be optimised using extsload
         (, , deposits, vTokenPositions) = rageClearingHouse.getAccountInfo(rageAccountNo);
         // (, uint256 virtualPriceX128) = rageClearingHouse.getTwapSqrtPricesForSetDuration(IVToken(VWETH_ADDRESS));
-        int256 vaultMarketValue = getVaultMarketValue();
 
         _rebalanceProfitAndCollateral(deposits, vTokenPositions, vaultMarketValue);
 
@@ -245,8 +248,8 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         return _blockTimestamp() - lastRebalanceTS > rebalanceTimeThreshold;
     }
 
-    function isValidRebalance() public view returns (bool isValid) {
-        return _isValidRebalanceTime() || _isValidRebalanceRange();
+    function isValidRebalance(int256 vaultMarketValue) public view returns (bool isValid) {
+        return _isValidRebalanceTime() || _isValidRebalanceRange(vaultMarketValue);
     }
 
     /// @notice Rebalances the pnl on rage trade and converts profit into asset tokens and covers losses using asset tokens
@@ -315,6 +318,20 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         return block.timestamp;
     }
 
+    /// @notice Get token notional absolute
+    /// @param tokenAmount Token amount
+    /// @param sqrtPriceX96 Sqrt of price in X96
+    function _getTokenNotionalAbs(int256 tokenAmount, uint160 sqrtPriceX96)
+        internal
+        pure
+        returns (uint256 tokenNotionalAbs)
+    {
+        tokenNotionalAbs = tokenAmount
+            .mulDiv(sqrtPriceX96, FixedPoint96.Q96)
+            .mulDiv(sqrtPriceX96, FixedPoint96.Q96)
+            .absUint();
+    }
+
     /*
         YIELD STRATEGY
     */
@@ -374,5 +391,5 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal virtual;
 
     /// @notice Checks if rebalance is valid based on range
-    function _isValidRebalanceRange() internal view virtual returns (bool isValid);
+    function _isValidRebalanceRange(int256 vaultMarketValue) internal view virtual returns (bool isValid);
 }
