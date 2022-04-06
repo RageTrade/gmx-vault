@@ -52,7 +52,11 @@ export async function checkVaultRangeParams(
 }
 
 export async function checkVaultRangeParamsApproximate(
-  vault: EightyTwentyRangeStrategyVaultTest,
+  vault: {
+    baseTickLower: () => Promise<number>;
+    baseTickUpper: () => Promise<number>;
+    baseLiquidity: () => Promise<BigNumber>;
+  },
   baseTickLower: number,
   baseTickUpper: number,
   baseLiquidity: BigNumberish,
