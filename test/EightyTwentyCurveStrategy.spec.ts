@@ -414,7 +414,9 @@ describe('EightyTwentyCurveStrategy', () => {
         ethPoolId,
         ethPool,
         weth,
+        crv,
         usdt,
+        uniswapQuoter,
         gauge,
         user1,
         trader0,
@@ -452,10 +454,16 @@ describe('EightyTwentyCurveStrategy', () => {
         triCrypto,
         lpOracle
         );
-      await accrueFees(
-        curveYieldStrategy.address,
-        gauge
-      );
+        await accrueFees(
+          curveYieldStrategy.address,
+          gauge,
+          crv,
+          usdt,
+          curveYieldStrategy,
+          triCrypto,
+          uniswapQuoter,
+          lpToken,
+        );
       // await checkAccountNetProfit(clearingHouse, vaultAccountNo, -1811804019n);
 
       await curveYieldStrategy.connect(user1).deposit(parseTokenAmount(10n, 18), user1.address);
@@ -488,7 +496,9 @@ describe('EightyTwentyCurveStrategy', () => {
         ethPoolId,
         ethPool,
         weth,
+        crv,
         usdt,
+        uniswapQuoter,
         gauge,
         user1,
         trader0,
@@ -527,10 +537,16 @@ describe('EightyTwentyCurveStrategy', () => {
         triCrypto,
         lpOracle
         );
-      await accrueFees(
-        curveYieldStrategy.address,
-        gauge
-      );
+        await accrueFees(
+          curveYieldStrategy.address,
+          gauge,
+          crv,
+          usdt,
+          curveYieldStrategy,
+          triCrypto,
+          uniswapQuoter,
+          lpToken,
+        );
       // await checkAccountNetProfit(clearingHouse, vaultAccountNo, -1811804019n);
 
       await curveYieldStrategy
