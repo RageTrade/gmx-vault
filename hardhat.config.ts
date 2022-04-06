@@ -17,16 +17,6 @@ import { task } from 'hardhat/config';
 config();
 const { ALCHEMY_KEY } = process.env;
 
-// This is a sample Hardhat task. To learn how to create your own go to
-// https://hardhat.org/guides/create-task.html
-task('accounts', 'Prints the list of accounts', async (args, hre) => {
-  const accounts = await hre.ethers.getSigners();
-
-  for (const account of accounts) {
-    console.log(account.address);
-  }
-});
-
 if (!process.env.ALCHEMY_KEY) {
   console.warn('PLEASE NOTE: The env var ALCHEMY_KEY is not set');
 }
@@ -59,13 +49,14 @@ export default {
       url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_KEY}`,
       accounts: [pk],
     },
-    arbitrum: {
+    arbmain: {
       url: `https://arb-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}`,
       accounts: [pk],
     },
-    arbitrumRinkeby: {
-      url: `https://arb-rinkeby.g.alchemy.com/v2/${ALCHEMY_KEY}`,
+    arbtest: {
+      url: `https://rinkeby.arbitrum.io/rpc`,
       accounts: [pk],
+      chainId: 421611,
     },
   },
   solidity: {

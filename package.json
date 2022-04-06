@@ -8,6 +8,7 @@
     "compile": "hardhat compile",
     "coverage": "hardhat coverage",
     "deploy": "TS_NODE_SKIP_IGNORE=true hardhat deploy",
+    "deploy:arbtest": "yarn deploy --network arbtest",
     "deploy:goerli": "hardhat deploy --network goerli && yarn etherscan --network goerli",
     "deploy:localhost": "hardhat --network localhost deploy",
     "deploy:rinkeby": "hardhat deploy --network rinkeby && yarn etherscan --network rinkeby",

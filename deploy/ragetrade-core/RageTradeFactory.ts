@@ -13,9 +13,6 @@ import {
 } from '../../typechain-types';
 import { IClearingHouseStructures } from '../../typechain-types/artifacts/@ragetrade/core/contracts/protocol/clearinghouse/ClearingHouse';
 
-// Not to be deployed during the deploy task
-export const skip = () => true;
-
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
     deployments: { deploy, get, read, save, execute },
@@ -115,6 +112,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
+
+// Only will be deployed on hardhat network
+func.skip = async hre => hre.network.config.chainId !== 31337;
 
 func.tags = ['RageTradeFactory'];
 func.dependencies = ['ClearingHouseLogic', 'VPoolWrapperLogic', 'InsuranceFundLogic', 'SettlementToken'];

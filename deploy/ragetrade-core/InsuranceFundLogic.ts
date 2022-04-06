@@ -1,9 +1,6 @@
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-// Not to be deployed during the deploy task
-export const skip = () => true;
-
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
     deployments: { deploy },
@@ -27,5 +24,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
+
+// Only will be deployed on hardhat network
+func.skip = async hre => hre.network.config.chainId !== 31337;
 
 func.tags = ['InsuranceFundLogic'];
