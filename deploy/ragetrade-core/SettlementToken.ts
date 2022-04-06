@@ -2,10 +2,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 import { IERC20Metadata__factory } from '../../typechain-types';
-import { getNetworkInfo } from './network-info';
-
-// Not to be deployed during the deploy task
-export const skip = () => true;
+import { getNetworkInfo } from '../network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
@@ -38,5 +35,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
+
+// Only will be deployed on hardhat network
+func.skip = async hre => hre.network.config.chainId !== 31337;
 
 func.tags = ['SettlementToken'];
