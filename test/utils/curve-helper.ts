@@ -1,7 +1,7 @@
 import addresses from '../fixtures/addresses';
 import hre from 'hardhat';
 import { BigNumber, BigNumberish } from 'ethers';
-import { eightyTwentyCurveStrategyFixture } from '../fixtures/eighty-twenty-curve-strategy';
+import { ERC20, ICurveStableSwap, ILPPriceGetter, ICurveGauge } from '../../typechain-types';
 
 export const unlockWhales = async () => {
   await Promise.all([
@@ -28,19 +28,16 @@ export const unlockWhales = async () => {
   ]);
 };
 
-const getReserves = async () => {
-  const { crv, weth, gauge, usdt, lpToken, triCrypto, crvOracle, lpOracle, uniswapQuoter, curveYieldStrategyTest } =
-    await eightyTwentyCurveStrategyFixture();
+const getReserves = async (triCrypto: ICurveStableSwap, lpOracle: ILPPriceGetter) => {
   return Promise.all([lpOracle.lp_price(), triCrypto.balances(0), triCrypto.balances(1), triCrypto.balances(2)]);
 };
 
-export const swapEth = async (amount: BigNumberish, address: string) => {
+export const swapEth = async (amount: BigNumberish, address: string, weth: ERC20, tc: ICurveStableSwap, lpOracle: ILPPriceGetter ) => {
   await unlockWhales();
   const signer = await hre.ethers.getSigner(address);
-  const { weth, triCrypto: tc } = await eightyTwentyCurveStrategyFixture();
 
   const triCrypto = tc.connect(signer);
-  const [initialLpTokenPrice, initialUsdtReserve, initialWbtcReserve, initialWethReserve] = await getReserves();
+  const [initialLpTokenPrice, initialUsdtReserve, initialWbtcReserve, initialWethReserve] = await getReserves(triCrypto, lpOracle);
 
   const [triCryptoWhale, usdtWhale, wbtcWhale, wethWhale, crvWhale] = await Promise.all([
     hre.ethers.getSigner(addresses.LP_TOKEN_WHALE),
@@ -64,7 +61,7 @@ export const swapEth = async (amount: BigNumberish, address: string) => {
 
   await triCrypto['exchange(uint256,uint256,uint256,uint256,bool)'](2, 0, ONE.mul(amount), dy, false);
 
-  let [finalLpTokenPrice, finalUsdtReserve, finalWbtcReserve, finalWethReserve] = await getReserves();
+  let [finalLpTokenPrice, finalUsdtReserve, finalWbtcReserve, finalWethReserve] = await getReserves(triCrypto, lpOracle);
 
   console.log('AFTER SWAP ETH : ');
   console.log('LP TOKEN PRICE', finalLpTokenPrice, '$');
@@ -73,13 +70,11 @@ export const swapEth = async (amount: BigNumberish, address: string) => {
   console.log('WETH RESERVE', finalWethReserve, ' WETH');
 };
 
-export const swapUsdt = async (amount: BigNumber, address: string) => {
+export const swapUsdt = async (amount: BigNumber, address: string, usdt: ERC20, tc: ICurveStableSwap, lpOracle: ILPPriceGetter) => {
   await unlockWhales();
   const signer = await hre.ethers.getSigner(address);
-  const { usdt, triCrypto: tc } = await eightyTwentyCurveStrategyFixture();
-
   const triCrypto = tc.connect(signer);
-  const [initialLpTokenPrice, initialUsdtReserve, initialWbtcReserve, initialWethReserve] = await getReserves();
+  const [initialLpTokenPrice, initialUsdtReserve, initialWbtcReserve, initialWethReserve] = await getReserves(triCrypto, lpOracle);
 
   const [triCryptoWhale, usdtWhale, wbtcWhale, wethWhale, crvWhale] = await Promise.all([
     hre.ethers.getSigner(addresses.LP_TOKEN_WHALE),
@@ -103,7 +98,7 @@ export const swapUsdt = async (amount: BigNumber, address: string) => {
 
   await triCrypto['exchange(uint256,uint256,uint256,uint256,bool)'](0, 2, POW_SIX.mul(amount), dy, false);
 
-  let [finalLpTokenPrice, finalUsdtReserve, finalWbtcReserve, finalWethReserve] = await getReserves();
+  let [finalLpTokenPrice, finalUsdtReserve, finalWbtcReserve, finalWethReserve] = await getReserves(triCrypto, lpOracle);
 
   console.log('AFTER SWAP USDT : ');
   console.log('LP TOKEN PRICE', finalLpTokenPrice, '$');
@@ -112,15 +107,14 @@ export const swapUsdt = async (amount: BigNumber, address: string) => {
   console.log('WETH RESERVE', finalWethReserve, ' WETH');
 };
 
-export const accrueFees = async () => {
-  const { crv, gauge, curveYieldStrategyTest } = await eightyTwentyCurveStrategyFixture();
+export const accrueFees = async (address: string, gauge: ICurveGauge) => {
 
   // console.log('BEFORE ACCRUING FEES : ');
   // console.log('LP TOKENS IN VAULT AFTER HARVESTING : ', (await curveYieldStrategyTest.totalAssets()).toBigInt());
   // console.log('PRICE PER SHARE AFTER HARVESTING : ', (await curveYieldStrategyTest.previewMint(10n ** 18n)).toBigInt());
   // console.log('CRV TOKENS IN VAULT (FEES) : ', (await crv.balanceOf(curveYieldStrategyTest.address)).toBigInt());
 
-  await gauge.claimable_reward_write(curveYieldStrategyTest.address, addresses.CRV);
+  await gauge.claimable_reward_write(address, addresses.CRV);
   console.log('FEES ACCRUED');
 
   // console.log('AFTER ACCRUING FEES : ');
