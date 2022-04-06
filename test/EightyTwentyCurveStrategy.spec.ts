@@ -352,7 +352,7 @@ describe('EightyTwentyCurveStrategy', () => {
     });
   });
   describe('#Scenarios', () => {
-    it.only('Rebalance', async () => {
+    it('Rebalance', async () => {
       const {
         curveYieldStrategyTest: curveYieldStrategy,
         clearingHouse,
@@ -362,7 +362,9 @@ describe('EightyTwentyCurveStrategy', () => {
         ethPoolId,
         ethPool,
         weth,
+        crv,
         usdt,
+        uniswapQuoter,
         gauge,
         user1,
         trader0,
@@ -397,16 +399,16 @@ describe('EightyTwentyCurveStrategy', () => {
       //   await eightyTwentyRangeStrategyVaultTest.setYieldTokenPriceX128(priceX128);
 
       await increaseBlockTimestamp(1_000_000);
-      await swapEth(
-        10,
-        trader0.address,
-        weth,
-        triCrypto,
-        lpOracle
-        );
+      await swapEth(10, trader0.address, weth, triCrypto, lpOracle);
       await accrueFees(
         curveYieldStrategy.address,
-        gauge
+        gauge,
+        crv,
+        usdt,
+        curveYieldStrategy,
+        triCrypto,
+        uniswapQuoter,
+        lpToken,
       );
       // merge script here
       // one swap, swap 10 eth for usdt, same as sent to finquant
