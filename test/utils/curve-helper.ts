@@ -89,7 +89,7 @@ export const swapEth = async (
 };
 
 export const swapUsdt = async (
-  amount: BigNumber,
+  amount: BigNumberish,
   address: string,
   usdt: ERC20,
   tc: ICurveStableSwap,

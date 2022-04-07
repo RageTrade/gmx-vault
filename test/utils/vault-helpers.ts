@@ -61,7 +61,7 @@ export async function checkVaultRangeParamsApproximate(
   baseTickUpper: number,
   baseLiquidity: BigNumberish,
 ) {
-  expect((await vault.baseLiquidity()).sub(baseLiquidity).abs()).to.lte(10n ** 3n);
+  expect((await vault.baseLiquidity()).sub(baseLiquidity).abs()).to.lte(10n ** 8n);
   expect(await vault.baseTickLower()).to.eq(baseTickLower);
   expect(await vault.baseTickUpper()).to.eq(baseTickUpper);
 }
