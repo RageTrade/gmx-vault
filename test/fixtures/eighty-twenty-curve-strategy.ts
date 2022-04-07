@@ -27,7 +27,7 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
 
   const closePositionSlippageSqrtToleranceBps = 500; //5%
   const resetPositionThresholdBps = 2000; //20%
-  const minNotionalPositionToCloseThreshold = parseTokenAmount(100, 6);
+  const minNotionalPositionToCloseThreshold = parseTokenAmount(10, 6);
   const collateralTokenPriceX128 = await priceToPriceX128(1, 6, 18);
 
   const collateralTokenOracle = await (await hre.ethers.getContractFactory('OracleMock')).deploy();
