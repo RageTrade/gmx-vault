@@ -146,7 +146,7 @@ export async function checkLiquidityPositionApproximate(
   );
   expect(liquidityPosition.tickLower).to.eq(baseTickLower);
   expect(liquidityPosition.tickUpper).to.eq(baseTickUpper);
-  expect(liquidityPosition.liquidity.sub(baseLiquidity).abs()).to.lte(10n ** 3n);
+  expect(liquidityPosition.liquidity.sub(baseLiquidity).abs()).to.lte(10n ** 8n);
 }
 
 export async function checkNetTokenPosition(
@@ -218,7 +218,7 @@ export async function logRageParams(
     tokenPosition.netTraderPosition,
   );
 
-  console.log("Account Net Profit:", await clearingHouse.getAccountNetProfit(accountNo));
+  console.log('Account Net Profit:', await clearingHouse.getAccountNetProfit(accountNo));
 
   const { sqrtPriceX96 } = await vPool.slot0();
   const amounts = amountsForLiquidity(
