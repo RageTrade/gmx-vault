@@ -51,14 +51,14 @@ describe.only('Base Vault', () => {
     });
 
     it('should only allow keeper to execute rebalance and closeTokenPosition', async () => {
-      const { baseVaultTest, keeper } = await baseVaultFixture();
+      const { baseVaultTest, admin, keeper } = await baseVaultFixture();
 
       // when someone else calls, it should revert
       await expect(baseVaultTest.rebalance()).to.be.revertedWith(
-        'BV_OnlyKeeperAllowed("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC")',
+        `BV_OnlyKeeperAllowed("${admin.address}", "${keeper.address}")`,
       );
       await expect(baseVaultTest.closeTokenPosition()).to.be.revertedWith(
-        'BV_OnlyKeeperAllowed("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC")',
+        `BV_OnlyKeeperAllowed("${admin.address}", "${keeper.address}")`,
       );
 
       // when keeper calls, this should not cause BV_OnlyKeeperAllowed revert
