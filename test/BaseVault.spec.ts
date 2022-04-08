@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import hre, { ethers } from 'hardhat';
 import { baseVaultFixture } from './fixtures/base-vault';
 
-describe('Base Vault', () => {
+describe.only('Base Vault', () => {
   before(async () => {
     await baseVaultFixture();
   });
@@ -114,7 +114,6 @@ describe('Base Vault', () => {
       await baseVaultTest.setBlockTimestamp(Math.floor(Date.now() / 1000) + 24 * 60 * 60 + 1);
 
       expect(await baseVaultTest.isValidRebalanceTime()).to.be.true;
-      // await expect(baseVaultTest.connect(keeper).rebalance()).to.be.reverted;
     });
   });
 });
