@@ -29,7 +29,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     settlementTokenAddress = coreDeployments.SettlementTokenDeployment.address;
     ethPoolId = truncate(coreDeployments.ETH_vTokenDeployment.address);
   } else {
-    // const rageTradeDeployments = await deploy('RageTradeFactory');
     const ClearingHouseDeployment = await get('ClearingHouse');
     const SettlementTokenDeployment = await get('SettlementToken');
     const ETH_vTokenDeployment = await get('ETH-vToken');
@@ -38,7 +37,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     ethPoolId = truncate(ETH_vTokenDeployment.address);
   }
 
-  const dummyCollateralDeployment = await get('DummyCollateralToken');
+  const dummyCollateralDeployment = await get('CollateralToken');
 
   const networkInfo = getNetworkInfo(hre.network.config.chainId ?? 31337);
 
@@ -94,4 +93,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 export default func;
 
 func.tags = ['CurveYieldStrategy'];
-func.dependencies = ['CurveYieldStrategyLogic', 'DummyCollateralToken', 'ProxyAdmin', 'vETH'];
+func.dependencies = ['CurveYieldStrategyLogic', 'CollateralToken', 'ProxyAdmin', 'vETH'];

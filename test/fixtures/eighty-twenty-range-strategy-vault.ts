@@ -13,11 +13,9 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
   // const initialPriceX128 = await priceToPriceX128(4000, 6, 18);
   // await pool0.oracle.setPriceX128(initialPriceX128);
 
-  const tokenFactory = await hre.ethers.getContractFactory('ERC20PresetMinterPauserUpgradeable');
-  const collateralToken = await tokenFactory.deploy();
-  await collateralToken.initialize('Collateral Token', 'CT');
-  const yieldToken = await tokenFactory.deploy();
-  await yieldToken.initialize('Yield Token', 'YT');
+  const tokenFactory = await hre.ethers.getContractFactory('ERC20PresetMinterPauser');
+  const collateralToken = await tokenFactory.deploy('Collateral Token', 'CT');
+  const yieldToken = await tokenFactory.deploy('Yield Token', 'YT');
 
   const [admin, user0, user1, trader0, settlementTokenTreasury] = await hre.ethers.getSigners();
 
