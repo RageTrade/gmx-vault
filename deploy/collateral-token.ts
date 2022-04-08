@@ -9,16 +9,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const { deployer } = await getNamedAccounts();
 
-  const deployment = await deploy('DummyCollateralToken', {
-    contract: 'DummyCollateralToken',
+  const deployment = await deploy('CollateralToken', {
+    contract: 'ERC20PresetMinterPauser',
     from: deployer,
     log: true,
-    args: ['DummyCollateralToken', 'DCT'],
+    args: ['RageTradeVaultsCollateralToken', 'RTVC'],
   });
 
   if (deployment.newlyDeployed && hre.network.config.chainId !== 31337) {
     await hre.tenderly.push({
-      name: 'DummyCollateralToken',
+      name: 'ERC20PresetMinterPauser',
       address: deployment.address,
     });
   }
@@ -26,4 +26,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
 export default func;
 
-func.tags = ['DummyCollateralToken'];
+func.tags = ['CollateralToken'];
