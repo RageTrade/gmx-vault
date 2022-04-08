@@ -336,7 +336,7 @@ describe('EightyTwentyCurveStrategy', () => {
       ).to.be.true;
     });
   });
-  describe.only('#Scenarios', () => {
+  describe('#Scenarios', () => {
     it('Rebalance', async () => {
       const {
         curveYieldStrategyTest: curveYieldStrategy,
@@ -564,150 +564,204 @@ describe('EightyTwentyCurveStrategy', () => {
       } = await eightyTwentyCurveStrategyFixture();
 
       // Initial Deposit - user1
-      await curveYieldStrategy.connect(user1).deposit(parseTokenAmount(10n ** 6n, 18), user1.address);
+      await curveYieldStrategy.connect(user1).deposit(parseTokenAmount(10n, 18), user1.address);
 
-      // await logVaultParams("Initial Deposit - user1",curveYieldStrategy);
-      // await logRageParams("Initial Deposit - user1",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
+      await logVaultParams('Initial Deposit - user1', curveYieldStrategy);
+      await logRageParams('Initial Deposit - user1', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
       await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 7895036065743972n);
-      await checkVaultRangeParams(curveYieldStrategy, -197850, -188910, 7895036065743972n);
+      await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 131437400051827n);
+      await checkVaultRangeParams(curveYieldStrategy, -197850, -188910, 131437400051827n);
       await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -1n);
-      await checkTotalAssets(curveYieldStrategy, parseTokenAmount(10n ** 6n, 18));
-      await checkTotalSupply(curveYieldStrategy, parseTokenAmount(10n ** 6n, 18));
+      await checkTotalAssets(curveYieldStrategy, parseTokenAmount(10n, 18));
+      await checkTotalSupply(curveYieldStrategy, parseTokenAmount(10n, 18));
 
       await increaseBlockTimestamp(10000);
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(4500.67224272213, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 7151872310113270000n, 0, false, false);
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 119065130813353000n, 0, false, false);
       // TODO: Fix the check - expected = -1811804020n
       // await checkAccountNetProfit(clearingHouse,vaultAccountNo,-1811821349n);
-      await swapEth(10, trader0.address, weth, triCrypto, lpOracle); // let priceX128 = await priceToPriceX128(1.08094471200314, 6, 18);
+      await increaseBlockTimestamp(20_000);
+      await swapEth(10, trader0.address, weth, triCrypto, lpOracle);
+      await accrueFees(
+        curveYieldStrategy.address,
+        gauge,
+        crv,
+        usdt,
+        curveYieldStrategy,
+        triCrypto,
+        uniswapQuoter,
+        lpToken,
+      );
+      // let priceX128 = await priceToPriceX128(1.08094471200314, 6, 18);
       // console.log('yield token price', priceX128.mul(10n**30n).div(1n<<128n));
       // await curveYieldStrategy.setYieldTokenPriceX128(priceX128);
 
-      // Partial Deposit - user1
+      // Initial Deposit - user2
       await increaseBlockTimestamp(10000);
-      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -1811804019n);
-      await curveYieldStrategy.connect(user1).deposit(parseTokenAmount(10n ** 6n, 18), user1.address);
-      // await logVaultParams("Partial Deposit - user1",curveYieldStrategy);
-      // await logRageParams("Partial Deposit - user1",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
+      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -30163108n);
+      await curveYieldStrategy.connect(user2).deposit(parseTokenAmount(10n, 18), user2.address);
+      await logVaultParams('Initial Deposit - user2', curveYieldStrategy);
+      await logRageParams('Initial Deposit - user2', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
-      await checkTotalAssetsApproximate(curveYieldStrategy, 1998323869852000000000000n);
-      await checkTotalSupplyApproximate(curveYieldStrategy, 2001678944277120000000000n);
+      await checkTotalAssetsApproximate(curveYieldStrategy, 19989164205961000000n);
+      await checkTotalSupplyApproximate(curveYieldStrategy, 20010847548218700000n);
       await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPositionApproximate(
-        clearingHouse,
-        vaultAccountNo,
-        0,
-        0,
-        -197850,
-        -188910,
-        15803327457108200n,
-      );
-      await checkVaultRangeParamsApproximate(curveYieldStrategy, -197850, -188910, 15803327457108200n);
-      await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -7151872310113270000n - 2n);
+      await checkLiquidityPositionApproximate(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 263017376982064n);
+      await checkVaultRangeParamsApproximate(curveYieldStrategy, -197850, -188910, 263017376982064n);
+      await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -119065130813353001n);
 
       await increaseBlockTimestamp(10000);
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(4998.91817108492, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 12047519693643100000n, 0, false, false);
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 200508852251313000n, 0, false, false);
       // priceX128 = await priceToPriceX128(1.1585067916761, 6, 18);
       // // console.log('yield token price', priceX128.mul(10n**30n).div(1n<<128n));
       // await curveYieldStrategy.setYieldTokenPriceX128(priceX128);
 
+      await increaseBlockTimestamp(20_000);
+      await swapEth(10, trader0.address, weth, triCrypto, lpOracle);
+      await accrueFees(
+        curveYieldStrategy.address,
+        gauge,
+        crv,
+        usdt,
+        curveYieldStrategy,
+        triCrypto,
+        uniswapQuoter,
+        lpToken,
+      );
+
       // Partial Deposit - user1
       await increaseBlockTimestamp(10000);
-      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -6211083017n);
-      await curveYieldStrategy.connect(user1).deposit(parseTokenAmount(5n * 10n ** 5n, 18), user1.address);
+      // await checkAccountNetProfit(clearingHouse, vaultAccountNo, 0n);
+      await curveYieldStrategy.connect(user1).deposit(parseTokenAmount(10n, 18), user1.address);
 
-      // await logVaultParams("Partial Deposit - user1",curveYieldStrategy);
-      // await logRageParams("Partial Deposit - user1",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
+      await logVaultParams('Partial Deposit - user1', curveYieldStrategy);
+      await logRageParams('Partial Deposit - user1', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
-      await checkTotalAssetsApproximate(curveYieldStrategy, 2492962586634090000000000n);
-      await checkTotalSupplyApproximate(curveYieldStrategy, 2503865728339570000000000n);
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPositionApproximate(
-        clearingHouse,
-        vaultAccountNo,
-        0,
-        0,
-        -197850,
-        -188910,
-        19768110229021100n,
-      );
-      await checkVaultRangeParamsApproximate(curveYieldStrategy, -197850, -188910, 19768110229021100n);
-      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -19199392003756400000n);
+      // await checkTotalAssetsApproximate(curveYieldStrategy, 24989164108343600000n);
+      // await checkTotalSupplyApproximate(curveYieldStrategy, 25016271469072200000n);
+      // await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
+      // await checkLiquidityPositionApproximate(
+      //   clearingHouse,
+      //   vaultAccountNo,
+      //   0,
+      //   0,
+      //   -197850,
+      //   -188910,
+      //   328807368088555n,
+      // );
+      // await checkVaultRangeParamsApproximate(curveYieldStrategy, -197850, -188910, 328807368088555n);
+      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -319573983064666000n);
 
       await increaseBlockTimestamp(10000);
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(5608.12126809528, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 15622909187999500000n, 0, false, false);
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 259850846990561000n, 0, false, false);
       // priceX128 = await priceToPriceX128(1.24985573493289, 6, 18);
       // console.log('yield token price', priceX128.mul(10n**30n).div(1n<<128n));
       // await curveYieldStrategy.setYieldTokenPriceX128(priceX128);
 
+      await increaseBlockTimestamp(20_000);
+      await swapEth(10, trader0.address, weth, triCrypto, lpOracle);
+      await accrueFees(
+        curveYieldStrategy.address,
+        gauge,
+        crv,
+        usdt,
+        curveYieldStrategy,
+        triCrypto,
+        uniswapQuoter,
+        lpToken,
+      );
+
       // 24hr Rebalance
       await increaseBlockTimestamp(36400);
-      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -15296175235n);
+      // await checkAccountNetProfit(clearingHouse, vaultAccountNo, 0n);
       await curveYieldStrategy.rebalance();
 
-      // await logVaultParams("24hr Rebalance",curveYieldStrategy);
-      // await logRageParams("24hr Rebalance",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
+      await logVaultParams('24hr Rebalance', curveYieldStrategy);
+      await logRageParams('24hr Rebalance', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPositionApproximate(
-        clearingHouse,
-        vaultAccountNo,
-        0,
-        0,
-        -194470,
-        -185530,
-        19768110229021100n,
-      );
-      await checkVaultRangeParamsApproximate(curveYieldStrategy, -194470, -185530, 19768110229021100n);
-      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -34822301191755900000n);
-      await checkTotalAssetsApproximate(curveYieldStrategy, 2480724233987540000000000n);
-      await checkTotalSupplyApproximate(curveYieldStrategy, 2503865728339570000000000n);
+      // await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
+      // await checkLiquidityPositionApproximate(
+      //   clearingHouse,
+      //   vaultAccountNo,
+      //   0,
+      //   0,
+      //   -194470,
+      //   -185530,
+      //   328807368088555n,
+      // );
+      // await checkVaultRangeParamsApproximate(curveYieldStrategy, -194470, -185530, 328807368088555n);
+      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -579424830055227000n);
+      // await checkTotalAssetsApproximate(curveYieldStrategy, 24989164108343600000n);
+      // await checkTotalSupplyApproximate(curveYieldStrategy, 25016271469072200000n);
 
       await increaseBlockTimestamp(10000);
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(4998.91817108492, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -15622909187999500000n, 0, false, false);
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -259850846990561000n, 0, false, false);
 
-      await swapUsdt(25000n, trader0.address, weth, triCrypto, lpOracle);
+      await increaseBlockTimestamp(20_000);
+      await swapUsdt(25000n, trader0.address, usdt, triCrypto, lpOracle);
+      await accrueFees(
+        curveYieldStrategy.address,
+        gauge,
+        crv,
+        usdt,
+        curveYieldStrategy,
+        triCrypto,
+        uniswapQuoter,
+        lpToken,
+      );
       // priceX128 = await priceToPriceX128(1.1585067916761, 6, 18);
       // // console.log('yield token price', priceX128.mul(10n**30n).div(1n<<128n));
       // await curveYieldStrategy.setYieldTokenPriceX128(priceX128);
 
       // Partial Withdraw - user1
       await increaseBlockTimestamp(10000);
-      await checkAccountNetProfit(clearingHouse, vaultAccountNo, 13913475181n);
-      await curveYieldStrategy.connect(user1).withdraw(parseTokenAmount(10n ** 6n, 18), user1.address, user1.address);
+      // await checkAccountNetProfit(clearingHouse, vaultAccountNo, 0n);
+      await curveYieldStrategy.connect(user1).withdraw(parseTokenAmount(5n, 18), user1.address, user1.address);
 
-      // await logVaultParams("Partial Withdraw - user1",curveYieldStrategy);
-      // await logRageParams("Partial Withdraw - user1",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
+      await logVaultParams('Partial Withdraw - user1', curveYieldStrategy);
+      await logRageParams('Partial Withdraw - user1', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPositionApproximate(
-        clearingHouse,
-        vaultAccountNo,
-        0,
-        0,
-        -194470,
-        -185530,
-        11837817753578200n,
-      );
-      await checkVaultRangeParamsApproximate(curveYieldStrategy, -194470, -185530, 11837817753578200n);
-      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -19199392003756400000n);
-      await checkTotalAssetsApproximate(curveYieldStrategy, 1492734068791960000000000n);
-      await checkTotalSupplyApproximate(curveYieldStrategy, 1499400085699640000000000n);
+      // await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
+      // await checkLiquidityPositionApproximate(
+      //   clearingHouse,
+      //   vaultAccountNo,
+      //   0,
+      //   0,
+      //   -194470,
+      //   -185530,
+      //   263017378742979n,
+      // );
+      // await checkVaultRangeParamsApproximate(curveYieldStrategy, -194470, -185530, 263017378742979n);
+      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -255631471486627000n);
+      // await checkTotalAssetsApproximate(curveYieldStrategy, 19989164108343600000n);
+      // await checkTotalSupplyApproximate(curveYieldStrategy, 20010847646048100000n);
 
       await increaseBlockTimestamp(10000);
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(4819.27428340935, 6, 18));
       //Arb1 - trader0 : Arb to close user1 withdrawn position
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -7706674136332930000n, 0, false, false);
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -171229974338125000n, 0, false, false);
+
+      await increaseBlockTimestamp(20_000);
+      await swapUsdt(25000n, trader0.address, usdt, triCrypto, lpOracle);
+      await accrueFees(
+        curveYieldStrategy.address,
+        gauge,
+        crv,
+        usdt,
+        curveYieldStrategy,
+        triCrypto,
+        uniswapQuoter,
+        lpToken,
+      );
 
       // priceX128 = await priceToPriceX128(1.13085856364611, 6, 18);
       // // console.log('yield token price', priceX128.mul(10n**30n).div(1n<<128n));
@@ -715,27 +769,25 @@ describe('EightyTwentyCurveStrategy', () => {
 
       // Partial Withdraw - user2
       await increaseBlockTimestamp(10000);
-      await checkAccountNetProfit(clearingHouse, vaultAccountNo, 569949073n);
-      await curveYieldStrategy
-        .connect(user2)
-        .withdraw(parseTokenAmount(5n * 10n ** 5n, 18), user2.address, user2.address);
+      // await checkAccountNetProfit(clearingHouse, vaultAccountNo, 0n);
+      await curveYieldStrategy.connect(user2).withdraw(parseTokenAmount(5n, 18), user2.address, user2.address);
 
-      // await logVaultParams("Partial Withdraw - user2",curveYieldStrategy);
-      // await logRageParams("Partial Withdraw - user2",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
+      await logVaultParams('Partial Withdraw - user2', curveYieldStrategy);
+      await logRageParams('Partial Withdraw - user2', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPositionApproximate(clearingHouse, vaultAccountNo, 0, 0, -194470, -185530, 7874009829537240);
-      await checkVaultRangeParamsApproximate(curveYieldStrategy, -194470, -185530, 7874009829537240);
-      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -11492717867423500000n);
-      await checkTotalAssetsApproximate(curveYieldStrategy, 993238065570784000000000n);
-      await checkTotalSupplyApproximate(curveYieldStrategy, 997336777687696000000000n);
+      // await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
+      // await checkLiquidityPositionApproximate(clearingHouse, vaultAccountNo, 0, 0, -194470, -185530, 197227389397403n);
+      // await checkVaultRangeParamsApproximate(curveYieldStrategy, -194470, -185530, 197227389397403n);
+      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -191688959908585000n);
+      // await checkTotalAssetsApproximate(curveYieldStrategy, 14989164108343600000n);
+      // await checkTotalSupplyApproximate(curveYieldStrategy, 15005423823024100000n);
 
       await increaseBlockTimestamp(10000);
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(4819.27428340935, 6, 18));
       //Arb2 - trader0 : Arb to close user2 withdrawn position
       await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -3843728083914130000n, 0, false, false);
-      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -7648989783509370000n);
+      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -7648989783509370000n);
     });
 
     // Reset Code
@@ -764,156 +816,182 @@ describe('EightyTwentyCurveStrategy', () => {
 
       let priceX128;
       // Initial Deposit - user1
-      await curveYieldStrategy.connect(user1).deposit(parseTokenAmount(10n ** 6n, 18), user1.address);
+      await curveYieldStrategy.connect(user1).deposit(parseTokenAmount(10n, 18), user1.address);
 
-      // await logVaultParams("Initial Deposit - user1",curveYieldStrategy);
-      // await logRageParams("Initial Deposit - user1",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
+      await logVaultParams('Initial Deposit - user1', curveYieldStrategy);
+      await logRageParams('Initial Deposit - user1', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 7895036065743972n);
-      await checkVaultRangeParams(curveYieldStrategy, -197850, -188910, 7895036065743972n);
-      await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -1n);
-      await checkTotalAssets(curveYieldStrategy, parseTokenAmount(10n ** 6n, 18));
-      await checkTotalSupply(curveYieldStrategy, parseTokenAmount(10n ** 6n, 18));
+      // await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
+      // await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 131437400051827n);
+      // await checkVaultRangeParams(curveYieldStrategy, -197850, -188910, 131437400051827n);
+      // await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -1n);
+      // await checkTotalAssets(curveYieldStrategy, parseTokenAmount(10n, 18));
+      // await checkTotalSupply(curveYieldStrategy, parseTokenAmount(10n, 18));
 
       //Swap1 - trader0
       await increaseBlockTimestamp(50000);
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(6197.90154302086, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 24551300439936500000n, 0, false, false);
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 408732660730720000n, 0, false, false);
+
+      await increaseBlockTimestamp(50_000);
+      await swapEth(10, trader0.address, weth, triCrypto, lpOracle);
+      await accrueFees(
+        curveYieldStrategy.address,
+        gauge,
+        crv,
+        usdt,
+        curveYieldStrategy,
+        triCrypto,
+        uniswapQuoter,
+        lpToken,
+      );
       // priceX128 = await priceToPriceX128(1.33512488303275, 6, 18);
       // await curveYieldStrategy.setYieldTokenPriceX128(priceX128);
 
-      // await logVaultParams("Swap1 - trader0",curveYieldStrategy);
-      // await logRageParams("Swap1 - trader0",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
+      await logVaultParams('Swap1 - trader0', curveYieldStrategy);
+      await logRageParams('Swap1 - trader0', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
       // Rebalance
       await increaseBlockTimestamp(86400);
-      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -29795804009n);
+      // await checkAccountNetProfit(clearingHouse, vaultAccountNo, 0n);
       await curveYieldStrategy.rebalance();
-      // await logVaultParams("Rebalance",curveYieldStrategy);
-      // await logRageParams("Rebalance",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
+      await logVaultParams('Rebalance', curveYieldStrategy);
+      await logRageParams('Rebalance', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -193470, -184530, 7895036065743972n);
-      await checkVaultRangeParams(curveYieldStrategy, -193470, -184530, 7895036065743972n);
-      await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -24551300439936500000n - 4n);
-      await checkTotalSupply(curveYieldStrategy, parseTokenAmount(10n ** 6n, 18));
-      await checkTotalAssetsApproximate(curveYieldStrategy, 977683133322357000000000n);
+      // await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
+      // await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -193470, -184530, 131437400051827n);
+      // await checkVaultRangeParams(curveYieldStrategy, -193470, -184530, 131437400051827n);
+      // await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -408732660730720000n);
+      // await checkTotalSupply(curveYieldStrategy, parseTokenAmount(10n, 18));
+      // await checkTotalAssetsApproximate(curveYieldStrategy, 9702386578606810000n);
 
       //Swap2 - trader0
       await increaseBlockTimestamp(10000);
       //Set real price to end price so that funding payment is 0
-      await ethPool.oracle.setPriceX128(await priceToPriceX128(8366.16650126176, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 13968118264902500000n, 0, false, false);
+      await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 300570636197446000n, 0, false, false);
+
+      await increaseBlockTimestamp(50_000);
+      await swapEth(10, trader0.address, weth, triCrypto, lpOracle);
+      await accrueFees(
+        curveYieldStrategy.address,
+        gauge,
+        crv,
+        usdt,
+        curveYieldStrategy,
+        triCrypto,
+        uniswapQuoter,
+        lpToken,
+      );
       // priceX128 = await priceToPriceX128(1.6274509127026, 6, 18);
       // await curveYieldStrategy.setYieldTokenPriceX128(priceX128);
-      // await logVaultParams("Swap2 - trader0",curveYieldStrategy);
-      // await logRageParams("Swap2 - trader0",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
+      await logVaultParams('Swap2 - trader0', curveYieldStrategy);
+      await logRageParams('Swap2 - trader0', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
       //Reset
       await increaseBlockTimestamp(10000);
-      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -64836248327n);
+      // await checkAccountNetProfit(clearingHouse, vaultAccountNo, 0n);
       await curveYieldStrategy.rebalance();
-      // await logVaultParams("Reset",curveYieldStrategy);
-      // await logRageParams("Reset",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
+      await logVaultParams('Reset', curveYieldStrategy);
+      await logRageParams('Reset', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -190470, -181530, 8331936759293308n);
-      await checkVaultRangeParams(curveYieldStrategy, -190470, -181530, 8331936759293308n);
-      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -38519418704839000000n);
-      await checkTotalSupply(curveYieldStrategy, parseTokenAmount(10n ** 6n, 18));
-      await checkTotalAssetsApproximate(curveYieldStrategy, 937843991116229000000000n);
+      // await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
+      // await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -190470, -181530, 162175424743904n);
+      // await checkVaultRangeParams(curveYieldStrategy, -190470, -181530, 162175424743904n);
+      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -709303296928166000n);
+      // await checkTotalSupply(curveYieldStrategy, parseTokenAmount(10n, 18));
+      // await checkTotalAssetsApproximate(curveYieldStrategy, 9702386578606810000n);
 
       //Arb1 - trader0
       //Set real price to end price so that funding payment is 0
-      await ethPool.oracle.setPriceX128(await priceToPriceX128(8366.16650126176, 6, 18));
+      await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
 
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -4517767898552700000n, 0, false, false);
-      // await logVaultParams("ClosePositon 1 Before",curveYieldStrategy);
-      // await logRageParams("ClosePositon 1 Before",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
-      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -34001650806286300000n);
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -81540303747114700n, 0, false, false);
+      await logVaultParams('ClosePositon 1 Before', curveYieldStrategy);
+      await logRageParams('ClosePositon 1 Before', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
+      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -627762993181052000n);
       //ClosePositon
       await increaseBlockTimestamp(10000);
       await curveYieldStrategy.closeTokenPosition();
-      // await logVaultParams("ClosePositon 1 After",curveYieldStrategy);
-      // await logRageParams("ClosePositon 1 After",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
+      await logVaultParams('ClosePositon 1 After', curveYieldStrategy);
+      await logRageParams('ClosePositon 1 After', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
       //Arb2 - trader0
       //Set real price to end price so that funding payment is 0
-      await ethPool.oracle.setPriceX128(await priceToPriceX128(8366.16650126176, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -4517767898552700000n, 0, false, false);
-      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -29483882907733600000n);
+      await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -81540303747114700n, 0, false, false);
+      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -546222689433938000n);
       //ClosePositon
       await increaseBlockTimestamp(10000);
       await curveYieldStrategy.closeTokenPosition();
-      // await logVaultParams("ClosePositon 2",curveYieldStrategy);
-      // await logRageParams("ClosePositon 2",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
+      await logVaultParams('ClosePositon 2', curveYieldStrategy);
+      await logRageParams('ClosePositon 2', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
       //Arb3 - trader0
       //Set real price to end price so that funding payment is 0
-      await ethPool.oracle.setPriceX128(await priceToPriceX128(8366.16650126176, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -4517767898552700000n, 0, false, false);
-      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -24966115009180900000n);
+      await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -81540303747114700n, 0, false, false);
+      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -464682385686823000n);
       //ClosePositon
       await increaseBlockTimestamp(10000);
       await curveYieldStrategy.closeTokenPosition();
-      // await logVaultParams("ClosePositon 3",curveYieldStrategy);
-      // await logRageParams("ClosePositon 3",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
+      await logVaultParams('ClosePositon 3', curveYieldStrategy);
+      await logRageParams('ClosePositon 3', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
       //Arb4 - trader0
       //Set real price to end price so that funding payment is 0
-      await ethPool.oracle.setPriceX128(await priceToPriceX128(8366.16650126176, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -4517767898552700000n, 0, false, false);
-      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -20448347110628200000n);
+      await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -81540303747114700n, 0, false, false);
+      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -383142081939708000n);
       //ClosePositon
       await increaseBlockTimestamp(10000);
       await curveYieldStrategy.closeTokenPosition();
-      // await logVaultParams("ClosePositon 4",curveYieldStrategy);
-      // await logRageParams("ClosePositon 4",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
+      await logVaultParams('ClosePositon 4', curveYieldStrategy);
+      await logRageParams('ClosePositon 4', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
       //Arb5 - trader0
       //Set real price to end price so that funding payment is 0
-      await ethPool.oracle.setPriceX128(await priceToPriceX128(8366.16650126176, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -4517767898552700000n, 0, false, false);
-      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -15930579212075500000n);
+      await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -81540303747114700n, 0, false, false);
+      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -301601778192594000n);
       //ClosePositon
       await increaseBlockTimestamp(10000);
       await curveYieldStrategy.closeTokenPosition();
-      // await logVaultParams("ClosePositon 5",curveYieldStrategy);
-      // await logRageParams("ClosePositon 5",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
+      await logVaultParams('ClosePositon 5', curveYieldStrategy);
+      await logRageParams('ClosePositon 5', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
       //Arb6 - trader0
       //Set real price to end price so that funding payment is 0
-      await ethPool.oracle.setPriceX128(await priceToPriceX128(8366.16650126176, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -4517767898552700000n, 0, false, false);
-      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -11412811313522800000n);
+      await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -81540303747114700n, 0, false, false);
+      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -220061474445479000n);
       //ClosePositon
       await increaseBlockTimestamp(10000);
       await curveYieldStrategy.closeTokenPosition();
-      // await logVaultParams("ClosePositon 6",curveYieldStrategy);
-      // await logRageParams("ClosePositon 6",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
+      await logVaultParams('ClosePositon 6', curveYieldStrategy);
+      await logRageParams('ClosePositon 6', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
       //Arb7 - trader0
       //Set real price to end price so that funding payment is 0
-      await ethPool.oracle.setPriceX128(await priceToPriceX128(8366.16650126176, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -4517767898552700000n, 0, false, false);
-      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -6895043414970090000n);
+      await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -81540303747114700n, 0, false, false);
+      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -138521170698364000n);
       //ClosePositon
       await increaseBlockTimestamp(10000);
       await curveYieldStrategy.closeTokenPosition();
 
       //Arb8 - trader0
       //Set real price to end price so that funding payment is 0
-      await ethPool.oracle.setPriceX128(await priceToPriceX128(8366.16650126176, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -4517767898552700000n, 0, false, false);
-      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -2377275516417390000n);
+      await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -81540303747114700n, 0, false, false);
+      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -56980866951249400n);
       //ClosePositon
       await increaseBlockTimestamp(10000);
       await curveYieldStrategy.closeTokenPosition();
 
       //Arb9 - trader0
       //Set real price to end price so that funding payment is 0
-      await ethPool.oracle.setPriceX128(await priceToPriceX128(8366.16650126176, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -2377275516417390000n, 0, false, false);
-      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, 0);
-      expect(await curveYieldStrategy.isReset()).to.be.false;
-      await expect(curveYieldStrategy.closeTokenPosition()).to.be.revertedWith('ETRS_INVALID_CLOSE');
+      await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -56980866951249400n, 0, false, false);
+      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, 0);
+      // expect(await curveYieldStrategy.isReset()).to.be.false;
+      // await expect(curveYieldStrategy.closeTokenPosition()).to.be.revertedWith('ETRS_INVALID_CLOSE');
     });
     it('Slippage Threshold - Partial Withdraw', async () => {
       const {
@@ -936,13 +1014,13 @@ describe('EightyTwentyCurveStrategy', () => {
         triCrypto,
         trader0AccountNo,
       } = await eightyTwentyCurveStrategyFixture();
-      await curveYieldStrategy.connect(user1).deposit(parseTokenAmount(10n ** 6n, 18), user1.address);
+      await curveYieldStrategy.connect(user1).deposit(parseTokenAmount(10n, 18), user1.address);
       await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 7895036065743972n);
-      await checkVaultRangeParams(curveYieldStrategy, -197850, -188910, 7895036065743972n);
+      await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 131437400051827n);
+      await checkVaultRangeParams(curveYieldStrategy, -197850, -188910, 131437400051827n);
       await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -1n);
-      await checkTotalAssets(curveYieldStrategy, parseTokenAmount(10n ** 6n, 18));
-      await checkTotalSupply(curveYieldStrategy, parseTokenAmount(10n ** 6n, 18));
+      await checkTotalAssets(curveYieldStrategy, parseTokenAmount(10n, 18));
+      await checkTotalSupply(curveYieldStrategy, parseTokenAmount(10n, 18));
 
       // await logVaultParams("Deposit - user2",curveYieldStrategy);
       // await logRageParams("Deposit - user2",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
@@ -951,7 +1029,22 @@ describe('EightyTwentyCurveStrategy', () => {
 
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(4500.67224272213, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 7151872310113270000n, 0, false, false);
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 119065130813353000n, 0, false, false);
+
+      await increaseBlockTimestamp(1_000_000);
+      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -30163108n);
+
+      await swapEth(10, trader0.address, weth, triCrypto, lpOracle);
+      await accrueFees(
+        curveYieldStrategy.address,
+        gauge,
+        crv,
+        usdt,
+        curveYieldStrategy,
+        triCrypto,
+        uniswapQuoter,
+        lpToken,
+      );
 
       // const priceX128 = await priceToPriceX128(1.08094471200314, 6, 18);
       // await curveYieldStrategy.setYieldTokenPriceX128(priceX128);
@@ -960,17 +1053,14 @@ describe('EightyTwentyCurveStrategy', () => {
       // await logRageParams("Swap1 - trader0",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
 
       await increaseBlockTimestamp(10000);
-      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -1811804019n);
 
-      await curveYieldStrategy
-        .connect(user1)
-        .withdraw(parseTokenAmount(8n * 10n ** 5n, 18), user1.address, user1.address);
+      await curveYieldStrategy.connect(user1).withdraw(parseTokenAmount(8n, 18), user1.address, user1.address);
       await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkTotalAssetsApproximate(curveYieldStrategy, 216607270713516000000000n);
-      await checkTotalSupplyApproximate(curveYieldStrategy, 216970942251063000000000n);
-      await checkLiquidityPositionApproximate(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 1712993414290590n);
-      await checkVaultRangeParamsApproximate(curveYieldStrategy, -197850, -188910, 1712993414290590n);
-      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -7151872310113270000n);
+      await checkTotalAssetsApproximate(curveYieldStrategy, 2167358348789560000n);
+      await checkTotalSupplyApproximate(curveYieldStrategy, 2169709422412270000n);
+      await checkLiquidityPositionApproximate(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 28518096536276n);
+      await checkVaultRangeParamsApproximate(curveYieldStrategy, -197850, -188910, 28518096536276n);
+      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -119065130813353000n);
 
       // await logVaultParams("Withdraw - user2",curveYieldStrategy);
       // await logRageParams("Withdraw - user2",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
@@ -979,9 +1069,9 @@ describe('EightyTwentyCurveStrategy', () => {
 
       //Arb1 - trader0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(4961.56838901073, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -5600123836128710000n, 0, false, false);
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -93262698100728065n, 0, false, false);
       await increaseBlockTimestamp(10000);
-      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -1551748473984560000n);
+      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -25802432712625000n);
       // await logVaultParams("Arb1 - trader0",curveYieldStrategy);
       // await logRageParams("Arb1 - trader0",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
     });
