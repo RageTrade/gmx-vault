@@ -19,7 +19,7 @@ export async function checkTotalSupplyApproximate(
   vault: { totalSupply: () => Promise<BigNumber> },
   expectedTotalSupply: BigNumberish,
 ) {
-  expect((await vault.totalSupply()).sub(expectedTotalSupply).abs()).to.lte(10n ** 12n);
+  expect((await vault.totalSupply()).sub(expectedTotalSupply).abs()).to.lte(10n ** 14n);
 }
 
 export async function checkTotalAssets(
@@ -33,7 +33,7 @@ export async function checkTotalAssetsApproximate(
   vault: { totalAssets: () => Promise<BigNumber> },
   expectedTotalAssets: BigNumberish,
 ) {
-  expect((await vault.totalAssets()).sub(expectedTotalAssets).abs()).to.lte(10n ** 12n);
+  expect((await vault.totalAssets()).sub(expectedTotalAssets).abs()).to.lte(10n ** 14n);
 }
 
 export async function checkVaultRangeParams(
