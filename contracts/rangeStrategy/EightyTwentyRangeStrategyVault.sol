@@ -190,15 +190,20 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         if (!isReset) revert ETRS_INVALID_CLOSE();
         int256 tokensToTrade = -vTokenPosition.netTraderPosition;
         uint160 sqrtTwapPriceX96 = _getTwapSqrtPriceX96();
+        uint256 tokensToTradeNotionalAbs = _getTokenNotionalAbs(tokensToTrade, sqrtTwapPriceX96);
 
-        (int256 vTokenAmountOut, ) = _closeTokenPosition(
-            tokensToTrade,
-            sqrtTwapPriceX96,
-            closePositionSlippageSqrtToleranceBps
-        );
+        if (tokensToTradeNotionalAbs > minNotionalPositionToCloseThreshold) {
+            (int256 vTokenAmountOut, ) = _closeTokenPosition(
+                tokensToTrade,
+                sqrtTwapPriceX96,
+                closePositionSlippageSqrtToleranceBps
+            );
 
-        //If whole position is closed then reset is done
-        if (tokensToTrade == vTokenAmountOut) isReset = false;
+            //If whole position is closed then reset is done
+            if (tokensToTrade == vTokenAmountOut) isReset = false;
+        } else {
+            isReset = false;
+        }
     }
 
     /// @notice Close position on rage clearing house
