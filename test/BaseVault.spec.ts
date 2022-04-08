@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import hre, { ethers } from 'hardhat';
 import { baseVaultFixture } from './fixtures/base-vault';
 
-describe.only('Base Vault', () => {
+describe('Base Vault', () => {
   before(async () => {
     await baseVaultFixture();
   });
