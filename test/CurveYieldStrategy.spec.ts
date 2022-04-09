@@ -44,7 +44,6 @@ describe('CurveYieldStrategy', () => {
       const { gauge, lpToken, curveYieldStrategyTest: curveYieldStrategy } = await curveYieldStrategyFixture();
       await curveYieldStrategy.grantAllowances();
 
-
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
         params: [addresses.LP_TOKEN_WHALE],
@@ -509,7 +508,6 @@ describe('CurveYieldStrategy', () => {
       } = await curveYieldStrategyFixture();
       await curveYieldStrategy.grantAllowances();
 
-
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
         params: [addresses.LP_TOKEN_WHALE],
@@ -611,7 +609,6 @@ describe('CurveYieldStrategy', () => {
       const { gauge, lpToken, curveYieldStrategyTest: curveYieldStrategy } = await curveYieldStrategyFixture();
       await curveYieldStrategy.grantAllowances();
 
-
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
         params: [addresses.LP_TOKEN_WHALE],
@@ -699,7 +696,6 @@ describe('CurveYieldStrategy', () => {
       const { curveYieldStrategyTest } = await curveYieldStrategyFixture();
       const curveYieldStrategy = curveYieldStrategyTest.connect(admin);
       await curveYieldStrategy.grantAllowances();
-
 
       await curveYieldStrategy.changeFee(2000);
       expect(await curveYieldStrategy.FEE()).to.be.eq(BigNumber.from(2000));
