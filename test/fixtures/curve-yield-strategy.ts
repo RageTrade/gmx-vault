@@ -1,6 +1,14 @@
 import { deployments } from 'hardhat';
 import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
-import { AggregatorV3Interface, CurveYieldStrategyTest__factory, CurveYieldStrategy__factory, ICurveGauge, ICurveStableSwap, ILPPriceGetter, IQuoter } from '../../typechain-types';
+import {
+  AggregatorV3Interface,
+  CurveYieldStrategyTest__factory,
+  CurveYieldStrategy__factory,
+  ICurveGauge,
+  ICurveStableSwap,
+  ILPPriceGetter,
+  IQuoter,
+} from '../../typechain-types';
 
 import { parseTokenAmount } from '@ragetrade/sdk';
 
@@ -12,7 +20,7 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
     await eightyTwentyRangeStrategyFixture();
 
   const [signer, user1, user2] = await hre.ethers.getSigners();
-  
+
   const lpToken = (await hre.ethers.getContractAt(
     '@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20',
     addresses.TRICRYPTO_LP_TOKEN,
@@ -68,12 +76,15 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
     '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6',
   )) as IQuoter;
 
-  const swapManager = await (await hre.ethers.getContractFactory('SwapManager')).deploy()
+  const swapManager = await (await hre.ethers.getContractFactory('SwapManager')).deploy();
 
-  let curveYieldStrategyTestFactory = new CurveYieldStrategyTest__factory({
-    ["contracts/libraries/SwapManager.sol:SwapManager"]: swapManager.address
-  }, signer)
-  
+  let curveYieldStrategyTestFactory = new CurveYieldStrategyTest__factory(
+    {
+      ['contracts/libraries/SwapManager.sol:SwapManager']: swapManager.address,
+    },
+    signer,
+  );
+
   let curveYieldStrategyTest = await curveYieldStrategyTestFactory.deploy({
     eightyTwentyRangeStrategyVaultInitParams: {
       baseVaultInitParams: {
