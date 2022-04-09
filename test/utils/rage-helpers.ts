@@ -146,7 +146,7 @@ export async function checkLiquidityPositionApproximate(
   );
   expect(liquidityPosition.tickLower).to.eq(baseTickLower);
   expect(liquidityPosition.tickUpper).to.eq(baseTickUpper);
-  expect(liquidityPosition.liquidity.sub(baseLiquidity).abs()).to.lte(10n ** 8n);
+  expect(liquidityPosition.liquidity.sub(baseLiquidity).abs()).to.lte(10n ** 10n);
 }
 
 export async function checkNetTokenPosition(
@@ -166,7 +166,7 @@ export async function checkNetTokenPositionApproximate(
   expectedNetTokenPosition: BigNumberish,
 ) {
   const netTokenPosition = await getNetTokenPosition(clearingHouse, accountNo, poolId);
-  expect(netTokenPosition.sub(expectedNetTokenPosition).abs()).to.lte(10n ** 6n);
+  expect(netTokenPosition.sub(expectedNetTokenPosition).abs()).to.lte(10n ** 13n);
 }
 
 export async function checkAccountNetProfit(
