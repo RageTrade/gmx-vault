@@ -33,10 +33,10 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     int24 public baseTickUpper;
     uint128 public baseLiquidity;
     bool public isReset;
-    uint16 public closePositionSlippageSqrtToleranceBps;
-    uint16 public resetPositionThresholdBps;
-    uint64 public minNotionalPositionToCloseThreshold;
-    uint64 public constant SQRT_PRICE_FACTOR_PIPS = 800000; // scaled by 1e6
+    uint16 private closePositionSlippageSqrtToleranceBps;
+    uint16 private resetPositionThresholdBps;
+    uint64 private minNotionalPositionToCloseThreshold;
+    uint64 private constant SQRT_PRICE_FACTOR_PIPS = 800000; // scaled by 1e6
 
     struct EightyTwentyRangeStrategyVaultInitParams {
         BaseVaultInitParams baseVaultInitParams;
@@ -54,6 +54,16 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         closePositionSlippageSqrtToleranceBps = params.closePositionSlippageSqrtToleranceBps;
         resetPositionThresholdBps = params.resetPositionThresholdBps;
         minNotionalPositionToCloseThreshold = params.minNotionalPositionToCloseThreshold;
+    }
+
+    function setEightTwentyParams(
+        uint16 _closePositionSlippageSqrtToleranceBps,
+        uint16 _resetPositionThresholdBps,
+        uint64 _minNotionalPositionToCloseThreshold
+    ) external onlyOwner {
+        closePositionSlippageSqrtToleranceBps = _closePositionSlippageSqrtToleranceBps;
+        resetPositionThresholdBps = _resetPositionThresholdBps;
+        minNotionalPositionToCloseThreshold = _minNotionalPositionToCloseThreshold;
     }
 
     /*
