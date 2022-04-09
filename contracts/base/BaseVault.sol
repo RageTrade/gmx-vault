@@ -26,8 +26,6 @@ import { IBaseYieldStrategy } from '../interfaces/IBaseYieldStrategy.sol';
 import { RageERC4626 } from './RageERC4626.sol';
 import { SafeCast } from '../libraries/SafeCast.sol';
 
-import { console } from 'hardhat/console.sol';
-
 abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, OwnableUpgradeable {
     using AddressHelper for address;
     using AddressHelper for IVToken;
@@ -137,7 +135,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     }
 
     /// @notice closes remaining token position (To be used when reset condition is hit)
-    function closeTokenPosition() public onlyKeeper {
+    function closeTokenPosition() external onlyKeeper {
         //TODO: Check if isReset check needs to be added
         IClearingHouse.VTokenPositionView[] memory vTokenPositions;
         // Step-0 Check if the rebalance can go through (time and threshold based checks)
@@ -290,13 +288,13 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         _rebalanceProfitAndCollateral();
     }
 
-    function afterDeposit(uint256 amount, uint256 shares) internal virtual override {
+    function afterDeposit(uint256 amount, uint256 /** shares **/) internal virtual override {
         if (totalAssets() > depositCap) revert BV_DepositCap(depositCap, totalAssets());
         _afterDepositYield(amount);
         _afterDepositRanges(totalAssets(), amount);
     }
 
-    function beforeWithdraw(uint256 amount, uint256 shares) internal virtual override {
+    function beforeWithdraw(uint256 amount, uint256 /** shares **/) internal virtual override {
         _beforeWithdrawRanges(totalAssets(), amount);
         _beforeWithdrawYield(amount);
     }
