@@ -1,6 +1,6 @@
 import { deployments } from 'hardhat';
 import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
-import { AggregatorV3Interface, ICurveGauge, ICurveStableSwap, ILPPriceGetter, IQuoter } from '../../typechain-types';
+import { AggregatorV3Interface, CurveYieldStrategyTest__factory, CurveYieldStrategy__factory, ICurveGauge, ICurveStableSwap, ILPPriceGetter, IQuoter } from '../../typechain-types';
 
 import { parseTokenAmount } from '@ragetrade/sdk';
 
@@ -11,6 +11,8 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
   const { clearingHouse, collateralToken, settlementToken, settlementTokenTreasury, ethPoolId } =
     await eightyTwentyRangeStrategyFixture();
 
+  const [signer, user1, user2] = await hre.ethers.getSigners();
+  
   const lpToken = (await hre.ethers.getContractAt(
     '@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20',
     addresses.TRICRYPTO_LP_TOKEN,
@@ -66,9 +68,13 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
     '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6',
   )) as IQuoter;
 
-  const curveYieldStrategyTest = await (
-    await hre.ethers.getContractFactory('CurveYieldStrategyTest')
-  ).deploy({
+  const swapManager = await (await hre.ethers.getContractFactory('SwapManager')).deploy()
+
+  let curveYieldStrategyTestFactory = new CurveYieldStrategyTest__factory({
+    ["contracts/libraries/SwapManager.sol:SwapManager"]: swapManager.address
+  }, signer)
+  
+  let curveYieldStrategyTest = await curveYieldStrategyTestFactory.deploy({
     eightyTwentyRangeStrategyVaultInitParams: {
       baseVaultInitParams: {
         rageErc4626InitParams: {
@@ -109,36 +115,6 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
   await collateralToken.approve(clearingHouse.address, parseTokenAmount(10n ** 10n, 18));
 
   await settlementToken.approve(clearingHouse.address, parseTokenAmount(10n ** 5n, 6));
-
-  const [signer] = await hre.ethers.getSigners();
-
-  // await curveYieldStrategyTest.initialize({
-  //   eightyTwentyRangeStrategyVaultInitParams: {
-  //     baseVaultInitParams: {
-  //       rageErc4626InitParams: {
-  //         asset: lpToken.address,
-  //         name: '',
-  //         symbol: '',
-  //       },
-  //       ethPoolId,
-  //       // owner: signer.address,
-  //       rageClearingHouse: clearingHouse.address,
-  //       rageCollateralToken: collateralToken.address,
-  //       rageBaseToken: settlementToken.address,
-  //     },
-  //     closePositionSlippageSqrtToleranceBps: 0,
-  //     resetPositionThresholdBps: 0,
-  //     minNotionalPositionToCloseThreshold: 0,
-  //   },
-  //   usdt: addresses.USDT,
-  //   usdc: addresses.USDC,
-  //   weth: addresses.WETH,
-  //   crvToken: addresses.CRV,
-  //   gauge: addresses.GAUGE,
-  //   uniV3Router: addresses.ROUTER,
-  //   lpPriceHolder: addresses.QUOTER,
-  //   tricryptoPool: addresses.TRICRYPTO_POOL,
-  // });
 
   await curveYieldStrategyTest.setCrvOracle(addresses.CRV_ORACLE);
 
