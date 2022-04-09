@@ -10,11 +10,6 @@ const within = (value: BigNumber, start: BigNumber, end: BigNumber): Boolean => 
   return false;
 };
 
-// remove when https://github.com/NomicFoundation/hardhat/issues/2234 is closed
-function revertReason(reason: string) {
-  return `Error: VM Exception while processing transaction: reverted with reason string ${reason}`;
-}
-
 describe('CurveYieldStrategy', () => {
   before(async () => {
     await curveYieldStrategyFixture();
@@ -47,6 +42,8 @@ describe('CurveYieldStrategy', () => {
     it('should transfer lp tokens & mint shares', async () => {
       const [admin, user1, user2] = await hre.ethers.getSigners();
       const { gauge, lpToken, curveYieldStrategyTest: curveYieldStrategy } = await curveYieldStrategyFixture();
+      await curveYieldStrategy.grantAllowances();
+
 
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
@@ -176,6 +173,7 @@ describe('CurveYieldStrategy', () => {
     it('should deposit & withdraw usdc', async () => {
       const [, user1, user2] = await hre.ethers.getSigners();
       const { usdc, gauge, lpToken, curveYieldStrategyTest: curveYieldStrategy } = await curveYieldStrategyFixture();
+      await curveYieldStrategy.grantAllowances();
 
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
@@ -263,6 +261,7 @@ describe('CurveYieldStrategy', () => {
     it('should pull LP from pool', async () => {
       const [admin, user1, user2] = await hre.ethers.getSigners();
       const { gauge, lpToken, curveYieldStrategyTest: curveYieldStrategy } = await curveYieldStrategyFixture();
+      await curveYieldStrategy.grantAllowances();
 
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
@@ -440,6 +439,7 @@ describe('CurveYieldStrategy', () => {
     it('should harvest & compound CRV from gauge', async () => {
       const [admin, user] = await hre.ethers.getSigners();
       const { gauge, lpToken, curveYieldStrategyTest: curveYieldStrategy } = await curveYieldStrategyFixture();
+      await curveYieldStrategy.grantAllowances();
 
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
@@ -498,6 +498,8 @@ describe('CurveYieldStrategy', () => {
         uniswapQuoter,
         curveYieldStrategyTest: curveYieldStrategy,
       } = await curveYieldStrategyFixture();
+      await curveYieldStrategy.grantAllowances();
+
 
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
@@ -598,6 +600,8 @@ describe('CurveYieldStrategy', () => {
     it('should calculate total assets exclusive of fees', async () => {
       const [admin, user1, user2] = await hre.ethers.getSigners();
       const { gauge, lpToken, curveYieldStrategyTest: curveYieldStrategy } = await curveYieldStrategyFixture();
+      await curveYieldStrategy.grantAllowances();
+
 
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
@@ -646,6 +650,7 @@ describe('CurveYieldStrategy', () => {
         lpOracle,
         curveYieldStrategyTest: curveYieldStrategy,
       } = await curveYieldStrategyFixture();
+      await curveYieldStrategy.grantAllowances();
 
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
@@ -684,6 +689,8 @@ describe('CurveYieldStrategy', () => {
       const [admin] = await hre.ethers.getSigners();
       const { curveYieldStrategyTest } = await curveYieldStrategyFixture();
       const curveYieldStrategy = curveYieldStrategyTest.connect(admin);
+      await curveYieldStrategy.grantAllowances();
+
 
       await curveYieldStrategy.changeFee(2000);
       expect(await curveYieldStrategy.FEE()).to.be.eq(BigNumber.from(2000));
@@ -693,6 +700,7 @@ describe('CurveYieldStrategy', () => {
       const [admin] = await hre.ethers.getSigners();
       const { curveYieldStrategyTest } = await curveYieldStrategyFixture();
       const curveYieldStrategy = curveYieldStrategyTest.connect(admin);
+      await curveYieldStrategy.grantAllowances();
 
       await expect(curveYieldStrategy.changeFee(10001)).to.be.revertedWith('CYS_INVALID_FEES');
     });

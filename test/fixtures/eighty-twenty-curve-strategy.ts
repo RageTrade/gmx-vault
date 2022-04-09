@@ -1,6 +1,6 @@
 import { deployments, ethers } from 'hardhat';
 import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
-import { ICurveGauge, ICurveStableSwap, ILPPriceGetter, IQuoterV2 } from '../../typechain-types';
+import { ICurveGauge, ICurveStableSwap, ILPPriceGetter, IQuoterV2, CurveYieldStrategy__factory } from '../../typechain-types';
 
 import { AggregatorV3Interface, parseTokenAmount, priceToPriceX128, truncate } from '@ragetrade/sdk';
 
@@ -132,7 +132,13 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
     '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6',
   )) as IQuoterV2;
 
-  const curveYieldStrategyTest = await (await hre.ethers.getContractFactory('CurveYieldStrategy')).deploy();
+  const swapManager = await (await hre.ethers.getContractFactory('SwapManager')).deploy()
+
+  let curveYieldStrategyTestFactory = new CurveYieldStrategy__factory({
+    ["contracts/libraries/SwapManager.sol:SwapManager"]: swapManager.address
+  }, admin)
+
+  const curveYieldStrategyTest = await curveYieldStrategyTestFactory.deploy();
 
   await collateralToken.grantRole(await collateralToken.MINTER_ROLE(), curveYieldStrategyTest.address);
 
