@@ -26,7 +26,6 @@ library SwapManager {
         ISwapRouter uniV3Router,
         ICurveStableSwap triCrypto
     ) external {
-
         ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
             path: path,
             amountIn: amount,
@@ -42,8 +41,11 @@ library SwapManager {
         triCrypto.add_liquidity(amounts, 0);
     }
 
-    function swapUsdtToUsdc(uint256 amount, bytes memory path, ISwapRouter uniV3Router) external returns (uint256 usdcOut) {
-
+    function swapUsdtToUsdc(
+        uint256 amount,
+        bytes memory path,
+        ISwapRouter uniV3Router
+    ) external returns (uint256 usdcOut) {
         ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
             path: path,
             amountIn: amount,
@@ -63,7 +65,6 @@ library SwapManager {
         ISwapRouter uniV3Router,
         ICurveStableSwap triCrypto
     ) external returns (uint256 usdtOut) {
-
         uint256 minOut = (_getCrvPrice(crvOracle) * crvAmount * crvSwapSlippageTolerance) / MAX_BPS;
         minOut = ((minOut * (10**6)) / 10**18) / 10**8;
 
