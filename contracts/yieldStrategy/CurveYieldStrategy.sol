@@ -171,7 +171,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
         bytes memory path = abi.encodePacked(usdt, uint24(500), usdc);
 
-        usdcAmount = SwapManager.swapUsdtToUsdc(usdt.balanceOf(address(this)), path, uniV3Router);
+        usdcAmount = SwapManager.swapUsdtToUsdc(balance, path, uniV3Router);
     }
 
     function getMarketValue(uint256 amount) public view override returns (uint256 marketValue) {
