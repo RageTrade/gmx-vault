@@ -94,7 +94,6 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     }
 
     /// @inheritdoc BaseVault
-
     function _afterDepositRanges(uint256 amountAfterDeposit, uint256 amountDeposited) internal virtual override {
         int256 depositMarketValue = getMarketValue(amountDeposited).toInt256();
 
@@ -122,7 +121,6 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     }
 
     /// @inheritdoc BaseVault
-
     function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal virtual override {
         // Remove from base range based on the collateral removal
         IClearingHouseStructures.LiquidityChangeParams
@@ -144,7 +142,6 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     }
 
     /// @inheritdoc BaseVault
-
     function _beforeWithdrawClosePositionRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn)
         internal
         override
@@ -177,7 +174,6 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     }
 
     /// @inheritdoc BaseVault
-
     function _rebalanceRanges(IClearingHouse.VTokenPositionView memory vTokenPosition, int256 vaultMarketValue)
         internal
         override
@@ -195,7 +191,6 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     }
 
     /// @inheritdoc BaseVault
-
     function _closeTokenPositionOnReset(IClearingHouse.VTokenPositionView memory vTokenPosition) internal override {
         if (!isReset) revert ETRS_INVALID_CLOSE();
         int256 tokensToTrade = -vTokenPosition.netTraderPosition;

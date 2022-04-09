@@ -5,9 +5,6 @@ pragma solidity ^0.8.9;
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadata.sol';
 
-import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
-
-import { BaseVault } from '../base/BaseVault.sol';
 import { EightyTwentyRangeStrategyVault } from '../rangeStrategy/EightyTwentyRangeStrategyVault.sol';
 
 import { ICurveGauge } from '../interfaces/curve/ICurveGauge.sol';
@@ -21,29 +18,29 @@ import { AggregatorV3Interface } from '@chainlink/contracts/src/v0.8/interfaces/
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
 
+import { SwapManager } from '../libraries/SwapManager.sol';
+
 contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     using FullMath for uint256;
 
     error CYS_INVALID_FEES();
-    error CYS_NEGATIVE_CRV_PRICE();
 
-    IERC20 public usdt;
-    IERC20 public weth;
-    IERC20 public usdc;
-    IERC20 public crvToken;
+    IERC20 private usdt;
+    IERC20 private weth;
+    IERC20 private usdc;
+    IERC20 private crvToken;
 
-    ICurveGauge public gauge;
-    ISwapRouter public uniV3Router;
-    ILPPriceGetter public lpPriceHolder;
-    ICurveStableSwap public triCryptoPool;
+    ICurveGauge private gauge;
+    ISwapRouter private uniV3Router;
+    ILPPriceGetter private lpPriceHolder;
+    ICurveStableSwap private triCryptoPool;
 
-    AggregatorV3Interface public crvOracle;
+    AggregatorV3Interface private crvOracle;
 
-    uint256 crvSwapSlippageTolerance; // in bps, 10**4
-    uint256 notionalCrvHarvestThreshold;
+    uint256 private crvSwapSlippageTolerance; // in bps, 10**4
+    uint256 private notionalCrvHarvestThreshold;
 
     /* solhint-enable const-name-snakecase */
-
     uint256 public constant MAX_BPS = 10_000;
     uint256 public FEE = 1000;
 
@@ -90,9 +87,15 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
     function grantAllowances() public override onlyOwner {
         _grantBaseAllowances();
-        usdt.approve(address(triCryptoPool), type(uint256).max);
-        crvToken.approve(address(uniV3Router), type(uint256).max);
+
+        asset.approve(address(gauge), type(uint256).max);
         asset.approve(address(triCryptoPool), type(uint256).max);
+
+        usdc.approve(address(uniV3Router), type(uint256).max);
+        usdt.approve(address(uniV3Router), type(uint256).max);
+        usdt.approve(address(triCryptoPool), type(uint256).max);
+
+        crvToken.approve(address(uniV3Router), type(uint256).max);
     }
 
     function changeFee(uint256 bps) external onlyOwner {
@@ -102,13 +105,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
     function withdrawFees() external onlyOwner {
         uint256 bal = crvToken.balanceOf(address(this));
-        crvToken.transfer(owner(), bal);
-    }
-
-    function _getCrvPrice() internal view returns (uint256) {
-        (, int256 answer, , , ) = crvOracle.latestRoundData();
-        if (answer < 0) revert CYS_NEGATIVE_CRV_PRICE();
-        return (uint256(answer));
+        crvToken.transfer(msg.sender, bal);
     }
 
     function _afterDepositYield(uint256 amount) internal override {
@@ -121,24 +118,8 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     function _convertSettlementTokenToAsset(uint256 amount) internal override {
-        usdc.approve(address(uniV3Router), amount);
         bytes memory path = abi.encodePacked(usdc, uint24(500), usdt);
-
-        ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
-            path: path,
-            amountIn: amount,
-            amountOutMinimum: 0,
-            recipient: address(this),
-            deadline: _blockTimestamp()
-        });
-
-        uint256 usdtOut = uniV3Router.exactInput(params);
-
-        // USDT, WBTC, WETH
-        usdt.approve(address(triCryptoPool), usdtOut);
-        uint256[3] memory amounts = [usdtOut, uint256(0), uint256(0)];
-        triCryptoPool.add_liquidity(amounts, 0);
-
+        SwapManager.swapUsdcToUsdtAndAddLiquidity(amount, path, uniV3Router, triCryptoPool);
         _stake(asset.balanceOf(address(this)));
     }
 
@@ -147,10 +128,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
         if (claimable > notionalCrvHarvestThreshold) {
             uint256 afterDeductions = claimable - ((claimable * FEE) / MAX_BPS);
-
             gauge.claim_rewards(address(this));
-
-            crvToken.approve(address(uniV3Router), afterDeductions);
 
             bytes memory path = abi.encodePacked(
                 address(crvToken),
@@ -160,29 +138,20 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
                 address(usdt)
             );
 
-            // 1 CRV (scaled 18 decimals) = x$ (scaled to 8 decimals)
-            uint256 minOut = (_getCrvPrice() * afterDeductions * crvSwapSlippageTolerance) / MAX_BPS / 10**8;
-
-            ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
-                path: path,
-                amountIn: afterDeductions,
-                amountOutMinimum: minOut,
-                recipient: address(this),
-                deadline: _blockTimestamp()
-            });
-
-            uint256 usdtOut = uniV3Router.exactInput(params);
-
-            usdt.approve(address(triCryptoPool), usdtOut);
-            uint256[3] memory amounts = [usdtOut, uint256(0), uint256(0)];
-            triCryptoPool.add_liquidity(amounts, 0);
+            SwapManager.swapCrvToUsdtAndAddLiquidity(
+                afterDeductions,
+                crvSwapSlippageTolerance,
+                crvOracle,
+                path,
+                uniV3Router,
+                triCryptoPool
+            );
 
             _stake(asset.balanceOf(address(this)));
         }
     }
 
     function _stake(uint256 amount) internal override {
-        asset.approve(address(gauge), amount);
         gauge.deposit(amount);
     }
 
@@ -202,17 +171,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
         bytes memory path = abi.encodePacked(usdt, uint24(500), usdc);
 
-        ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
-            path: path,
-            amountIn: usdt.balanceOf(address(this)),
-            amountOutMinimum: 0,
-            recipient: address(this),
-            deadline: _blockTimestamp()
-        });
-
-        usdcAmount = uniV3Router.exactInput(params);
-
-        return usdcAmount;
+        usdcAmount = SwapManager.swapUsdtToUsdc(usdt.balanceOf(address(this)), path, uniV3Router);
     }
 
     function getMarketValue(uint256 amount) public view override returns (uint256 marketValue) {
