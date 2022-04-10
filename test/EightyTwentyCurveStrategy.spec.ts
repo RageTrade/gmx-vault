@@ -269,8 +269,8 @@ describe('EightyTwentyCurveStrategy', () => {
       // Initial Deposit - user1
       await curveYieldStrategy.connect(user1).deposit(parseTokenAmount(10n, 18), user1.address);
 
-      await logVaultParams('Initial Deposit - user1', curveYieldStrategy);
-      await logRageParams('Initial Deposit - user1', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
+      // await logVaultParams('Initial Deposit - user1', curveYieldStrategy);
+      // await logRageParams('Initial Deposit - user1', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
       await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
       await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 131437400051827n);
@@ -305,8 +305,8 @@ describe('EightyTwentyCurveStrategy', () => {
       await increaseBlockTimestamp(10000);
       // await checkAccountNetProfit(clearingHouse, vaultAccountNo, -30124931n);
       await curveYieldStrategy.connect(user2).deposit(parseTokenAmount(10n, 18), user2.address);
-      await logVaultParams('Initial Deposit - user2', curveYieldStrategy);
-      await logRageParams('Initial Deposit - user2', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
+      // await logVaultParams('Initial Deposit - user2', curveYieldStrategy);
+      // await logRageParams('Initial Deposit - user2', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
       await checkTotalAssetsApproximate(curveYieldStrategy, 19983017869055200000n);
       await checkTotalSupplyApproximate(curveYieldStrategy, 20017011019280500000n);
@@ -341,8 +341,8 @@ describe('EightyTwentyCurveStrategy', () => {
       // await checkAccountNetProfit(clearingHouse, vaultAccountNo, -103336910n);
       await curveYieldStrategy.connect(user1).deposit(parseTokenAmount(10n, 18), user1.address);
 
-      await logVaultParams('Partial Deposit - user1', curveYieldStrategy);
-      await logRageParams('Partial Deposit - user1', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
+      // await logVaultParams('Partial Deposit - user1', curveYieldStrategy);
+      // await logRageParams('Partial Deposit - user1', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
       await checkTotalAssetsApproximate(curveYieldStrategy, 29922966458878300000n);
       await checkTotalSupplyApproximate(curveYieldStrategy, 30064215114411800000n);
@@ -377,8 +377,8 @@ describe('EightyTwentyCurveStrategy', () => {
       // await checkAccountNetProfit(clearingHouse, vaultAccountNo, -207756819n);
       await curveYieldStrategy.rebalance();
 
-      await logVaultParams('24hr Rebalance', curveYieldStrategy);
-      await logRageParams('24hr Rebalance', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
+      // await logVaultParams('24hr Rebalance', curveYieldStrategy);
+      // await logRageParams('24hr Rebalance', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
       await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
       await checkLiquidityPositionApproximate(clearingHouse, vaultAccountNo, 0, 0, -194670, -185730, 395156226923712n);
@@ -413,8 +413,8 @@ describe('EightyTwentyCurveStrategy', () => {
       // await checkAccountNetProfit(clearingHouse, vaultAccountNo, 190339458n);
       await curveYieldStrategy.connect(user1).withdraw(parseTokenAmount(5n, 18), user1.address, user1.address);
 
-      await logVaultParams('Partial Withdraw - user1', curveYieldStrategy);
-      await logRageParams('Partial Withdraw - user1', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
+      // await logVaultParams('Partial Withdraw - user1', curveYieldStrategy);
+      // await logRageParams('Partial Withdraw - user1', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
       await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
       await checkLiquidityPositionApproximate(clearingHouse, vaultAccountNo, 0, 0, -194670, -185730, 329118900714233n);
@@ -451,14 +451,14 @@ describe('EightyTwentyCurveStrategy', () => {
       // await checkAccountNetProfit(clearingHouse, vaultAccountNo, 20498698n);
       await curveYieldStrategy.connect(user2).withdraw(parseTokenAmount(5n, 18), user2.address, user2.address);
 
-      await logVaultParams('Partial Withdraw - user2', curveYieldStrategy);
-      await logRageParams('Partial Withdraw - user2', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
+      // await logVaultParams('Partial Withdraw - user2', curveYieldStrategy);
+      // await logRageParams('Partial Withdraw - user2', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
-      // await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      // await checkLiquidityPositionApproximate(clearingHouse, vaultAccountNo, 0, 0, -194670, -185730, 263117506524451n);
-      // await checkVaultRangeParamsApproximate(curveYieldStrategy, -194670, -185730, 263117506524451n);
-      // await checkTotalAssetsApproximate(curveYieldStrategy, 19932723373075800000n);
-      // await checkTotalSupplyApproximate(curveYieldStrategy, 20018465552476000000n);
+      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
+      await checkLiquidityPositionApproximate(clearingHouse, vaultAccountNo, 0, 0, -194670, -185730, 263081272024017n);
+      await checkVaultRangeParamsApproximate(curveYieldStrategy, -194670, -185730, 263081272024017n);
+      await checkTotalAssetsApproximate(curveYieldStrategy, 19918971646489091783n);
+      await checkTotalSupplyApproximate(curveYieldStrategy, 20015708764802261312n);
 
       await increaseBlockTimestamp(10000);
       //Set real price to end price so that funding payment is 0
@@ -466,10 +466,10 @@ describe('EightyTwentyCurveStrategy', () => {
       //Arb2 - trader0 : Arb to close user2 withdrawn position
       await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -53377188544524200n, 0, false, false);
 
-      await logVaultParams('Arb2', curveYieldStrategy);
-      await logRageParams('Arb2', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
+      // await logVaultParams('Arb2', curveYieldStrategy);
+      // await logRageParams('Arb2', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
-      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -212790546738102000n);
+      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -212790546738102000n);
     });
 
     // Reset Code
