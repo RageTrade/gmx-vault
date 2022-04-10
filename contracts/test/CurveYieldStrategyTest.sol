@@ -4,8 +4,6 @@ pragma solidity ^0.8.0;
 
 import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadata.sol';
 
-import { RageERC4626 } from '../base/RageERC4626.sol';
-
 import { CurveYieldStrategy } from '../yieldStrategy/CurveYieldStrategy.sol';
 
 import { ICurveGauge } from '../interfaces/curve/ICurveGauge.sol';

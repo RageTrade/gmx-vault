@@ -23,10 +23,10 @@ import { FixedPoint96 } from '@uniswap/v3-core-0.8-support/contracts/libraries/F
 
 import { IBaseVault } from '../interfaces/IBaseVault.sol';
 import { IBaseYieldStrategy } from '../interfaces/IBaseYieldStrategy.sol';
-import { RageERC4626 } from './RageERC4626.sol';
+import { RageERC4626Upgradable } from './RageERC4626Upgradable.sol';
 import { SafeCast } from '../libraries/SafeCast.sol';
 
-abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, OwnableUpgradeable {
+abstract contract BaseVault is IBaseVault, RageERC4626Upgradable, IBaseYieldStrategy, OwnableUpgradeable {
     using AddressHelper for address;
     using AddressHelper for IVToken;
     using SafeCast for uint256;
@@ -76,7 +76,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     function __BaseVault_init(BaseVaultInitParams memory params) internal onlyInitializing {
         __Ownable_init();
         // transferOwnership(params.owner); // TODO i think this is not needed, check it
-        __RageERC4626_init(params.rageErc4626InitParams);
+        __RageERC4626Upgradeable_init(params.rageErc4626InitParams);
         ethPoolId = params.ethPoolId;
         rageClearingHouse = IClearingHouse(params.rageClearingHouse);
         rageAccountNo = rageClearingHouse.createAccount();
