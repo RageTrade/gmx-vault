@@ -26,6 +26,8 @@ import { IBaseYieldStrategy } from '../interfaces/IBaseYieldStrategy.sol';
 import { RageERC4626 } from './RageERC4626.sol';
 import { SafeCast } from '../libraries/SafeCast.sol';
 
+import { Logic } from '../libraries/Logic.sol';
+
 abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, OwnableUpgradeable {
     using AddressHelper for address;
     using AddressHelper for IVToken;
@@ -279,7 +281,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     // TODO: check if caching is required for this function
     /// @notice returns twap price X96 from rage trade
     function _getTwapSqrtPriceX96() internal view returns (uint160 twapSqrtPriceX96) {
-        twapSqrtPriceX96 = rageVPool.twapSqrtPrice(rageTwapDuration);
+        twapSqrtPriceX96 = Logic.getTwapSqrtPriceX96(rageVPool, rageTwapDuration);
     }
 
     /// @notice converts all non-asset balances into asset

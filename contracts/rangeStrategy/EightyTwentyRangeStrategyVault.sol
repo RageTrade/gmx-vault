@@ -10,13 +10,14 @@ import { IClearingHouseEnums } from '@ragetrade/core/contracts/interfaces/cleari
 
 import { UniswapV3PoolHelper, IUniswapV3Pool } from '@ragetrade/core/contracts/libraries/UniswapV3PoolHelper.sol';
 
-import { TickMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/TickMath.sol';
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 import { SignedMath } from '@ragetrade/core/contracts/libraries/SignedMath.sol';
 import { SignedFullMath } from '@ragetrade/core/contracts/libraries/SignedFullMath.sol';
 
 import { SafeCast } from '../libraries/SafeCast.sol';
 import { FixedPoint96 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint96.sol';
+
+import { Logic } from '../libraries/Logic.sol';
 
 abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     using SafeCast for uint256;
@@ -72,12 +73,13 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
 
     /// @inheritdoc BaseVault
     function _isValidRebalanceRange(int256 vaultMarketValue) internal view override returns (bool isValid) {
-        uint256 twapSqrtPriceX96 = uint256(_getTwapSqrtPriceX96());
-        uint256 twapSqrtPriceX96Delta = twapSqrtPriceX96.mulDiv(rebalancePriceThresholdBps, 1e4);
-        if (
-            TickMath.getTickAtSqrtRatio((twapSqrtPriceX96 + twapSqrtPriceX96Delta).toUint160()) > baseTickUpper ||
-            TickMath.getTickAtSqrtRatio((twapSqrtPriceX96 - twapSqrtPriceX96Delta).toUint160()) < baseTickLower
-        ) isValid = true;
+        isValid = Logic.isValidRebalanceRangeWithoutCheckReset(
+            rageVPool,
+            rageTwapDuration,
+            rebalancePriceThresholdBps,
+            baseTickLower,
+            baseTickUpper
+        );
 
         if (!isValid) {
             isValid = checkIsReset(vaultMarketValue);
@@ -104,9 +106,10 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         if (baseLiquidity == 0 && amountAfterDeposit == amountDeposited) {
             // No range present - calculate range params and add new range
             uint160 twapSqrtPriceX96 = _getTwapSqrtPriceX96();
-            (baseTickLower, baseTickUpper, baseLiquidity) = _getUpdatedBaseRangeParams(
+            (baseTickLower, baseTickUpper, baseLiquidity) = Logic.getUpdatedBaseRangeParams(
                 twapSqrtPriceX96,
-                depositMarketValue
+                depositMarketValue,
+                SQRT_PRICE_FACTOR_PIPS
             );
             liquidityChangeParam = _getLiquidityChangeParams(baseTickLower, baseTickUpper, baseLiquidity.toInt128());
         } else {
@@ -266,9 +269,10 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         uint160 twapSqrtPriceX96 = _getTwapSqrtPriceX96();
 
         uint128 baseLiquidityUpdate;
-        (baseTickLower, baseTickUpper, baseLiquidityUpdate) = _getUpdatedBaseRangeParams(
+        (baseTickLower, baseTickUpper, baseLiquidityUpdate) = Logic.getUpdatedBaseRangeParams(
             twapSqrtPriceX96,
-            vaultMarketValue
+            vaultMarketValue,
+            SQRT_PRICE_FACTOR_PIPS
         );
 
         // If (there are no ranges) || (netPositionNotional > 20% of vault market value) then update base liquidity otherwise carry forward same liquidity value
@@ -328,52 +332,5 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
             false,
             IClearingHouseEnums.LimitOrderType.NONE
         );
-    }
-
-    /// @notice Get updated base range params
-    /// @param sqrtPriceX96 Sqrt of price in X96
-    /// @param vaultMarketValue Market value of vault in USDC
-    function _getUpdatedBaseRangeParams(uint160 sqrtPriceX96, int256 vaultMarketValue)
-        internal
-        pure
-        returns (
-            int24 baseTickLowerUpdate,
-            int24 baseTickUpperUpdate,
-            uint128 baseLiquidityUpdate
-        )
-    {
-        {
-            uint160 sqrtPriceLowerX96 = uint256(sqrtPriceX96).mulDiv(SQRT_PRICE_FACTOR_PIPS, 1e6).toUint160();
-            uint160 sqrtPriceUpperX96 = uint256(sqrtPriceX96).mulDiv(1e6, SQRT_PRICE_FACTOR_PIPS).toUint160();
-
-            baseTickLowerUpdate = _sqrtPriceX96ToValidTick(sqrtPriceLowerX96, false);
-            baseTickUpperUpdate = _sqrtPriceX96ToValidTick(sqrtPriceUpperX96, true);
-        }
-
-        uint160 updatedSqrtPriceLowerX96 = TickMath.getSqrtRatioAtTick(baseTickLowerUpdate);
-
-        assert(vaultMarketValue > 0);
-        baseLiquidityUpdate = (
-            uint256(vaultMarketValue).mulDiv(FixedPoint96.Q96 / 10, (sqrtPriceX96 - updatedSqrtPriceLowerX96))
-        ).toUint128();
-    }
-
-    // TODO can be moved to library
-    /// @notice convert sqrt price in X96 to initializable tick
-    /// @param sqrtPriceX96 Sqrt of price in X96
-    /// @param isTickUpper true if price represents upper tick and false if price represents lower tick
-    function _sqrtPriceX96ToValidTick(uint160 sqrtPriceX96, bool isTickUpper)
-        internal
-        pure
-        returns (int24 roundedTick)
-    {
-        int24 tick = TickMath.getTickAtSqrtRatio(sqrtPriceX96);
-        if (isTickUpper) {
-            roundedTick = tick + 10 - (tick % 10);
-        } else {
-            roundedTick = tick - (tick % 10);
-        }
-
-        if (tick < 0) roundedTick -= 10;
     }
 }
