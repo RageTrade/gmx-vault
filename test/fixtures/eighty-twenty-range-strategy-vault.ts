@@ -38,8 +38,21 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
   //   minNotionalPositionToCloseThreshold,
   // );
 
+  const swapManager = await (await hre.ethers.getContractFactory('SwapManager')).deploy();
+  const logic = await (
+    await hre.ethers.getContractFactory('Logic', {
+      libraries: {
+        ['contracts/libraries/SwapManager.sol:SwapManager']: swapManager.address,
+      },
+    })
+  ).deploy();
+
   const eightyTwentyRangeStrategyVaultTest = await (
-    await hre.ethers.getContractFactory('EightyTwentyRangeStrategyVaultTest')
+    await hre.ethers.getContractFactory('EightyTwentyRangeStrategyVaultTest', {
+      libraries: {
+        ['contracts/libraries/Logic.sol:Logic']: logic.address,
+      },
+    })
   ).deploy(
     {
       baseVaultInitParams: {

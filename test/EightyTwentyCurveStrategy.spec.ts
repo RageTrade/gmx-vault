@@ -244,7 +244,7 @@ describe('EightyTwentyCurveStrategy', () => {
       // await logRageParams('Withdraw', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
     });
 
-    it.only('EndToEnd Scenario - Multiple Deposits & Withdrawals', async () => {
+    it('EndToEnd Scenario - Multiple Deposits & Withdrawals', async () => {
       const {
         curveYieldStrategyTest: curveYieldStrategy,
         clearingHouse,
