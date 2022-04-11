@@ -20,6 +20,8 @@ import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/
 
 import { SwapManager } from '../libraries/SwapManager.sol';
 
+import { Logic } from '../libraries/Logic.sol';
+
 contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     using FullMath for uint256;
 
@@ -160,26 +162,15 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     function _convertAssetToSettlementToken(uint256 amount) internal override returns (uint256 usdcAmount) {
-        uint256 pricePerLP = lpPriceHolder.lp_price();
-        uint256 lpToWithdraw = ((amount * (10**12)) * (10**18)) / pricePerLP;
-
-        gauge.withdraw(lpToWithdraw);
-        triCryptoPool.remove_liquidity_one_coin(lpToWithdraw, 0, 0);
-
-        uint256 balance = usdt.balanceOf(address(this));
-        usdt.approve(address(uniV3Router), balance);
-
-        bytes memory path = abi.encodePacked(usdt, uint24(500), usdc);
-
-        usdcAmount = SwapManager.swapUsdtToUsdc(balance, path, uniV3Router);
+        return
+            Logic.convertAssetToSettlementToken(amount, lpPriceHolder, gauge, triCryptoPool, usdt, uniV3Router, usdc);
     }
 
     function getMarketValue(uint256 amount) public view override returns (uint256 marketValue) {
-        marketValue = amount.mulDiv(getPriceX128(), FixedPoint128.Q128);
+        return Logic.getMarketValue(amount, lpPriceHolder);
     }
 
     function getPriceX128() public view override returns (uint256 priceX128) {
-        uint256 pricePerLP = lpPriceHolder.lp_price();
-        return pricePerLP.mulDiv(FixedPoint128.Q128, 10**30); // 10**6 / (10**18*10**18)
+        return Logic.getPriceX128(lpPriceHolder);
     }
 }
