@@ -126,22 +126,6 @@ library Logic {
 
     // curve yeild strategy
 
-    struct State {
-        IERC20 usdt;
-        IERC20 weth;
-        IERC20 usdc;
-        IERC20 crvToken;
-        ICurveGauge gauge;
-        ISwapRouter uniV3Router;
-        ILPPriceGetter lpPriceHolder;
-        ICurveStableSwap triCryptoPool;
-        AggregatorV3Interface crvOracle;
-        uint256 crvSwapSlippageTolerance; // in bps, 10**4
-        uint256 notionalCrvHarvestThreshold;
-        uint256 MAX_BPS;
-        uint256 FEE;
-    }
-
     function convertAssetToSettlementToken(
         uint256 amount,
         ILPPriceGetter lpPriceHolder,
