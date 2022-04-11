@@ -129,9 +129,18 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
 
   const swapManager = await (await hre.ethers.getContractFactory('SwapManager')).deploy();
 
+  const logic = await (
+    await hre.ethers.getContractFactory('Logic', {
+      libraries: {
+        ['contracts/libraries/SwapManager.sol:SwapManager']: swapManager.address,
+      },
+    })
+  ).deploy();
+
   let curveYieldStrategyTestFactory = new CurveYieldStrategy__factory(
     {
       ['contracts/libraries/SwapManager.sol:SwapManager']: swapManager.address,
+      ['contracts/libraries/Logic.sol:Logic']: logic.address,
     },
     admin,
   );

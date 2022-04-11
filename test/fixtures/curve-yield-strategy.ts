@@ -77,10 +77,18 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
   )) as IQuoter;
 
   const swapManager = await (await hre.ethers.getContractFactory('SwapManager')).deploy();
+  const logic = await (
+    await hre.ethers.getContractFactory('Logic', {
+      libraries: {
+        ['contracts/libraries/SwapManager.sol:SwapManager']: swapManager.address,
+      },
+    })
+  ).deploy();
 
   let curveYieldStrategyTestFactory = new CurveYieldStrategyTest__factory(
     {
       ['contracts/libraries/SwapManager.sol:SwapManager']: swapManager.address,
+      ['contracts/libraries/Logic.sol:Logic']: logic.address,
     },
     signer,
   );
