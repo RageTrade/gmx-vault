@@ -27,6 +27,16 @@ library Logic {
     using FullMath for uint256;
     using UniswapV3PoolHelper for IUniswapV3Pool;
 
+    event Harvested(uint256 crvAmount);
+    event Staked(uint256 amount, address depositor);
+
+    event FeesWithdrawn(uint256 total);
+    event FeesUpdated(uint256 oldFee, uint256 newFee);
+
+    event CrvOracleUpdated(address oldOracle, address newOracle);
+    event CrvSwapSlippageToleranceUpdated(uint256 oldTolerance, uint256 newTolerance);
+    event NotionalCrvHarvestThresholdUpdated(uint256 oldThreshold, uint256 newThreshold);
+
     // base vault
 
     function getTwapSqrtPriceX96(IUniswapV3Pool rageVPool, uint32 rageTwapDuration)
