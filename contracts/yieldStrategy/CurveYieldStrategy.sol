@@ -77,18 +77,18 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     function setCrvOracle(AggregatorV3Interface _crvOracle) external onlyOwner {
-        emit Logic.CrvOracleUpdated(address(crvOracle), address(_crvOracle));
         crvOracle = _crvOracle;
+        emit Logic.CrvOracleUpdated(address(_crvOracle));
     }
 
     function setCrvSwapSlippageTolerance(uint256 _slippageTolerance) external onlyOwner {
-        emit Logic.CrvSwapSlippageToleranceUpdated(crvSwapSlippageTolerance, _slippageTolerance);
         crvSwapSlippageTolerance = _slippageTolerance;
+        emit Logic.CrvSwapSlippageToleranceUpdated(_slippageTolerance);
     }
 
     function setNotionalCrvHarvestThreshold(uint256 _notionalCrvHarvestThreshold) external onlyOwner {
-        emit Logic.NotionalCrvHarvestThresholdUpdated(notionalCrvHarvestThreshold, _notionalCrvHarvestThreshold);
         notionalCrvHarvestThreshold = _notionalCrvHarvestThreshold;
+        emit Logic.NotionalCrvHarvestThresholdUpdated(_notionalCrvHarvestThreshold);
     }
 
     function grantAllowances() public override onlyOwner {
@@ -106,8 +106,8 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
     function changeFee(uint256 bps) external onlyOwner {
         if (bps > MAX_BPS) revert CYS_INVALID_FEES();
-        emit Logic.FeesUpdated(FEE, bps);
         FEE = bps;
+        emit Logic.FeesUpdated(bps);
     }
 
     function withdrawFees() external onlyOwner {
