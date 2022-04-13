@@ -116,10 +116,12 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     function _afterDepositYield(uint256 amount) internal override {
+        emit Logic.StateInfo(lpPriceHolder.lp_price());
         _stake(amount);
     }
 
     function _beforeWithdrawYield(uint256 amount) internal override {
+        emit Logic.StateInfo(lpPriceHolder.lp_price());
         gauge.withdraw(amount);
         _harvestFees();
     }
