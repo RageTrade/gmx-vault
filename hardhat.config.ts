@@ -112,7 +112,7 @@ export default {
     apiKey: process.env.ETHERSCAN_KEY,
   },
   mocha: {
-    timeout: 200000,
+    timeout: 400000,
   },
   gasReporter: {
     currency: 'USD',
