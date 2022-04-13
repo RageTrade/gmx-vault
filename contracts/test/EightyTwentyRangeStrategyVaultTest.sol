@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.0;
 
+/* solhint-disable */
+
 import { IClearingHouse } from '@ragetrade/core/contracts/interfaces/IClearingHouse.sol';
 import { IClearingHouseStructures } from '@ragetrade/core/contracts/interfaces/clearinghouse/IClearingHouseStructures.sol';
 

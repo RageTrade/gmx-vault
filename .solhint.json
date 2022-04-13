@@ -3,6 +3,6 @@
   "rules": {
     "compiler-version": ["error", "^0.8.0"],
     "func-visibility": ["warn", { "ignoreConstructors": true }],
-    "quotes": [2, "single", { "avoidEscape": true }]
+    "quotes": ["warn", "single", { "avoidEscape": true }]
   }
 }

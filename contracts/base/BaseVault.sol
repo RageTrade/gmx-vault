@@ -74,7 +74,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         address rageSettlementToken;
     }
 
-    // solhint-disable-next-line func-name-mixedcase
+    /* solhint-disable-next-line func-name-mixedcase */
     function __BaseVault_init(BaseVaultInitParams memory params) internal onlyInitializing {
         __Ownable_init();
         // transferOwnership(params.owner); // TODO i think this is not needed, check it
@@ -312,7 +312,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     }
 
     function _blockTimestamp() internal view virtual returns (uint256) {
-        // solhint-disable-next-line not-rely-on-time
+        /* solhint-disable-next-line not-rely-on-time */
         return block.timestamp;
     }
 

@@ -15,6 +15,7 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
         string symbol;
     }
 
+    /* solhint-disable-next-line func-name-mixedcase */
     function __RageERC4626_init(RageERC4626InitParams memory params) internal {
         __ERC4626Upgradeable_init(params.asset, params.name, params.symbol);
     }
