@@ -232,12 +232,13 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         } else {
             sqrtPriceLimitX96 = uint256(sqrtPriceX96).mulDiv(1e4 - slippageSqrtToleranceBps, 1e4).toUint160();
         }
-        IClearingHouseStructures.SwapParams memory swapParams = IClearingHouseStructures.SwapParams(
-            tokensToTrade,
-            sqrtPriceLimitX96,
-            false,
-            true
-        );
+        IClearingHouseStructures.SwapParams memory swapParams = IClearingHouseStructures.SwapParams({
+            amount: tokensToTrade,
+            sqrtPriceLimit: sqrtPriceLimitX96,
+            isNotional: false,
+            isPartialAllowed: true,
+            settleProfit: false
+        });
         (vTokenAmountOut, vQuoteAmountOut) = rageClearingHouse.swapToken(rageAccountNo, ethPoolId, swapParams);
     }
 
@@ -330,7 +331,8 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
             0,
             0,
             false,
-            IClearingHouseEnums.LimitOrderType.NONE
+            IClearingHouseEnums.LimitOrderType.NONE,
+            false
         );
     }
 }

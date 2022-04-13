@@ -40,6 +40,7 @@ export async function swapToken(
     sqrtPriceLimit: sqrtPriceLimit,
     isNotional: isNotional,
     isPartialAllowed: isPartialAllowed,
+    settleProfit: false,
   };
   return await clearingHouse.connect(user).swapToken(userAccountNo, poolId, swapParams);
 }
