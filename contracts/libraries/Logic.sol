@@ -74,7 +74,6 @@ library Logic {
         ) isValid = true;
     }
 
-    // TODO can be moved to library
     /// @notice convert sqrt price in X96 to initializable tick
     /// @param sqrtPriceX96 Sqrt of price in X96
     /// @param isTickUpper true if price represents upper tick and false if price represents lower tick
