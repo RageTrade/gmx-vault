@@ -146,6 +146,7 @@ describe('EightyTwentyRangeStrategyVault', () => {
         sqrtPriceCurrent: 0,
         slippageToleranceBps: 0,
         limitOrderType: 0,
+        settleProfit: false,
       });
       //Withdraw all shares
       await eightyTwentyRangeStrategyVaultTest
