@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.9;
 
+/* solhint-disable */
+
 import { IOracle } from '@ragetrade/core/contracts/interfaces/IOracle.sol';
 
 import { PriceMath } from '@ragetrade/core/contracts/libraries/PriceMath.sol';

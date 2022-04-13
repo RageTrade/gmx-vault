@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.0;
 
+/* solhint-disable */
+
 import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadata.sol';
 
 import { IClearingHouse } from '@ragetrade/core/contracts/interfaces/IClearingHouse.sol';

@@ -46,7 +46,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         uint64 minNotionalPositionToCloseThreshold;
     }
 
-    // solhint-disable-next-line func-name-mixedcase
+    /* solhint-disable-next-line func-name-mixedcase */
     function __EightyTwentyRangeStrategyVault_init(EightyTwentyRangeStrategyVaultInitParams memory params)
         internal
         onlyInitializing
