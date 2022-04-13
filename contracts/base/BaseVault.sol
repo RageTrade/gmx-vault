@@ -40,7 +40,6 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     using UniswapV3PoolHelper for IUniswapV3Pool;
     using ClearingHouseExtsload for IClearingHouse;
 
-    // TODO: Make relevant things immutable
     IERC20Metadata public rageSettlementToken;
     IClearingHouse public rageClearingHouse;
     CollateralToken public rageCollateralToken;
@@ -78,7 +77,6 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     /* solhint-disable-next-line func-name-mixedcase */
     function __BaseVault_init(BaseVaultInitParams memory params) internal onlyInitializing {
         __Ownable_init();
-        // transferOwnership(params.owner); // TODO i think this is not needed, check it
         __RageERC4626_init(params.rageErc4626InitParams);
         ethPoolId = params.ethPoolId;
         rageClearingHouse = IClearingHouse(params.rageClearingHouse);
@@ -122,7 +120,6 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         IClearingHouse.CollateralDepositView[] memory deposits;
         IClearingHouse.VTokenPositionView[] memory vTokenPositions;
         // Step-0 Check if the rebalance can go through (time and threshold based checks)
-        // TODO getAccountInfo CALL may be optimised using extsload
         (, , deposits, vTokenPositions) = rageClearingHouse.getAccountInfo(rageAccountNo);
         // (, uint256 virtualPriceX128) = rageClearingHouse.getTwapSqrtPricesForSetDuration(IVToken(VWETH_ADDRESS));
 
@@ -137,7 +134,6 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
     /// @notice closes remaining token position (To be used when reset condition is hit)
     function closeTokenPosition() external onlyKeeper {
-        //TODO: Check if isReset check needs to be added
         IClearingHouse.VTokenPositionView[] memory vTokenPositions;
         // Step-0 Check if the rebalance can go through (time and threshold based checks)
         (, , , vTokenPositions) = rageClearingHouse.getAccountInfo(rageAccountNo);
@@ -150,7 +146,6 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         return asset.balanceOf(address(this)) + _stakedAssetBalance();
     }
 
-    // TODO: Add handling for unrealized fees
     /// @notice Returns account market value of vault in USDC (settlement token)
     function getVaultMarketValue() public view returns (int256 vaultMarketValue) {
         vaultMarketValue = rageClearingHouse.getAccountNetProfit(rageAccountNo);
@@ -277,7 +272,6 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         _stake(asset.balanceOf(address(this)));
     }
 
-    // TODO: check if caching is required for this function
     /// @notice returns twap price X96 from rage trade
     function _getTwapSqrtPriceX96() internal view returns (uint160 twapSqrtPriceX96) {
         twapSqrtPriceX96 = Logic.getTwapSqrtPriceX96(rageVPool, rageTwapDuration);

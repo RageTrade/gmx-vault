@@ -87,7 +87,6 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     }
 
     function checkIsReset(int256 vaultMarketValue) internal view returns (bool _isReset) {
-        //TODO: should we take netPosition from outside
         int256 netPosition = rageClearingHouse.getAccountNetTokenPosition(rageAccountNo, ethPoolId);
 
         uint256 netPositionNotional = _getTokenNotionalAbs(netPosition, _getTwapSqrtPriceX96());

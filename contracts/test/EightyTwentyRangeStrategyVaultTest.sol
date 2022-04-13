@@ -66,7 +66,6 @@ contract EightyTwentyRangeStrategyVaultTest is EightyTwentyRangeStrategyVault {
         marketValue = amount.mulDiv(priceX128, FixedPoint128.Q128);
     }
 
-    //TODO: handle update of yield tokens based on their value along with update in settlement token
     // To convert yield token into USDC to cover loss on rage trade
     function _convertAssetToSettlementToken(uint256 amount) internal virtual override returns (uint256 usdcAmount) {
         rageSettlementToken.transferFrom(tokenTreasury, address(this), amount);
