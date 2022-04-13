@@ -152,7 +152,6 @@ library Logic {
         triCryptoPool.remove_liquidity_one_coin(lpToWithdraw, 0, 0);
 
         uint256 balance = usdt.balanceOf(address(this));
-        usdt.approve(address(uniV3Router), balance);
 
         bytes memory path = abi.encodePacked(usdt, uint24(500), usdc);
 
