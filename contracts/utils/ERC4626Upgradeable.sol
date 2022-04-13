@@ -33,6 +33,7 @@ abstract contract ERC4626Upgradeable is ERC20Upgradeable {
 
     IERC20Metadata public asset;
 
+    /* solhint-disable func-name-mixedcase */
     function __ERC4626Upgradeable_init(
         IERC20Metadata _asset,
         string memory _name,
@@ -180,7 +181,9 @@ abstract contract ERC4626Upgradeable is ERC20Upgradeable {
                           INTERNAL HOOKS LOGIC
     //////////////////////////////////////////////////////////////*/
 
+    /* solhint-disable no-empty-blocks */
     function beforeWithdraw(uint256 assets, uint256 shares) internal virtual {}
 
+    /* solhint-disable no-empty-blocks */
     function afterDeposit(uint256 assets, uint256 shares) internal virtual {}
 }

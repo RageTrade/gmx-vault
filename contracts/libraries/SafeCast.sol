@@ -19,6 +19,7 @@ library SafeCast {
     /// @return z The downcasted integer, now type uint160
     function toUint128(uint256 y) internal pure returns (uint128 z) {
         unchecked {
+            /* solhint-disable reason-string */
             require((z = uint128(y)) == y);
         }
     }
