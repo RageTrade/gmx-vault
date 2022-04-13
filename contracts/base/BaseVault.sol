@@ -86,9 +86,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         rageCollateralToken = CollateralToken(params.rageCollateralToken);
         rageSettlementToken = IERC20Metadata(params.rageSettlementToken);
 
-        (address vPool, uint32 twapDuration) = rageClearingHouse.pools_vPool_and_settings_twapDuration(ethPoolId);
-        rageVPool = IUniswapV3Pool(vPool);
-        rageTwapDuration = twapDuration;
+        (rageVPool, rageTwapDuration) = rageClearingHouse.getVPoolAndTwapDuration(ethPoolId);
 
         rebalanceTimeThreshold = 1 days;
         // Give rageClearingHouse full allowance of rageCollateralToken and usdc

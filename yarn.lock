@@ -728,10 +728,10 @@
     fs-extra "^9.0.1"
     js-yaml "^3.14.0"
 
-"@ragetrade/core@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@ragetrade/core/-/core-1.0.0.tgz#2ea891b3f6c44c60a0813a6d6fa7a5e9e1ffc9ba"
-  integrity sha512-V4QbySn+5GpinWc+n9YSgnbQu4A15/999/6LNsh3qDKByEkrU1sW4vPIsd2M0anbKIBFBg2Vsll3wpceDXvSWw==
+"@ragetrade/core@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@ragetrade/core/-/core-1.0.1.tgz#0f3a52ba4424af7c3ee08565508629b7e6a8a503"
+  integrity sha512-TYXhekmt2+el06UQlgr6tPSMF7i2g72gbsv1/GeZDqyvdl/+ohQUv/88E6ZqNgIC0DEQKEk7PgoZWQ4rJ0TDYQ==
   dependencies:
     "@chainlink/contracts" "^0.4.0"
     "@openzeppelin/contracts" "^4.5.0"
@@ -739,10 +739,10 @@
     "@uniswap/v3-core-0.8-support" "https://github.com/uniswap/v3-core.git#36bc9101b91e2b8b5690f59e0911a85deb2d2480"
     "@uniswap/v3-periphery" "^1.4.0"
 
-"@ragetrade/sdk@^0.5.13":
-  version "0.5.13"
-  resolved "https://registry.yarnpkg.com/@ragetrade/sdk/-/sdk-0.5.13.tgz#30524878b80f2ea4c1097e8660774743ec45f388"
-  integrity sha512-ni5LCi8k4HCxRiUnVuwPxwkufmGCHI11f4VXGAMD8VUzgoMGFws+QJyiRISo7MeSDujDyU5JPAiuUJ3ssPgThA==
+"@ragetrade/sdk@^0.6.0":
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/@ragetrade/sdk/-/sdk-0.6.0.tgz#dc7552dc8a3308b76e17e19067c7cbdc48957921"
+  integrity sha512-ZD7uJjD+3oPfqSMonXRm8mU9gS9H2UKjs2BSGf6zsLxwkpV1Ndx2J6RNzLYUnFiEV//Y0x/fS5TAz+RbqEJlFw==
   dependencies:
     "@uniswap/v3-sdk" "^3.8.2"
     ethers "^5.6.2"
