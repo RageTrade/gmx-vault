@@ -31,11 +31,11 @@ library Logic {
     event Staked(uint256 amount, address indexed depositor);
 
     event FeesWithdrawn(uint256 total);
-    event FeesUpdated(uint256 indexed oldFee, uint256 indexed newFee);
+    event FeesUpdated(uint256 fee);
 
-    event CrvOracleUpdated(address indexed oldOracle, address indexed newOracle);
-    event CrvSwapSlippageToleranceUpdated(uint256 indexed oldTolerance, uint256 indexed newTolerance);
-    event NotionalCrvHarvestThresholdUpdated(uint256 indexed oldThreshold, uint256 indexed newThreshold);
+    event CrvOracleUpdated(address indexed oracle);
+    event CrvSwapSlippageToleranceUpdated(uint256 tolerance);
+    event NotionalCrvHarvestThresholdUpdated(uint256 threshold);
 
     event StateInfo(uint256 lpPrice);
 
