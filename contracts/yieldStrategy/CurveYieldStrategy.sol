@@ -76,14 +76,17 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     function setCrvOracle(AggregatorV3Interface _crvOracle) external onlyOwner {
+        emit Logic.CrvOracleUpdated(address(crvOracle), address(_crvOracle));
         crvOracle = _crvOracle;
     }
 
     function setCrvSwapSlippageTolerance(uint256 _slippageTolerance) external onlyOwner {
+        emit Logic.CrvSwapSlippageToleranceUpdated(crvSwapSlippageTolerance, _slippageTolerance);
         crvSwapSlippageTolerance = _slippageTolerance;
     }
 
     function setNotionalCrvHarvestThreshold(uint256 _notionalCrvHarvestThreshold) external onlyOwner {
+        emit Logic.NotionalCrvHarvestThresholdUpdated(notionalCrvHarvestThreshold, _notionalCrvHarvestThreshold);
         notionalCrvHarvestThreshold = _notionalCrvHarvestThreshold;
     }
 
@@ -102,12 +105,14 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
     function changeFee(uint256 bps) external onlyOwner {
         if (bps > MAX_BPS) revert CYS_INVALID_FEES();
+        emit Logic.FeesUpdated(FEE, bps);
         FEE = bps;
     }
 
     function withdrawFees() external onlyOwner {
         uint256 bal = crvToken.balanceOf(address(this));
         crvToken.transfer(msg.sender, bal);
+        emit Logic.FeesWithdrawn(bal);
     }
 
     function _afterDepositYield(uint256 amount) internal override {
@@ -132,6 +137,8 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
             uint256 afterDeductions = claimable - ((claimable * FEE) / MAX_BPS);
             gauge.claim_rewards(address(this));
 
+            emit Logic.Harvested(claimable);
+
             bytes memory path = abi.encodePacked(
                 address(crvToken),
                 uint24(3000),
@@ -155,6 +162,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
     function _stake(uint256 amount) internal override {
         gauge.deposit(amount);
+        emit Logic.Staked(amount, msg.sender);
     }
 
     function _stakedAssetBalance() internal view override returns (uint256) {
