@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.0;
 
+/* solhint-disable */
+
 import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadata.sol';
 
 import { RageERC4626 } from '../base/RageERC4626.sol';
@@ -15,7 +17,6 @@ import { ICurveStableSwap } from '../interfaces/curve/ICurveStableSwap.sol';
 import { ISwapRouter } from '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
 
 contract CurveYieldStrategyTest is CurveYieldStrategy {
-    // solhint-disable-next-line no-empty-blocks
     constructor(CurveYieldStrategyInitParams memory params) initializer {
         __CurveYieldStrategy_init(params);
     }

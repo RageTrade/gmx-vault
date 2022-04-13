@@ -2,6 +2,9 @@
 
 pragma solidity ^0.8.9;
 
+/* solhint-disable func-name-mixedcase */
+/* solhint-disable var-name-mixedcase */
+
 interface ICurveStableSwap {
     function get_virtual_price() external view returns (uint256);
 

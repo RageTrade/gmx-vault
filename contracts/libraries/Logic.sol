@@ -110,6 +110,7 @@ library Logic {
     function getUpdatedBaseRangeParams(
         uint160 sqrtPriceX96,
         int256 vaultMarketValue,
+        /* solhint-disable var-name-mixedcase */
         uint64 SQRT_PRICE_FACTOR_PIPS
     )
         external

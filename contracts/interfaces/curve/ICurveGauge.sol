@@ -2,6 +2,9 @@
 
 pragma solidity ^0.8.9;
 
+/* solhint-disable func-name-mixedcase */
+/* solhint-disable var-name-mixedcase */
+
 interface ICurveGauge {
     function deposit(uint256 _value) external;
 

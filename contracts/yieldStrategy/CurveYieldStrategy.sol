@@ -42,8 +42,9 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     uint256 private crvSwapSlippageTolerance; // in bps, 10**4
     uint256 private notionalCrvHarvestThreshold;
 
-    /* solhint-enable const-name-snakecase */
+    /* solhint-disable var-name-mixedcase */
     uint256 public constant MAX_BPS = 10_000;
+    /* solhint-disable var-name-mixedcase */
     uint256 public FEE = 1000;
 
     function initialize(CurveYieldStrategyInitParams memory curveYieldStrategyInitParams) external initializer {
@@ -62,7 +63,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         ICurveStableSwap tricryptoPool;
     }
 
-    // solhint-disable-next-line func-name-mixedcase
+    /* solhint-disable-next-line func-name-mixedcase */
     function __CurveYieldStrategy_init(CurveYieldStrategyInitParams memory params) internal onlyInitializing {
         __EightyTwentyRangeStrategyVault_init(params.eightyTwentyRangeStrategyVaultInitParams);
         usdt = params.usdt;
