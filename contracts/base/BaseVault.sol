@@ -14,6 +14,7 @@ import { SignedMath } from '@ragetrade/core/contracts/libraries/SignedMath.sol';
 import { SignedFullMath } from '@ragetrade/core/contracts/libraries/SignedFullMath.sol';
 import { AddressHelper } from '@ragetrade/core/contracts/libraries/AddressHelper.sol';
 import { UniswapV3PoolHelper, IUniswapV3Pool } from '@ragetrade/core/contracts/libraries/UniswapV3PoolHelper.sol';
+import { Extsload } from '@ragetrade/core/contracts/utils/Extsload.sol';
 import { ClearingHouseExtsload } from '@ragetrade/core/contracts/extsloads/ClearingHouseExtsload.sol';
 
 import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
@@ -23,12 +24,12 @@ import { FixedPoint96 } from '@uniswap/v3-core-0.8-support/contracts/libraries/F
 
 import { IBaseVault } from '../interfaces/IBaseVault.sol';
 import { IBaseYieldStrategy } from '../interfaces/IBaseYieldStrategy.sol';
+
 import { RageERC4626 } from './RageERC4626.sol';
 import { SafeCast } from '../libraries/SafeCast.sol';
-
 import { Logic } from '../libraries/Logic.sol';
 
-abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, OwnableUpgradeable {
+abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, OwnableUpgradeable, Extsload {
     using AddressHelper for address;
     using AddressHelper for IVToken;
     using SafeCast for uint256;
