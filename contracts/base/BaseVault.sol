@@ -128,10 +128,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         IClearingHouse.CollateralDepositView[] memory deposits;
         IClearingHouse.VTokenPositionView[] memory vTokenPositions;
         // Step-0 Check if the rebalance can go through (time and threshold based checks)
-        (, , deposits, vTokenPositions) = rageClearingHouse.getAccountInfo(rageAccountNo);
-        // (, uint256 virtualPriceX128) = rageClearingHouse.getTwapSqrtPricesForSetDuration(IVToken(VWETH_ADDRESS));
-
-        _rebalanceProfitAndCollateral(deposits, vTokenPositions, vaultMarketValue);
+        (deposits, vTokenPositions) = _rebalanceProfitAndCollateral();
 
         // Step-4 Rebalance
         if (vTokenPositions.length == 0) revert BV_NoPositionToRebalance();
@@ -251,30 +248,21 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
     /// @notice Rebalances the pnl on rage trade and converts profit into asset tokens and covers losses using asset tokens
     /// @notice Rebalances collateral based on the updated market value of vault assets
-    function _rebalanceProfitAndCollateral() internal {
+    function _rebalanceProfitAndCollateral()
+        internal
+        returns (
+            IClearingHouse.CollateralDepositView[] memory deposits,
+            IClearingHouse.VTokenPositionView[] memory vTokenPositions
+        )
+    {
         // Rebalance collateral and dummy stable coins representing the collateral
         // Update protocol and management fee accumulated
-        IClearingHouse.CollateralDepositView[] memory deposits;
-        IClearingHouse.VTokenPositionView[] memory vTokenPositions;
 
         // Step-0 Check if the rebalance can go through (time and threshold based checks)
         (, , deposits, vTokenPositions) = rageClearingHouse.getAccountInfo(rageAccountNo);
         // #Token position = 0 or (1 and token should be VWETH)
         int256 vaultMarketValue = getVaultMarketValue();
 
-        _rebalanceProfitAndCollateral(deposits, vTokenPositions, vaultMarketValue);
-    }
-
-    /// @notice Rebalances the pnl on rage trade and converts profit into asset tokens and covers losses using asset tokens
-    /// @notice Rebalances collateral based on the updated market value of vault assets
-    /// @param deposits The amount of collateral deposited to rage core
-    /// @param vTokenPositions The token positions of the vault
-    /// @param vaultMarketValue The market value of the vault in USDC
-    function _rebalanceProfitAndCollateral(
-        IClearingHouse.CollateralDepositView[] memory deposits,
-        IClearingHouse.VTokenPositionView[] memory vTokenPositions,
-        int256 vaultMarketValue
-    ) internal {
         // assert(vTokenPositions.length == 0 || (vTokenPositions.length == 1 && vTokenPositions[0].poolId == ethPoolId));
         // Harvest the rewards earned (Should be harvested before calculating vault market value)
         _harvestFees();
