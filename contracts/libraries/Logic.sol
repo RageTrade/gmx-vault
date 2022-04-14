@@ -36,6 +36,17 @@ library Logic {
     event CrvOracleUpdated(address indexed oracle);
     event CrvSwapSlippageToleranceUpdated(uint256 tolerance);
     event NotionalCrvHarvestThresholdUpdated(uint256 threshold);
+    event EightyTwentyParamsUpdated(
+        uint16 closePositionSlippageSqrtToleranceBps,
+        uint16 resetPositionThresholdBps,
+        uint64 minNotionalPositionToCloseThreshold
+    );
+    event KeeperUpdated(address keeper);
+    event DepositCapUpdated(uint256 depositCap);
+    event RebalanceTimeThresholdUpdated(uint32 rebalanceTimeThreshold);
+    event RebalancePriceThresholdUpdated(uint16 rebalancePriceThresholdBps);
+    event Rebalance();
+    event TokenPositionClosed();
 
     event StateInfo(uint256 lpPrice);
 
