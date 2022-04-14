@@ -141,7 +141,7 @@ library Logic {
 
         uint160 updatedSqrtPriceLowerX96 = TickMath.getSqrtRatioAtTick(baseTickLowerUpdate);
 
-        assert(vaultMarketValue > 0);
+        // assert(vaultMarketValue > 0);
         baseLiquidityUpdate = (
             uint256(vaultMarketValue).mulDiv(FixedPoint96.Q96 / 10, (sqrtPriceX96 - updatedSqrtPriceLowerX96))
         ).toUint128();

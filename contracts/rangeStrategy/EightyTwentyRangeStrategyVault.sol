@@ -126,7 +126,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         } else {
             // Range Present - Add to base range based on the additional assets deposited
             liquidityChangeParam = _getLiquidityChangeParamsAfterDeposit(amountAfterDeposit, amountDeposited);
-            assert(liquidityChangeParam.liquidityDelta > 0);
+            // assert(liquidityChangeParam.liquidityDelta > 0);
 
             baseLiquidity += uint128(liquidityChangeParam.liquidityDelta);
         }
@@ -142,7 +142,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
                 amountBeforeWithdraw,
                 amountWithdrawn
             );
-        assert(liquidityChangeParam.liquidityDelta < 0);
+        // assert(liquidityChangeParam.liquidityDelta < 0);
         baseLiquidity -= uint128(-liquidityChangeParam.liquidityDelta);
 
         //In case liquidity is becoming 0 then remove the remaining position
@@ -179,7 +179,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
                     amountBeforeWithdraw.toInt256(),
                     netPosition
                 );
-                assert(updatedAmountWithdrawnInt > 0);
+                // assert(updatedAmountWithdrawnInt > 0);
                 updatedAmountWithdrawn = uint256(updatedAmountWithdrawnInt);
             }
         } else {
@@ -267,9 +267,9 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         uint8 liqCount = 0;
 
         if (baseLiquidity > 0) {
-            assert(baseTickLower != 0);
-            assert(baseTickUpper != 0);
-            assert(baseLiquidity != 0);
+            // assert(baseTickLower != 0);
+            // assert(baseTickUpper != 0);
+            // assert(baseLiquidity != 0);
             //Remove previous range
             liquidityChangeParamList[liqCount] = _getLiquidityChangeParams(
                 baseTickLower,
