@@ -198,9 +198,9 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         int256 vaultMarketValueDiff;
         if (deposits.length > 0) {
             //Since USDC never deposited as margin so there would just be 1 collateral
-            assert(deposits.length == 1);
+            // assert(deposits.length == 1);
             IClearingHouse.CollateralDepositView memory stablecoinDeposit = deposits[0];
-            assert(address(stablecoinDeposit.collateral) == address(rageCollateralToken));
+            // assert(address(stablecoinDeposit.collateral) == address(rageCollateralToken));
             vaultMarketValueDiff =
                 vaultMarketValue -
                 stablecoinDeposit.balance.toInt256().mulDiv(
@@ -277,7 +277,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         IClearingHouse.VTokenPositionView[] memory vTokenPositions,
         int256 vaultMarketValue
     ) internal {
-        assert(vTokenPositions.length == 0 || (vTokenPositions.length == 1 && vTokenPositions[0].poolId == ethPoolId));
+        // assert(vTokenPositions.length == 0 || (vTokenPositions.length == 1 && vTokenPositions[0].poolId == ethPoolId));
         // Harvest the rewards earned (Should be harvested before calculating vault market value)
         _harvestFees();
 
