@@ -104,6 +104,11 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         asset.approve(address(gauge), type(uint256).max);
         asset.approve(address(triCryptoPool), type(uint256).max);
 
+        /// @dev USDT requires allowance set to 0 before re-approving
+        usdc.approve(address(uniV3Router), 0);
+        usdt.approve(address(uniV3Router), 0);
+        usdt.approve(address(triCryptoPool), 0);
+
         usdc.approve(address(uniV3Router), type(uint256).max);
         usdt.approve(address(uniV3Router), type(uint256).max);
         usdt.approve(address(triCryptoPool), type(uint256).max);
