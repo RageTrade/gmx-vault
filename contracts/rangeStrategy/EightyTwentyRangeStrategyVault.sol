@@ -55,6 +55,11 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         closePositionSlippageSqrtToleranceBps = params.closePositionSlippageSqrtToleranceBps;
         resetPositionThresholdBps = params.resetPositionThresholdBps;
         minNotionalPositionToCloseThreshold = params.minNotionalPositionToCloseThreshold;
+        emit Logic.EightyTwentyParamsUpdated(
+            params.closePositionSlippageSqrtToleranceBps,
+            params.resetPositionThresholdBps,
+            params.minNotionalPositionToCloseThreshold
+        );
     }
 
     function setEightTwentyParams(
@@ -65,6 +70,11 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         closePositionSlippageSqrtToleranceBps = _closePositionSlippageSqrtToleranceBps;
         resetPositionThresholdBps = _resetPositionThresholdBps;
         minNotionalPositionToCloseThreshold = _minNotionalPositionToCloseThreshold;
+        emit Logic.EightyTwentyParamsUpdated(
+            _closePositionSlippageSqrtToleranceBps,
+            _resetPositionThresholdBps,
+            _minNotionalPositionToCloseThreshold
+        );
     }
 
     /*

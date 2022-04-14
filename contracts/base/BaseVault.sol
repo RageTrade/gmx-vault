@@ -49,18 +49,18 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     IUniswapV3Pool public rageVPool;
     uint32 public rageTwapDuration;
 
+    uint256 public depositCap; // in vault shares
+
     uint64 public lastRebalanceTS;
     uint16 public rebalancePriceThresholdBps;
     uint32 public rebalanceTimeThreshold; // seconds
 
-    uint256 public depositCap; // in vault shares
-
     address public keeper;
 
     error BV_InvalidRebalance();
+    error BV_NoPositionToRebalance();
     error BV_DepositCap(uint256 depositCap, uint256 depositAmount);
     error BV_OnlyKeeperAllowed(address msgSender, address authorisedKeeperAddress);
-
     modifier onlyKeeper() {
         if (msg.sender != keeper) revert BV_OnlyKeeperAllowed(msg.sender, keeper);
         _;
@@ -86,22 +86,33 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
         (rageVPool, rageTwapDuration) = rageClearingHouse.getVPoolAndTwapDuration(ethPoolId);
 
+        rebalancePriceThresholdBps = 500; //5%
         rebalanceTimeThreshold = 1 days;
+        emit Logic.RebalancePriceThresholdUpdated(rebalancePriceThresholdBps);
+        emit Logic.RebalanceTimeThresholdUpdated(rebalanceTimeThreshold);
         // Give rageClearingHouse full allowance of rageCollateralToken and usdc
     }
 
-    function setRebalanceTimeThreshold(uint32 _rebalanceTimeThreshold) external onlyOwner {
+    function setRebalanceThreshold(uint32 _rebalanceTimeThreshold, uint16 _rebalancePriceThresholdBps)
+        external
+        onlyOwner
+    {
         rebalanceTimeThreshold = _rebalanceTimeThreshold;
+        rebalancePriceThresholdBps = _rebalancePriceThresholdBps;
+        emit Logic.RebalancePriceThresholdUpdated(_rebalancePriceThresholdBps);
+        emit Logic.RebalanceTimeThresholdUpdated(_rebalanceTimeThreshold);
     }
 
     /// @notice Set the deposit cap for the vault in asset amount
     /// @param newDepositCap The new deposit cap in asset amount
     function updateDepositCap(uint256 newDepositCap) external onlyOwner {
         depositCap = newDepositCap;
+        emit Logic.DepositCapUpdated(newDepositCap);
     }
 
     function setKeeper(address newKeeperAddress) external onlyOwner {
         keeper = newKeeperAddress;
+        emit Logic.KeeperUpdated(newKeeperAddress);
     }
 
     /// @notice grants relevant allowances
@@ -126,10 +137,13 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         _rebalanceProfitAndCollateral(deposits, vTokenPositions, vaultMarketValue);
 
         // Step-4 Rebalance
+        if (vTokenPositions.length == 0) revert BV_NoPositionToRebalance();
         _rebalanceRanges(vTokenPositions[0], vaultMarketValue);
 
         // Post rebalance
         lastRebalanceTS = uint64(_blockTimestamp());
+
+        emit Logic.Rebalance();
     }
 
     /// @notice closes remaining token position (To be used when reset condition is hit)
@@ -139,6 +153,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         (, , , vTokenPositions) = rageClearingHouse.getAccountInfo(rageAccountNo);
 
         _closeTokenPositionOnReset(vTokenPositions[0]);
+        emit Logic.TokenPositionClosed();
     }
 
     /// @notice returns the total vault asset balance + staked balance
