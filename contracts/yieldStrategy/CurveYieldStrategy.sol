@@ -76,21 +76,28 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         lpPriceHolder = params.lpPriceHolder;
     }
 
+    /// @notice Sets the CRV to USD oracle address
+    /// @param _crvOracle address of oracle
     function setCrvOracle(AggregatorV3Interface _crvOracle) external onlyOwner {
         crvOracle = _crvOracle;
         emit Logic.CrvOracleUpdated(address(_crvOracle));
     }
 
+    /// @notice Sets the max allowed slippage tolerance for CRV->WETH->USDT swap
+    /// @param _slippageTolerance value in bps unit for slippage tolerance
     function setCrvSwapSlippageTolerance(uint256 _slippageTolerance) external onlyOwner {
         crvSwapSlippageTolerance = _slippageTolerance;
         emit Logic.CrvSwapSlippageToleranceUpdated(_slippageTolerance);
     }
 
+    /// @notice Sets the minimum threshold to harvest CRV rewards
+    /// @param _notionalCrvHarvestThreshold minimum threshold value (in CRV)
     function setNotionalCrvHarvestThreshold(uint256 _notionalCrvHarvestThreshold) external onlyOwner {
         notionalCrvHarvestThreshold = _notionalCrvHarvestThreshold;
         emit Logic.NotionalCrvHarvestThresholdUpdated(_notionalCrvHarvestThreshold);
     }
 
+    /// @notice grants one time max allowance to various third parties
     function grantAllowances() public override onlyOwner {
         _grantBaseAllowances();
 
@@ -104,35 +111,45 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         crvToken.approve(address(uniV3Router), type(uint256).max);
     }
 
+    /// @notice changes the fee value for CRV yield generated
+    /// @param bps new fee value (less than MAX_BPS)
     function changeFee(uint256 bps) external onlyOwner {
         if (bps > MAX_BPS) revert CYS_INVALID_FEES();
         FEE = bps;
         emit Logic.FeesUpdated(bps);
     }
 
+    /// @notice withdraw accumulated CRV fees
     function withdrawFees() external onlyOwner {
         uint256 bal = crvToken.balanceOf(address(this));
         crvToken.transfer(msg.sender, bal);
         emit Logic.FeesWithdrawn(bal);
     }
 
+    /// @notice triggered from the afterDeposit hook, stakes the deposited tricrypto LP tokens
+    /// @param amount amount of LP tokens
     function _afterDepositYield(uint256 amount) internal override {
         emit Logic.StateInfo(lpPriceHolder.lp_price());
         _stake(amount);
     }
 
+    /// @notice triggered from beforeWithdraw hook
+    /// @param amount amount of LP tokens
     function _beforeWithdrawYield(uint256 amount) internal override {
         emit Logic.StateInfo(lpPriceHolder.lp_price());
         gauge.withdraw(amount);
         _harvestFees();
     }
 
+    /// @notice sells settlementToken for LP tokens and then stakes LP tokens
+    /// @param amount amount of settlementToken
     function _convertSettlementTokenToAsset(uint256 amount) internal override {
         bytes memory path = abi.encodePacked(usdc, uint24(500), usdt);
         SwapManager.swapUsdcToUsdtAndAddLiquidity(amount, path, uniV3Router, triCryptoPool);
         _stake(asset.balanceOf(address(this)));
     }
 
+    /// @notice claims the accumulated CRV rewards from the gauge, sells CRV rewards for LP tokens and stakes LP tokens
     function _harvestFees() internal override {
         uint256 claimable = gauge.claimable_reward(address(this), address(crvToken));
 
@@ -163,24 +180,32 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         }
     }
 
+    /// @notice stakes LP tokens (i.e deposits into reward gauge)
+    /// @param amount amount of LP tokens
     function _stake(uint256 amount) internal override {
         gauge.deposit(amount);
         emit Logic.Staked(amount, msg.sender);
     }
 
+    /// @notice total LP tokens staked in the curve rewards gauge
     function _stakedAssetBalance() internal view override returns (uint256) {
         return gauge.balanceOf(address(this));
     }
 
+    /// @notice withdraws LP tokens from gauge, sells LP token for settlementToken
+    /// @param amount amount of LP tokens
     function _convertAssetToSettlementToken(uint256 amount) internal override returns (uint256 usdcAmount) {
         return
             Logic.convertAssetToSettlementToken(amount, lpPriceHolder, gauge, triCryptoPool, usdt, uniV3Router, usdc);
     }
 
+    /// @notice compute notional value for given amount of LP tokens
+    /// @param amount amount of LP tokens
     function getMarketValue(uint256 amount) public view override returns (uint256 marketValue) {
         return Logic.getMarketValue(amount, lpPriceHolder);
     }
 
+    /// @notice gives x128 price of 1 tricrypto LP token
     function getPriceX128() public view override returns (uint256 priceX128) {
         return Logic.getPriceX128(lpPriceHolder);
     }
