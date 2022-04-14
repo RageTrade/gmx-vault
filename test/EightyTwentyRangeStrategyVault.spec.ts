@@ -535,7 +535,7 @@ describe('EightyTwentyRangeStrategyVault', () => {
       await checkTotalSupply(eightyTwentyRangeStrategyVaultTest, parseTokenAmount(10n ** 6n, 18));
 
       //Swap1 - trader0
-      await increaseBlockTimestamp(50000);
+      await increaseBlockTimestamp(10);
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(6197.90154302086, 6, 18));
       await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 24551300439936500000n, 0, false, false);
@@ -546,7 +546,7 @@ describe('EightyTwentyRangeStrategyVault', () => {
       // await logRageParams("Swap1 - trader0",clearingHouse,ethPool.vPool,vaultAccountNo,0,0);
 
       // Rebalance
-      await increaseBlockTimestamp(86400);
+      await increaseBlockTimestamp(10);
       await checkAccountNetProfit(clearingHouse, vaultAccountNo, -29795804009n);
       await eightyTwentyRangeStrategyVaultTest.rebalance();
       // await logVaultParams("Rebalance",eightyTwentyRangeStrategyVaultTest);
