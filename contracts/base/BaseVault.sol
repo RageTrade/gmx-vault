@@ -40,13 +40,13 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     using UniswapV3PoolHelper for IUniswapV3Pool;
     using ClearingHouseExtsload for IClearingHouse;
 
-    IERC20Metadata public rageSettlementToken;
-    IClearingHouse public rageClearingHouse;
-    CollateralToken public rageCollateralToken;
+    IERC20Metadata internal rageSettlementToken;
+    IClearingHouse internal rageClearingHouse;
+    CollateralToken internal rageCollateralToken;
 
     uint256 public rageAccountNo;
-    uint32 public ethPoolId;
-    IUniswapV3Pool public rageVPool;
+    uint32 internal ethPoolId;
+    IUniswapV3Pool internal rageVPool;
 
     uint256 public depositCap; // in vault shares
 
@@ -87,8 +87,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
         rebalancePriceThresholdBps = 500; //5%
         rebalanceTimeThreshold = 1 days;
-        emit Logic.RebalancePriceThresholdUpdated(rebalancePriceThresholdBps);
-        emit Logic.RebalanceTimeThresholdUpdated(rebalanceTimeThreshold);
+        emit Logic.RebalanceThresholdUpdated(rebalanceTimeThreshold, rebalancePriceThresholdBps);
         // Give rageClearingHouse full allowance of rageCollateralToken and usdc
     }
 
@@ -98,8 +97,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     {
         rebalanceTimeThreshold = _rebalanceTimeThreshold;
         rebalancePriceThresholdBps = _rebalancePriceThresholdBps;
-        emit Logic.RebalancePriceThresholdUpdated(_rebalancePriceThresholdBps);
-        emit Logic.RebalanceTimeThresholdUpdated(_rebalanceTimeThreshold);
+        emit Logic.RebalanceThresholdUpdated(_rebalanceTimeThreshold, _rebalancePriceThresholdBps);
     }
 
     /// @notice Set the deposit cap for the vault in asset amount
