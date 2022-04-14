@@ -16,6 +16,7 @@ import { SignedFullMath } from '@ragetrade/core/contracts/libraries/SignedFullMa
 
 import { SafeCast } from '../libraries/SafeCast.sol';
 import { FixedPoint96 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint96.sol';
+import { ClearingHouseExtsload } from '@ragetrade/core/contracts/extsloads/ClearingHouseExtsload.sol';
 
 import { Logic } from '../libraries/Logic.sol';
 
@@ -27,6 +28,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     using SignedFullMath for int256;
     using FullMath for uint256;
     using UniswapV3PoolHelper for IUniswapV3Pool;
+    using ClearingHouseExtsload for IClearingHouse;
 
     error ETRS_INVALID_CLOSE();
 
@@ -85,7 +87,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     function _isValidRebalanceRange(int256 vaultMarketValue) internal view override returns (bool isValid) {
         isValid = Logic.isValidRebalanceRangeWithoutCheckReset(
             rageVPool,
-            rageTwapDuration,
+            rageClearingHouse.getTwapDuration(ethPoolId),
             rebalancePriceThresholdBps,
             baseTickLower,
             baseTickUpper

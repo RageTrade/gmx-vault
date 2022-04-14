@@ -47,7 +47,6 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     uint256 public rageAccountNo;
     uint32 public ethPoolId;
     IUniswapV3Pool public rageVPool;
-    uint32 public rageTwapDuration;
 
     uint256 public depositCap; // in vault shares
 
@@ -84,7 +83,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         rageCollateralToken = CollateralToken(params.rageCollateralToken);
         rageSettlementToken = IERC20Metadata(params.rageSettlementToken);
 
-        (rageVPool, rageTwapDuration) = rageClearingHouse.getVPoolAndTwapDuration(ethPoolId);
+        rageVPool = rageClearingHouse.getVPool(ethPoolId);
 
         rebalancePriceThresholdBps = 500; //5%
         rebalanceTimeThreshold = 1 days;
@@ -289,7 +288,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
     /// @notice returns twap price X96 from rage trade
     function _getTwapSqrtPriceX96() internal view returns (uint160 twapSqrtPriceX96) {
-        twapSqrtPriceX96 = Logic.getTwapSqrtPriceX96(rageVPool, rageTwapDuration);
+        twapSqrtPriceX96 = Logic.getTwapSqrtPriceX96(rageVPool, rageClearingHouse.getTwapDuration(ethPoolId));
     }
 
     /// @notice converts all non-asset balances into asset
