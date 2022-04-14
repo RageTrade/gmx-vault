@@ -1,2 +1,2 @@
-# perpswap-vaults
-LP and strategy vaults for rage trade
+# RageTrade vaults
+refer https://docs.rage.trade/80-20-vaults
