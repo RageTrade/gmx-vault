@@ -125,7 +125,11 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
             liquidityChangeParam = _getLiquidityChangeParams(baseTickLower, baseTickUpper, baseLiquidity.toInt128());
         } else {
             // Range Present - Add to base range based on the additional assets deposited
-            liquidityChangeParam = _getLiquidityChangeParamsAfterDeposit(amountAfterDeposit, amountDeposited);
+            liquidityChangeParam = _getLiquidityChangeParamsAfterDepositWithdraw(
+                amountAfterDeposit - amountDeposited,
+                amountDeposited,
+                false
+            );
             // assert(liquidityChangeParam.liquidityDelta > 0);
 
             baseLiquidity += uint128(liquidityChangeParam.liquidityDelta);
@@ -138,9 +142,10 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal virtual override {
         // Remove from base range based on the collateral removal
         IClearingHouseStructures.LiquidityChangeParams
-            memory liquidityChangeParam = _getLiquidityChangeParamsBeforeWithdraw(
+            memory liquidityChangeParam = _getLiquidityChangeParamsAfterDepositWithdraw(
                 amountBeforeWithdraw,
-                amountWithdrawn
+                amountWithdrawn,
+                true
             );
         // assert(liquidityChangeParam.liquidityDelta < 0);
         baseLiquidity -= uint128(-liquidityChangeParam.liquidityDelta);
@@ -302,27 +307,16 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     }
 
     /// @notice Get liquidity change params on deposit
-    /// @param amountAfterDeposit Amount of asset tokens after deposit
-    /// @param amountDeposited Amount of asset tokens deposited
-    function _getLiquidityChangeParamsAfterDeposit(uint256 amountAfterDeposit, uint256 amountDeposited)
-        internal
-        view
-        returns (IClearingHouseStructures.LiquidityChangeParams memory liquidityChangeParam)
-    {
-        uint256 amountBeforeDeposit = amountAfterDeposit - amountDeposited;
-        int128 liquidityDelta = baseLiquidity.toInt256().mulDiv(amountDeposited, amountBeforeDeposit).toInt128();
-        liquidityChangeParam = _getLiquidityChangeParams(baseTickLower, baseTickUpper, liquidityDelta);
-    }
-
-    /// @notice Get liquidity change params on withdraw
-    /// @param amountBeforeWithdraw Amount of asset tokens after withdraw
-    /// @param amountWithdrawn Amount of asset tokens withdrawn
-    function _getLiquidityChangeParamsBeforeWithdraw(uint256 amountBeforeWithdraw, uint256 amountWithdrawn)
-        internal
-        view
-        returns (IClearingHouseStructures.LiquidityChangeParams memory liquidityChangeParam)
-    {
-        int128 liquidityDelta = -baseLiquidity.toInt256().mulDiv(amountWithdrawn, amountBeforeWithdraw).toInt128();
+    /// @param amountBefore Amount of asset tokens after deposit
+    /// @param amountDelta Amount of asset tokens deposited
+    /// @param isWithdraw True if withdraw else deposit
+    function _getLiquidityChangeParamsAfterDepositWithdraw(
+        uint256 amountBefore,
+        uint256 amountDelta,
+        bool isWithdraw
+    ) internal view returns (IClearingHouseStructures.LiquidityChangeParams memory liquidityChangeParam) {
+        int128 liquidityDelta = baseLiquidity.toInt256().mulDiv(amountDelta, amountBefore).toInt128();
+        if (isWithdraw) liquidityDelta = -liquidityDelta;
         liquidityChangeParam = _getLiquidityChangeParams(baseTickLower, baseTickUpper, liquidityDelta);
     }
 
