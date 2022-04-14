@@ -90,11 +90,11 @@ describe('Base Vault', () => {
         'rebalance time threshold should be 1 days initially',
       );
 
-      await baseVaultTest.setRebalanceTimeThreshold(1);
+      await baseVaultTest.setRebalanceThreshold(1, 0);
       expect(await baseVaultTest.rebalanceTimeThreshold()).to.eq(1, 'rebalance time threshold should be 1 now');
 
       const [, other] = await hre.ethers.getSigners();
-      await expect(baseVaultTest.connect(other).setRebalanceTimeThreshold(1)).to.be.revertedWith(
+      await expect(baseVaultTest.connect(other).setRebalanceThreshold(1, 0)).to.be.revertedWith(
         'Ownable: caller is not the owner',
       );
     });
@@ -102,7 +102,7 @@ describe('Base Vault', () => {
     it('should not allow to rebalance before rebalance time threshold', async () => {
       const { baseVaultTest, keeper } = await baseVaultFixture();
 
-      await baseVaultTest.setRebalanceTimeThreshold(10);
+      await baseVaultTest.setRebalanceThreshold(10, 0);
 
       const [admin] = await hre.ethers.getSigners();
 
