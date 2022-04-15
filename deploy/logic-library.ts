@@ -3,26 +3,35 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
-    deployments: { deploy },
+    deployments: { deploy, get },
     getNamedAccounts,
   } = hre;
 
   const { deployer } = await getNamedAccounts();
 
-  const logicDeployment = await deploy('SwapManager', {
-    contract: 'SwapManager',
+  const swapManagerLib = await get('SwapManagerLibrary');
+
+  const logicDeployment = await deploy('LogicLibrary', {
+    contract: 'Logic',
+    libraries: {
+      SwapManager: swapManagerLib.address,
+    },
     from: deployer,
     log: true,
   });
 
   if (logicDeployment.newlyDeployed && hre.network.config.chainId !== 31337) {
     await hre.tenderly.push({
-      name: 'SwapManager',
+      name: 'Logic',
       address: logicDeployment.address,
+      libraries: {
+        SwapManager: swapManagerLib.address,
+      },
     });
   }
 };
 
 export default func;
 
-func.tags = ['SwapManager'];
+func.tags = ['LogicLibrary'];
+func.dependencies = ['SwapManagerLibrary'];
