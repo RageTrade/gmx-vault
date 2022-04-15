@@ -9,12 +9,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const { deployer } = await getNamedAccounts();
 
-  const swapManagerLib = await get('SwapManager');
+  const logicLib = await get('LogicLibrary');
+  const swapManagerLib = await get('SwapManagerLibrary');
 
   const logicDeployment = await deploy('CurveYieldStrategyLogic', {
     contract: 'CurveYieldStrategy',
     libraries: {
       SwapManager: swapManagerLib.address,
+      Logic: logicLib.address,
     },
     from: deployer,
     log: true,
@@ -26,7 +28,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       address: logicDeployment.address,
       libraries: {
         SwapManager: swapManagerLib.address,
-      }
+        Logic: logicLib.address,
+      },
     });
   }
 };
@@ -34,3 +37,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 export default func;
 
 func.tags = ['CurveYieldStrategyLogic'];
+func.dependencies = ['LogicLibrary', 'SwapManagerLibrary'];
