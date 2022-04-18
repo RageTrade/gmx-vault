@@ -62,7 +62,7 @@ contract StableSwapMock {
                 uint256 normalized = amounts[i] * (10**(18 - decimals[i]));
                 uint256 quantity = _getPrice(oracles[i]) * normalized;
 
-                lpTokenToMint += (quantity / 3);
+                lpTokenToMint += quantity;
 
                 if (amounts[i] > quantities[i]) slippage += amounts[i] / (amounts[i] - quantities[i]);
                 if (quantities[i] > amounts[i]) slippage += quantities[i] / (quantities[i] - amounts[i]);
@@ -71,20 +71,44 @@ contract StableSwapMock {
 
         uint256 fees = ((3 - nonZeroQuantities) * 10**18 * FEES) / MAX_BPS;
         lpTokenToMint = lpTokenToMint - fees - slippage;
-        IMintable(lpToken).mint(msg.sender, lpTokenToMint);
+
+        uint256 toMint = lpTokenToMint / lp_price();
+        IMintable(lpToken).mint(msg.sender, toMint);
+    }
+
+    function remove_liquidity_one_coin(
+        uint256 token_amount,
+        uint256 index,
+        uint256 /** min_amount */
+    ) external {
+        IERC20(lpToken).transferFrom(msg.sender, address(0), token_amount);
+        uint256 output = (token_amount * lp_price()) / 10**18;
+        uint256 toTransfer = output / _getPrice(oracles[index]);
+
+        IERC20(tokens[index]).transferFrom(address(this), msg.sender, toTransfer);
     }
 
     function exchange(
         int128 from,
         int128 to,
         uint256 _from_amount,
-        uint256 _min_to_amount
+        uint256 /** _min_to_amount */
     ) external {
-        IERC20(tokens[uint256(from)]).transferFrom(msg.sender, address(this), _from_amount);
-        uint256 input = _getPrice(oracles[]);
+        uint256 idxFrom = uint256(uint128(from));
+        uint256 idxTo = uint256(uint128(to));
+
+        IERC20(tokens[idxFrom]).transferFrom(msg.sender, address(this), _from_amount);
+        uint256 input = _getPrice(oracles[idxFrom]) * _from_amount;
+        uint256 output = input / (_getPrice(oracles[idxTo]));
+
+        IERC20(tokens[idxTo]).transfer(msg.sender, output);
     }
 
-    function lp_price() external view returns (uint256) {
+    function lp_price() public view returns (uint256) {
+        uint256 one = _getPrice(oracles[0]) * (10**(18 - decimals[0]));
+        uint256 two = _getPrice(oracles[1]) * (10**(18 - decimals[1]));
+        uint256 three = _getPrice(oracles[2]) * (10**(18 - decimals[2]));
 
+        return (one + two + three);
     }
 }
