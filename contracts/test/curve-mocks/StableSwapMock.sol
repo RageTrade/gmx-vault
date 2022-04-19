@@ -55,33 +55,19 @@ contract StableSwapMock {
     ) external {
         require(amounts.length == tokens.length, 'LENGTH_MISMATCH');
         uint256 len = tokens.length;
-
-        uint256 slippage;
         uint256 lpTokenToMint;
-        uint256 nonZeroQuantities;
 
         for (uint256 i; i < len; ++i) {
             if (amounts[i] > 0) {
-                nonZeroQuantities++;
                 IERC20(tokens[i]).transferFrom(msg.sender, address(this), amounts[i]);
                 quantities[i] += amounts[i];
 
-                uint256 normalized = amounts[i] * (10**(18 - decimals[i]));
-                uint256 quantity = _getPrice(oracles[i]) * normalized;
-
+                uint256 quantity = (_getPrice(oracles[i]) * 10**10 * amounts[i]) / IERC20Metadata(tokens[i]).decimals();
                 lpTokenToMint += quantity;
-
-                // denom = max(K, diff)
-                // numm = min()
-                if (amounts[i] > quantities[i]) slippage += amounts[i] / (amounts[i] - quantities[i]);
-                if (quantities[i] > amounts[i]) slippage += quantities[i] / (quantities[i] - amounts[i]);
             }
         }
 
-        uint256 fees = ((3 - nonZeroQuantities) * 10**18 * FEES) / MAX_BPS;
-        lpTokenToMint = lpTokenToMint - fees - slippage;
-
-        uint256 toMint = lpTokenToMint / lp_price();
+        uint256 toMint = lpTokenToMint.mulDiv(1, lp_price());
         IMintable(lpToken).mint(msg.sender, toMint);
     }
 
@@ -91,10 +77,11 @@ contract StableSwapMock {
         uint256 /** min_amount */
     ) external {
         IERC20(lpToken).transferFrom(msg.sender, address(0), token_amount);
-        uint256 output = (token_amount * lp_price()) / 10**18;
-        uint256 toTransfer = output / _getPrice(oracles[index]);
 
-        IERC20(tokens[index]).transferFrom(address(this), msg.sender, toTransfer);
+        uint256 input = (token_amount * lp_price()) / 10**18;
+        uint256 output = (input * 10**8) / _getPrice(oracles[index]);
+
+        IERC20(tokens[index]).transferFrom(address(this), msg.sender, output);
     }
 
     function exchange(
