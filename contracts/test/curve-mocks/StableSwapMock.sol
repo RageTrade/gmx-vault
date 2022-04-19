@@ -3,7 +3,10 @@
 pragma solidity ^0.8.9;
 
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol';
+import { IERC20Metadata } from '@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol';
 import { AggregatorV3Interface } from '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol';
+
+import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 
 interface IMintable {
     function mint(address to, uint256 amount) external;
@@ -14,14 +17,18 @@ interface IMintable {
 contract StableSwapMock {
     error NEGATIVE_PRICE();
 
+    using FullMath for uint256;
+
     uint256 constant FEES = 30;
     uint256 constant MAX_BPS = 10_000;
 
     address[3] public tokens;
     address[3] public oracles;
     uint256[3] public decimals;
+    // contract has minting access
     uint256[3] public quantities;
 
+    // contract has minting access
     address public lpToken;
 
     constructor(
@@ -64,6 +71,8 @@ contract StableSwapMock {
 
                 lpTokenToMint += quantity;
 
+                // denom = max(K, diff)
+                // numm = min()
                 if (amounts[i] > quantities[i]) slippage += amounts[i] / (amounts[i] - quantities[i]);
                 if (quantities[i] > amounts[i]) slippage += quantities[i] / (quantities[i] - amounts[i]);
             }
@@ -97,18 +106,27 @@ contract StableSwapMock {
         uint256 idxFrom = uint256(uint128(from));
         uint256 idxTo = uint256(uint128(to));
 
+        uint8 fromDecimals = IERC20Metadata(tokens[idxFrom]).decimals();
+        uint8 toDecimals = IERC20Metadata(tokens[idxTo]).decimals();
+
         IERC20(tokens[idxFrom]).transferFrom(msg.sender, address(this), _from_amount);
-        uint256 input = _getPrice(oracles[idxFrom]) * _from_amount;
-        uint256 output = input / (_getPrice(oracles[idxTo]));
+        uint256 output = _from_amount.mulDiv(
+            _getPrice(tokens[idxFrom]) * toDecimals,
+            _getPrice(tokens[idxTo]) * fromDecimals
+        );
 
         IERC20(tokens[idxTo]).transfer(msg.sender, output);
     }
 
     function lp_price() public view returns (uint256) {
-        uint256 one = _getPrice(oracles[0]) * (10**(18 - decimals[0]));
-        uint256 two = _getPrice(oracles[1]) * (10**(18 - decimals[1]));
-        uint256 three = _getPrice(oracles[2]) * (10**(18 - decimals[2]));
+        if (IERC20(lpToken).totalSupply() > 0) {
+            uint256 one = ((_getPrice(oracles[0])) * 10**10 * quantities[0]) / 10**6;
+            uint256 two = ((_getPrice(oracles[1])) * 10**10 * quantities[1]) / 10**8;
+            uint256 three = ((_getPrice(oracles[2])) * 10**10 * quantities[2]) / 10**18;
 
-        return (one + two + three);
+            return (one + two + three);
+        }
+
+        return 10**18;
     }
 }
