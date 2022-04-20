@@ -1,3 +1,4 @@
+import { parseUnits } from 'ethers/lib/utils';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
@@ -6,7 +7,7 @@ import { getNetworkInfo } from './network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
-    deployments: { save, deploy, get },
+    deployments: { save, deploy, execute },
     getNamedAccounts,
   } = hre;
 
@@ -17,11 +18,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   if (USDT_ADDRESS === undefined) {
     // deploying mock
     await deploy('USDT', {
-      contract: 'ERC20PresetMinterPauser',
+      contract: 'TokenMock',
       from: deployer,
       log: true,
-      args: ['USDT', 'USDT'],
+      args: ['USDT', 'USDT', 6, parseUnits('1000000000', 6)],
     });
+
+    await execute('USDT', { from: deployer }, 'mint', deployer, parseUnits('1000000000000', 6));
   } else {
     await save('USDT', { abi: IERC20Metadata__factory.abi, address: USDT_ADDRESS });
   }

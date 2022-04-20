@@ -1,3 +1,4 @@
+import { parseUnits } from 'ethers/lib/utils';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
@@ -17,10 +18,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   if (CURVE_TOKEN_ADDRESS === undefined) {
     // deploying mock
     await deploy('CurveToken', {
-      contract: 'ERC20PresetMinterPauser',
+      contract: 'TokenMock',
       from: deployer,
       log: true,
-      args: ['Curve Token', 'CRV'],
+      args: ['Curve Token', 'CRV', 18, parseUnits('1000000000', 18)],
     });
   } else {
     await save('CurveToken', { abi: IERC20Metadata__factory.abi, address: CURVE_TOKEN_ADDRESS });

@@ -50,7 +50,7 @@ contract VaultPeriphery is OwnableUpgradeable {
         ILPPriceGetter _lpOracle,
         ICurveStableSwap _stableSwap,
         AggregatorV3Interface _ethOracle
-    ) external onlyInitializing {
+    ) external initializer {
         __Ownable_init();
 
         usdc = _usdc;
