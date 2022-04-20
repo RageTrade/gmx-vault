@@ -3,6 +3,8 @@ import { truncate } from '@ragetrade/sdk';
 export const skip = () => true;
 
 export interface NetworkInfo {
+  DEPOSIT_CAP_C3CLT: number;
+
   UNISWAP_V3_FACTORY_ADDRESS: string;
   UNISWAP_V3_DEFAULT_FEE_TIER: number;
   UNISWAP_V3_ROUTER_ADDRESS: string;
@@ -11,15 +13,15 @@ export interface NetworkInfo {
   RAGE_SETTLEMENT_TOKEN_ADDRESS?: string;
   RAGE_ETH_POOL_ID?: string;
 
-  CURVE_QUOTER: string;
+  CURVE_QUOTER?: string;
   CURVE_TOKEN_ADDRESS?: string;
   CURVE_GAUGE_ADDRESS?: string;
   CURVE_TRICRYPTO_POOL?: string;
   CURVE_TRICRYPTO_LP_TOKEN?: string;
 
-  ETH_USD_ORACLE?: string;
-  BTC_USD_ORACLE?: string;
-  USDT_USD_ORACLE?: string;
+  ETH_USD_ORACLE: string;
+  BTC_USD_ORACLE: string;
+  USDT_USD_ORACLE: string;
 
   WETH_ADDRESS?: string;
   WBTC_ADDRESS?: string;
@@ -31,6 +33,8 @@ export const UNISWAP_V3_DEFAULT_FEE_TIER = 500;
 export const UNISWAP_V3_ROUTER_ADDRESS = '0xE592427A0AEce92De3Edee1F18E0157C05861564';
 
 export const arbitrumInfo: NetworkInfo = {
+  DEPOSIT_CAP_C3CLT: 1_000_000, // CURVE_TRICRYPTO_LP_TOKEN
+
   UNISWAP_V3_FACTORY_ADDRESS,
   UNISWAP_V3_DEFAULT_FEE_TIER,
   UNISWAP_V3_ROUTER_ADDRESS,
@@ -45,11 +49,13 @@ export const arbitrumInfo: NetworkInfo = {
   BTC_USD_ORACLE: '0x6ce185860a4963106506C203335A2910413708e9',
   USDT_USD_ORACLE: '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
 
-  WETH_ADDRESS: '0x82af49447d8a07e3bd95bd0d56f35241523fbab1',
-  USDT_ADDRESS: '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9',
+  // WETH_ADDRESS: '0x82af49447d8a07e3bd95bd0d56f35241523fbab1',
+  // USDT_ADDRESS: '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9',
 };
 
 export const arbitrumTestnetInfo: NetworkInfo = {
+  DEPOSIT_CAP_C3CLT: 1_000_000_000,
+
   UNISWAP_V3_FACTORY_ADDRESS,
   UNISWAP_V3_DEFAULT_FEE_TIER,
   UNISWAP_V3_ROUTER_ADDRESS: '0xE592427A0AEce92De3Edee1F18E0157C05861564',
@@ -57,8 +63,6 @@ export const arbitrumTestnetInfo: NetworkInfo = {
   RAGE_CLEARING_HOUSE_ADDRESS: require('@ragetrade/core/deployments/arbtest/ClearingHouse.json').address,
   RAGE_SETTLEMENT_TOKEN_ADDRESS: require('@ragetrade/core/deployments/arbtest/SettlementToken.json').address,
   RAGE_ETH_POOL_ID: truncate(require('@ragetrade/core/deployments/arbtest/ETH-vToken.json').address),
-
-  CURVE_QUOTER: '0xdeab20aa402f63eb3a929758fd3c1b813b2c7e35',
 
   ETH_USD_ORACLE: '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8',
   BTC_USD_ORACLE: '0x0c9973e7a27d00e656B9f153348dA46CaD70d03d',

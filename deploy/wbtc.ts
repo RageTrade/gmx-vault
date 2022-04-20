@@ -1,3 +1,4 @@
+import { parseUnits } from 'ethers/lib/utils';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
@@ -6,7 +7,7 @@ import { getNetworkInfo } from './network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
-    deployments: { save, deploy, get },
+    deployments: { save, deploy, execute },
     getNamedAccounts,
   } = hre;
 
@@ -17,11 +18,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   if (WBTC_ADDRESS === undefined) {
     // deploying mock
     await deploy('WBTC', {
-      contract: 'ERC20PresetMinterPauser',
+      contract: 'TokenMock',
       from: deployer,
       log: true,
-      args: ['Wrapped Bitcoin', 'WBTC'],
+      args: ['Wrapped Bitcoin', 'WBTC', 8, parseUnits('21000000', 8)],
     });
+
+    await execute('WBTC', { from: deployer }, 'mint', deployer, parseUnits('21000000', 8));
   } else {
     await save('WBTC', { abi: IERC20Metadata__factory.abi, address: WBTC_ADDRESS });
   }

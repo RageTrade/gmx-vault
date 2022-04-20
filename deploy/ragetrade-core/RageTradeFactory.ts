@@ -58,7 +58,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     });
   }
 
-  execute(
+  await execute(
     'ClearingHouse',
     { from: deployer },
     'updateProtocolSettings',
