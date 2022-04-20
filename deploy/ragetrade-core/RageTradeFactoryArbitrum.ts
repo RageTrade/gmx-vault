@@ -59,7 +59,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     });
   }
 
-  execute(
+  await execute(
     'ClearingHouseArbitrum',
     { from: deployer },
     'updateProtocolSettings',

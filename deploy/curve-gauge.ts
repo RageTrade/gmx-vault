@@ -6,7 +6,7 @@ import { getNetworkInfo } from './network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
-    deployments: { save, deploy, get },
+    deployments: { save, deploy, get, read, execute },
     getNamedAccounts,
   } = hre;
 
@@ -16,12 +16,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   if (CURVE_GAUGE_ADDRESS === undefined) {
     // deploying mock
-    await deploy('CurveGauge', {
+    const CurveGaugeDeployment = await deploy('CurveGauge', {
       contract: 'RewardsGaugeMock',
       from: deployer,
       log: true,
       args: [(await get('CurveToken')).address, (await get('CurveTriCryptoLpToken')).address],
     });
+
+    const MINTER_ROLE = await read('CurveToken', 'MINTER_ROLE');
+    await execute('CurveToken', { from: deployer }, 'grantRole', MINTER_ROLE, CurveGaugeDeployment.address);
   } else {
     await save('CurveGauge', { abi: ICurveGauge__factory.abi, address: CURVE_GAUGE_ADDRESS });
   }

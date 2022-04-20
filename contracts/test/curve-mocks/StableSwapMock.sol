@@ -2,11 +2,13 @@
 
 pragma solidity ^0.8.9;
 
-import { IERC20 } from '@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol';
+import { IERC20, ERC20PresetMinterPauser } from '@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol';
 import { IERC20Metadata } from '@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol';
 import { AggregatorV3Interface } from '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol';
 
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
+
+import 'hardhat/console.sol';
 
 interface IMintable {
     function mint(address to, uint256 amount) external;
@@ -76,7 +78,7 @@ contract StableSwapMock {
         uint256 index,
         uint256 /** min_amount */
     ) external {
-        IERC20(lpToken).transferFrom(msg.sender, address(0), token_amount);
+        ERC20PresetMinterPauser(lpToken).burnFrom(msg.sender, token_amount);
 
         uint256 input = (token_amount * lp_price()) / 10**18;
         uint256 output = (input * 10**8) / _getPrice(oracles[index]);
@@ -106,12 +108,13 @@ contract StableSwapMock {
     }
 
     function lp_price() public view returns (uint256) {
-        if (IERC20(lpToken).totalSupply() > 0) {
+        uint256 ts = IERC20(lpToken).totalSupply();
+        if (ts > 0) {
             uint256 one = ((_getPrice(oracles[0])) * 10**10 * quantities[0]) / 10**6;
             uint256 two = ((_getPrice(oracles[1])) * 10**10 * quantities[1]) / 10**8;
             uint256 three = ((_getPrice(oracles[2])) * 10**10 * quantities[2]) / 10**18;
 
-            return (one + two + three);
+            return ((one + two + three) * 10**18) / ts;
         }
 
         return 10**18;
