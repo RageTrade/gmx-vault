@@ -6,18 +6,27 @@ import { getNetworkInfo } from './network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
-    deployments: { save },
+    deployments: { save, deploy },
+    getNamedAccounts,
   } = hre;
 
-  const { TRICRYPTO_LP_TOKEN } = getNetworkInfo(hre.network.config.chainId);
+  const { deployer } = await getNamedAccounts();
 
-  if (TRICRYPTO_LP_TOKEN === undefined) {
-    throw new Error('Mock deployment not implemented yet');
+  const { CURVE_TRICRYPTO_LP_TOKEN } = getNetworkInfo(hre.network.config.chainId);
+
+  if (CURVE_TRICRYPTO_LP_TOKEN === undefined) {
+    // deploying mock
+    await deploy('CurveTriCryptoLpToken', {
+      contract: 'ERC20PresetMinterPauser',
+      from: deployer,
+      log: true,
+      args: ['Curve TriCrypto Token', '3CRYPTO'],
+    });
   } else {
-    await save('CurveTriCrypto', { abi: IERC20Metadata__factory.abi, address: TRICRYPTO_LP_TOKEN });
+    await save('CurveTriCryptoLpToken', { abi: IERC20Metadata__factory.abi, address: CURVE_TRICRYPTO_LP_TOKEN });
   }
 };
 
 export default func;
 
-func.tags = ['CurveTriCrypto'];
+func.tags = ['CurveTriCryptoLpToken'];
