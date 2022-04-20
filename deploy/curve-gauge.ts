@@ -6,13 +6,22 @@ import { getNetworkInfo } from './network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
-    deployments: { save },
+    deployments: { save, deploy, get },
+    getNamedAccounts,
   } = hre;
+
+  const { deployer } = await getNamedAccounts();
 
   const { CURVE_GAUGE_ADDRESS } = getNetworkInfo(hre.network.config.chainId);
 
   if (CURVE_GAUGE_ADDRESS === undefined) {
-    throw new Error('Mock deployment not implemented yet');
+    // deploying mock
+    await deploy('CurveGauge', {
+      contract: 'RewardsGaugeMock',
+      from: deployer,
+      log: true,
+      args: [(await get('CurveToken')).address, (await get('CurveTriCryptoLpToken')).address],
+    });
   } else {
     await save('CurveGauge', { abi: ICurveGauge__factory.abi, address: CURVE_GAUGE_ADDRESS });
   }
@@ -21,3 +30,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 export default func;
 
 func.tags = ['CurveGauge'];
+func.dependencies = ['CurveToken', 'CurveTriCryptoLpToken'];

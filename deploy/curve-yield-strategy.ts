@@ -15,57 +15,40 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const proxyAdminDeployment = await get('ProxyAdmin');
   const curveYieldStrategyLogicDeployment = await get('CurveYieldStrategyLogic');
 
-  let coreDeployments: Deployments | undefined;
-  try {
-    const networkName = getNetworkNameFromChainId(hre.network.config.chainId ?? 31337);
-    coreDeployments = await getDeployments(networkName);
-  } catch {}
-
-  let clearingHouseAddress: string;
-  let settlementTokenAddress: string;
-  let ethPoolId: string;
-  if (coreDeployments) {
-    clearingHouseAddress = coreDeployments.ClearingHouseDeployment.address;
-    settlementTokenAddress = coreDeployments.SettlementTokenDeployment.address;
-    ethPoolId = truncate(coreDeployments.ETH_vTokenDeployment.address);
-  } else {
-    const ClearingHouseDeployment = await get('ClearingHouse');
-    const SettlementTokenDeployment = await get('SettlementToken');
-    const ETH_vTokenDeployment = await get('ETH-vToken');
-    clearingHouseAddress = ClearingHouseDeployment.address;
-    settlementTokenAddress = SettlementTokenDeployment.address;
-    ethPoolId = truncate(ETH_vTokenDeployment.address);
-  }
-
-  const dummyCollateralDeployment = await get('CollateralToken');
-
   const networkInfo = getNetworkInfo(hre.network.config.chainId ?? 31337);
+
+  const clearingHouseAddress: string = networkInfo.RAGE_CLEARING_HOUSE_ADDRESS ?? (await get('ClearingHouse')).address;
+  const settlementTokenAddress: string =
+    networkInfo.RAGE_SETTLEMENT_TOKEN_ADDRESS ?? (await get('SettlementToken')).address;
+  const ethPoolId: string = networkInfo.RAGE_ETH_POOL_ID ?? truncate((await get('ETH-vToken')).address);
+
+  const collateralTokenDeployment = await get('CollateralToken');
 
   const initializeArg: CurveYieldStrategy.CurveYieldStrategyInitParamsStruct = {
     eightyTwentyRangeStrategyVaultInitParams: {
       baseVaultInitParams: {
         rageErc4626InitParams: {
-          asset: dummyCollateralDeployment.address,
-          name: 'TriCrypto Shares',
+          asset: (await get('CurveTriCryptoLpToken')).address,
+          name: '80-20 TriCrypto Strategy',
           symbol: 'TCS',
         },
         ethPoolId,
         rageClearingHouse: clearingHouseAddress,
-        rageCollateralToken: dummyCollateralDeployment.address,
+        rageCollateralToken: collateralTokenDeployment.address,
         rageSettlementToken: settlementTokenAddress,
       },
       closePositionSlippageSqrtToleranceBps: 0,
       resetPositionThresholdBps: 0,
       minNotionalPositionToCloseThreshold: 0,
     },
-    usdt: networkInfo.USDT_ADDRESS,
-    usdc: networkInfo.USDC_ADDRESS,
-    weth: networkInfo.WETH_ADDRESS,
-    crvToken: networkInfo.CRV_ADDRESS,
-    gauge: networkInfo.CURVE_GAUGE_ADDRESS,
+    usdc: settlementTokenAddress,
+    usdt: (await get('USDT')).address,
+    weth: (await get('WETH')).address,
+    crvToken: (await get('USDT')).address,
+    gauge: (await get('CurveGauge')).address,
     uniV3Router: networkInfo.UNISWAP_V3_ROUTER_ADDRESS,
     lpPriceHolder: networkInfo.CURVE_QUOTER,
-    tricryptoPool: networkInfo.TRICRYPTO_POOL,
+    tricryptoPool: (await get('CurveTriCryptoPool')).address,
   };
 
   const proxyDeployment = await deploy('CurveYieldStrategy', {
@@ -93,4 +76,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 export default func;
 
 func.tags = ['CurveYieldStrategy'];
-func.dependencies = ['CurveYieldStrategyLogic', 'CollateralToken', 'ProxyAdmin', 'vETH'];
+func.dependencies = [
+  'CurveYieldStrategyLogic',
+  'CollateralToken',
+  'ProxyAdmin',
+  'vETH',
+  'WETH',
+  'USDT',
+  'CurveGauge',
+  'CurveTriCryptoPool',
+];

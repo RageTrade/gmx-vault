@@ -6,27 +6,27 @@ import { getNetworkInfo } from './network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
-    deployments: { save, deploy },
+    deployments: { save, deploy, get },
     getNamedAccounts,
   } = hre;
 
   const { deployer } = await getNamedAccounts();
 
-  const { CURVE_TOKEN_ADDRESS } = getNetworkInfo(hre.network.config.chainId);
+  const { WBTC_ADDRESS } = getNetworkInfo(hre.network.config.chainId);
 
-  if (CURVE_TOKEN_ADDRESS === undefined) {
+  if (WBTC_ADDRESS === undefined) {
     // deploying mock
-    await deploy('CurveToken', {
+    await deploy('WBTC', {
       contract: 'ERC20PresetMinterPauser',
       from: deployer,
       log: true,
-      args: ['Curve Token', 'CRV'],
+      args: ['Wrapped Bitcoin', 'WBTC'],
     });
   } else {
-    await save('CurveToken', { abi: IERC20Metadata__factory.abi, address: CURVE_TOKEN_ADDRESS });
+    await save('WBTC', { abi: IERC20Metadata__factory.abi, address: WBTC_ADDRESS });
   }
 };
 
 export default func;
 
-func.tags = ['CurveToken'];
+func.tags = ['WBTC'];
