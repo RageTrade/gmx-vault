@@ -786,10 +786,10 @@
     "@uniswap/v3-core-0.8-support" "https://github.com/uniswap/v3-core.git#36bc9101b91e2b8b5690f59e0911a85deb2d2480"
     "@uniswap/v3-periphery" "^1.4.0"
 
-"@ragetrade/sdk@^0.7.6":
-  version "0.7.6"
-  resolved "https://registry.yarnpkg.com/@ragetrade/sdk/-/sdk-0.7.6.tgz#3323d0cd979aadf3268171825e6bc78566a56ae1"
-  integrity sha512-vGG8HUgDe94g1NlYCoM9u78YIUGc2mKO+F/Jxx3s1WzvCzDwg4N94Q2bDYdo4N6WGVEiN46GxWlH/VuFyJEDow==
+"@ragetrade/sdk@^0.7.9":
+  version "0.7.9"
+  resolved "https://registry.yarnpkg.com/@ragetrade/sdk/-/sdk-0.7.9.tgz#09adbd459dc6331fe47c9d562c145c84e5bcdc36"
+  integrity sha512-1oJsmMLfxs/7rpVSEiyjxzGyMegHd9IJmnCnl+ouK440/9Ey19Xpz/CaV3jO+ghCpfo/p65gH6xPRlPfzCWCUg==
   dependencies:
     "@uniswap/v3-sdk" "^3.8.2"
     ethers "^5.6.2"
