@@ -61,6 +61,11 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
     addresses.CRV_ORACLE,
   )) as AggregatorV3Interface;
 
+  const wethOracle = (await hre.ethers.getContractAt(
+    '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface',
+    addresses.WETH_ORACLE,
+  )) as AggregatorV3Interface;
+
   const lpOracle = (await hre.ethers.getContractAt(
     'contracts/interfaces/curve/ILPPriceGetter.sol:ILPPriceGetter',
     addresses.QUOTER,
@@ -145,6 +150,7 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
     gauge,
     lpToken,
     lpOracle,
+    wethOracle,
     triCrypto,
     crvOracle,
     // crvWethPool,
