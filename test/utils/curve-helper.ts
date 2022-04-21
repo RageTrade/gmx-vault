@@ -18,6 +18,10 @@ export const unlockWhales = async () => {
     }),
     hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
+      params: [addresses.USDC_WHALE],
+    }),
+    hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
       params: [addresses.USDT_WHALE],
     }),
     hre.network.provider.request({
