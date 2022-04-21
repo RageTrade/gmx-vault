@@ -9,6 +9,7 @@ import {
 import { priceToPriceX128 } from '@ragetrade/sdk';
 import addresses from './addresses';
 import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
+import { ClearingHouse } from '@ragetrade/sdk/dist/typechain/core';
 
 export const rageTradeFixture = deployments.createFixture(async hre => {
   const rageTradeDeployments = await deployments.fixture('RageTradeFactoryArbitrum');
@@ -17,10 +18,10 @@ export const rageTradeFixture = deployments.createFixture(async hre => {
     'RageTradeFactory',
     rageTradeDeployments.RageTradeFactoryArbitrum.address,
   );
-  const clearingHouse = await hre.ethers.getContractAt(
-    'ClearingHouse',
+  const clearingHouse = (await hre.ethers.getContractAt(
+    '@ragetrade/core/contracts/protocol/clearinghouse/ClearingHouse.sol:ClearingHouse',
     rageTradeDeployments.ClearingHouseArbitrum.address,
-  );
+  )) as ClearingHouse;
   const settlementToken = (await hre.ethers.getContractAt(
     '@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20',
     addresses.USDC,

@@ -7,6 +7,7 @@ import {
   VTokenDeployer,
 } from '../../typechain-types/artifacts/@ragetrade/core/contracts/protocol/RageTradeFactory';
 import { priceToPriceX128 } from '@ragetrade/sdk';
+import { ClearingHouse } from '@ragetrade/sdk/dist/typechain/core';
 
 export const rageTradeFixture = deployments.createFixture(async hre => {
   const rageTradeDeployments = await deployments.fixture('RageTradeFactory');
@@ -15,7 +16,10 @@ export const rageTradeFixture = deployments.createFixture(async hre => {
     'RageTradeFactory',
     rageTradeDeployments.RageTradeFactory.address,
   );
-  const clearingHouse = await hre.ethers.getContractAt('ClearingHouse', rageTradeDeployments.ClearingHouse.address);
+  const clearingHouse = (await hre.ethers.getContractAt(
+    '@ragetrade/core/contracts/protocol/clearinghouse/ClearingHouse.sol:ClearingHouse',
+    rageTradeDeployments.ClearingHouse.address,
+  )) as ClearingHouse;
   const settlementToken = await hre.ethers.getContractAt(
     'SettlementTokenMock',
     rageTradeDeployments.SettlementToken.address,
