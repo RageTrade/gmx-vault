@@ -8,7 +8,8 @@ import {
   CurveYieldStrategy__factory,
 } from '../../typechain-types';
 
-import { AggregatorV3Interface, parseTokenAmount, priceToPriceX128, truncate } from '@ragetrade/sdk';
+import { parseTokenAmount, priceToPriceX128, truncate } from '@ragetrade/sdk';
+import { AggregatorV3Interface } from '@ragetrade/sdk/dist/typechain/vaults';
 
 import addresses from './addresses';
 import { updateSettlementTokenMargin } from '../utils/rage-helpers';
