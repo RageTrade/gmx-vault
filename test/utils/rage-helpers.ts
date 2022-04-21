@@ -2,14 +2,7 @@ import { expect } from 'chai';
 import { BigNumber, BigNumberish, ContractTransaction } from 'ethers';
 
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import {
-  amountsForLiquidity,
-  ClearingHouse,
-  IUniswapV3Pool,
-  SettlementTokenMock,
-  sqrtPriceX96ToPrice,
-  truncate,
-} from '@ragetrade/sdk';
+import { amountsForLiquidity, ClearingHouse, IUniswapV3Pool, sqrtPriceX96ToPrice, truncate } from '@ragetrade/sdk';
 
 import { IClearingHouseStructures } from '../../typechain-types/artifacts/@ragetrade/core/contracts/interfaces/IClearingHouse';
 import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
