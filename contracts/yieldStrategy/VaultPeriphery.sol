@@ -95,11 +95,13 @@ contract VaultPeriphery is OwnableUpgradeable {
 
         uint256 usdtOut = swapRouter.exactInput(params);
 
+        uint256 beforeSwapLpPrice = lpOracle.lp_price();
+
         stableSwap.add_liquidity([usdtOut, 0, 0], 0);
 
         uint256 balance = lpToken.balanceOf(address(this));
 
-        if (balance.mulDiv(lpOracle.lp_price(), 10**18) < (amount * (MAX_BPS - MAX_TOLERANCE) * 10**12) / MAX_BPS)
+        if (balance.mulDiv(beforeSwapLpPrice, 10**18) < (amount * (MAX_BPS - MAX_TOLERANCE) * 10**12) / MAX_BPS)
             revert SlippageToleranceBreached();
 
         sharesMinted = vault.deposit(balance, msg.sender);
@@ -109,13 +111,15 @@ contract VaultPeriphery is OwnableUpgradeable {
         if (amount == 0) revert ZeroValue();
         weth.transferFrom(msg.sender, address(this), amount);
 
+        uint256 beforeSwapLpPrice = lpOracle.lp_price();
+
         stableSwap.add_liquidity([0, 0, amount], 0);
 
         uint256 balance = lpToken.balanceOf(address(this));
 
         if (
-            balance.mulDiv(lpOracle.lp_price(), 10**18) <
-            _getEthPrice(ethOracle).mulDiv(amount * (MAX_BPS - MAX_TOLERANCE), 10**10 * MAX_BPS)
+            balance.mulDiv(beforeSwapLpPrice, 10**18) <
+            _getEthPrice(ethOracle).mulDiv(amount * (MAX_BPS - MAX_TOLERANCE), 10**8 * MAX_BPS)
         ) revert SlippageToleranceBreached();
 
         sharesMinted = vault.deposit(lpToken.balanceOf(address(this)), msg.sender);
