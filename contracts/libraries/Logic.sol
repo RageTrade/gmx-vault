@@ -147,7 +147,6 @@ library Logic {
     }
 
     // curve yeild strategy
-
     function convertAssetToSettlementToken(
         uint256 amount,
         ILPPriceGetter lpPriceHolder,
