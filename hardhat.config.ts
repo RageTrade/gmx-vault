@@ -101,7 +101,9 @@ export default {
     alwaysGenerateOverloads: false,
     externalArtifacts: [
       'node_modules/@uniswap/v3-periphery/artifacts/contracts/interfaces/IQuoter.sol/IQuoter.json',
+      'node_modules/@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json',
       'node_modules/@uniswap/v3-core/artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json',
+      'node_modules/@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json',
       'node_modules/@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3PoolDeployer.sol/IUniswapV3PoolDeployer.json',
       'node_modules/@uniswap/v2-core/build/IUniswapV2Factory.json',
       'node_modules/@uniswap/v2-core/build/IUniswapV2Pair.json',

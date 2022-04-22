@@ -83,7 +83,7 @@ contract StableSwapMock {
         uint256 input = (token_amount * lp_price()) / 10**18;
         uint256 output = (input * 10**8) / _getPrice(oracles[index]);
 
-        IERC20(tokens[index]).transferFrom(address(this), msg.sender, output);
+        IERC20(tokens[index]).transfer(msg.sender, output);
     }
 
     function exchange(
