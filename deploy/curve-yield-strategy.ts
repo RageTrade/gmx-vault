@@ -1,4 +1,4 @@
-import { Deployments, getDeployments, getNetworkNameFromChainId, truncate } from '@ragetrade/sdk';
+import { truncate } from '@ragetrade/sdk';
 import { ethers } from 'ethers';
 import { parseUnits } from 'ethers/lib/utils';
 import { DeployFunction } from 'hardhat-deploy/types';

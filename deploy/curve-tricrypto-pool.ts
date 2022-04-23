@@ -1,12 +1,10 @@
 import {
   ERC20PresetMinterPauser__factory,
-  IERC20Metadata__factory,
-  IERC20__factory,
   IUniswapV3Pool__factory,
   priceToSqrtPriceX96,
   priceToTick,
-  UniswapV3Pool__factory,
 } from '@ragetrade/sdk';
+
 import { BigNumber, ethers } from 'ethers';
 import { parseEther, parseUnits } from 'ethers/lib/utils';
 import { DeployFunction } from 'hardhat-deploy/types';
