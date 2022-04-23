@@ -64,12 +64,13 @@ contract StableSwapMock {
                 IERC20(tokens[i]).transferFrom(msg.sender, address(this), amounts[i]);
                 quantities[i] += amounts[i];
 
-                uint256 quantity = (_getPrice(oracles[i]) * 10**10 * amounts[i]) / IERC20Metadata(tokens[i]).decimals();
+                uint256 quantity = (_getPrice(oracles[i]) * 10**10 * amounts[i]) /
+                    10**IERC20Metadata(tokens[i]).decimals();
                 lpTokenToMint += quantity;
             }
         }
 
-        uint256 toMint = lpTokenToMint.mulDiv(1, lp_price());
+        uint256 toMint = lpTokenToMint.mulDiv(10**18, lp_price());
         IMintable(lpToken).mint(msg.sender, toMint);
     }
 
@@ -100,8 +101,8 @@ contract StableSwapMock {
 
         IERC20(tokens[idxFrom]).transferFrom(msg.sender, address(this), _from_amount);
         uint256 output = _from_amount.mulDiv(
-            _getPrice(tokens[idxFrom]) * toDecimals,
-            _getPrice(tokens[idxTo]) * fromDecimals
+            _getPrice(tokens[idxFrom]) * 10**toDecimals,
+            _getPrice(tokens[idxTo]) * 10**fromDecimals
         );
 
         IERC20(tokens[idxTo]).transfer(msg.sender, output);

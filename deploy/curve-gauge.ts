@@ -23,8 +23,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       args: [(await get('CurveToken')).address, (await get('CurveTriCryptoLpToken')).address],
     });
 
-    const MINTER_ROLE = await read('CurveToken', 'MINTER_ROLE');
-    await execute('CurveToken', { from: deployer }, 'grantRole', MINTER_ROLE, CurveGaugeDeployment.address);
+    if (CurveGaugeDeployment.newlyDeployed) {
+      const MINTER_ROLE = await read('CurveToken', 'MINTER_ROLE');
+      await execute('CurveToken', { from: deployer }, 'grantRole', MINTER_ROLE, CurveGaugeDeployment.address);
+    }
   } else {
     await save('CurveGauge', { abi: ICurveGauge__factory.abi, address: CURVE_GAUGE_ADDRESS });
   }

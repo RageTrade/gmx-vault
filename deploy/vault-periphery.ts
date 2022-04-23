@@ -33,7 +33,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     ETH_USD_ORACLE,
   ];
 
-  await execute('VaultPeriphery', { from: deployer }, 'initialize', ...initializeArgs);
+  if (logicDeployment.newlyDeployed) {
+    await execute('VaultPeriphery', { from: deployer }, 'initialize', ...initializeArgs);
+  }
 
   if (logicDeployment.newlyDeployed && hre.network.config.chainId !== 31337) {
     await hre.tenderly.push({
