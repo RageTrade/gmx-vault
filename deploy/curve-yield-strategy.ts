@@ -53,7 +53,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     tricryptoPool: (await get('CurveTriCryptoPool')).address,
   };
 
-  const proxyDeployment = await deploy('CurveYieldStrategy', {
+  const ProxyDeployment = await deploy('CurveYieldStrategy', {
     contract: 'TransparentUpgradeableProxy',
     from: deployer,
     log: true,
@@ -63,36 +63,37 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       CurveYieldStrategy__factory.createInterface().encodeFunctionData('initialize', [initializeArg]),
     ],
   });
-  await save('CurveYieldStrategy', { ...proxyDeployment, abi: curveYieldStrategyLogicDeployment.abi });
+  await save('CurveYieldStrategy', { ...ProxyDeployment, abi: curveYieldStrategyLogicDeployment.abi });
 
-  await execute('CurveYieldStrategy', { from: deployer }, 'grantAllowances');
+  if (ProxyDeployment.newlyDeployed) {
+    await execute('CurveYieldStrategy', { from: deployer }, 'grantAllowances');
+    await execute(
+      'CurveYieldStrategy',
+      { from: deployer },
+      'updateDepositCap',
+      parseUnits(networkInfo.DEPOSIT_CAP_C3CLT.toString(), 18),
+    );
 
-  await execute(
-    'CurveYieldStrategy',
-    { from: deployer },
-    'updateDepositCap',
-    parseUnits(networkInfo.DEPOSIT_CAP_C3CLT.toString(), 18),
-  );
+    await execute(
+      'CurveTriCryptoLpToken',
+      { from: deployer },
+      'approve',
+      ProxyDeployment.address, // curveYieldStrategy
+      ethers.constants.MaxUint256,
+    );
 
-  await execute(
-    'CurveTriCryptoLpToken',
-    { from: deployer },
-    'approve',
-    proxyDeployment.address, // curveYieldStrategy
-    ethers.constants.MaxUint256,
-  );
+    const MINTER_ROLE = await read('USDT', 'MINTER_ROLE');
+    await execute('CollateralToken', { from: deployer }, 'grantRole', MINTER_ROLE, ProxyDeployment.address);
 
-  const MINTER_ROLE = await read('USDT', 'MINTER_ROLE');
-  await execute('CollateralToken', { from: deployer }, 'grantRole', MINTER_ROLE, proxyDeployment.address);
-
-  if (proxyDeployment.newlyDeployed && hre.network.config.chainId !== 31337) {
-    try {
-      // TODO this errors with "Cannot set property 'networks' of undefined"
-      await hre.tenderly.push({
-        name: 'TransparentUpgradeableProxy',
-        address: proxyDeployment.address,
-      });
-    } catch {}
+    if (hre.network.config.chainId !== 31337) {
+      try {
+        // TODO this errors with "Cannot set property 'networks' of undefined"
+        await hre.tenderly.push({
+          name: 'TransparentUpgradeableProxy',
+          address: ProxyDeployment.address,
+        });
+      } catch {}
+    }
   }
 };
 

@@ -20,7 +20,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   });
 
   const { RAGE_CLEARING_HOUSE_ADDRESS, RAGE_SETTLEMENT_TOKEN_ADDRESS } = getNetworkInfo(hre.network.config.chainId);
-  if (RAGE_CLEARING_HOUSE_ADDRESS) {
+  if (CollateralTokenDeployment.newlyDeployed && RAGE_CLEARING_HOUSE_ADDRESS) {
     const clearingHouse = ClearingHouse__factory.connect(
       RAGE_CLEARING_HOUSE_ADDRESS ?? (await get('ClearingHouse')).address,
       await hre.ethers.getSigner(deployer),

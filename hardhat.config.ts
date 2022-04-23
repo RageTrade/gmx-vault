@@ -111,8 +111,9 @@ export default {
     ],
   },
   etherscan: {
-    // https://info.etherscan.com/api-keys/
-    apiKey: process.env.ETHERSCAN_KEY,
+    apiKey: {
+      arbitrumTestnet: process.env.ETHERSCAN_KEY,
+    },
   },
   mocha: {
     timeout: 400000,

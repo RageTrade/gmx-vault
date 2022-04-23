@@ -21,7 +21,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       contract: 'TokenMock',
       from: deployer,
       log: true,
-      args: ['Curve TriCrypto Token', '3CRYPTO', 18, parseUnits('1000000000', 18)],
+      args: ['Curve TriCrypto Token', 'curve3crypto', 18, parseUnits('1000000000', 18)],
     });
   } else {
     await save('CurveTriCryptoLpToken', { abi: IERC20Metadata__factory.abi, address: CURVE_TRICRYPTO_LP_TOKEN });
