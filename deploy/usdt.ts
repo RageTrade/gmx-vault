@@ -21,10 +21,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       contract: 'TokenMock',
       from: deployer,
       log: true,
-      args: ['USDT', 'USDT', 6, parseUnits('1000000000', 6)],
+      args: ['USDT', 'USDT', 6, parseUnits('1000000000000', 6)],
     });
-
-    await execute('USDT', { from: deployer }, 'mint', deployer, parseUnits('1000000000000', 6));
   } else {
     await save('USDT', { abi: IERC20Metadata__factory.abi, address: USDT_ADDRESS });
   }

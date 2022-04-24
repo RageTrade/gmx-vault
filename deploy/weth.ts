@@ -18,13 +18,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   if (WETH_ADDRESS === undefined) {
     // deploying mock
     await deploy('WETH', {
-      contract: 'TokenMock',
+      contract: 'Weth9Mock',
       from: deployer,
       log: true,
-      args: ['Wrapped Ether', 'WETH', 18, parseUnits('1000000000', 18)],
+      args: [parseUnits('1000000000', 18)],
     });
-
-    await execute('WETH', { from: deployer }, 'mint', deployer, parseUnits('1000000000', 18));
   } else {
     await save('WETH', { abi: IERC20Metadata__factory.abi, address: WETH_ADDRESS });
   }
