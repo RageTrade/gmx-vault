@@ -23,8 +23,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       log: true,
       args: ['Wrapped Bitcoin', 'WBTC', 8, parseUnits('21000000', 8)],
     });
-
-    await execute('WBTC', { from: deployer }, 'mint', deployer, parseUnits('21000000', 8));
   } else {
     await save('WBTC', { abi: IERC20Metadata__factory.abi, address: WBTC_ADDRESS });
   }
