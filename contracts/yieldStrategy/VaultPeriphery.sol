@@ -140,6 +140,28 @@ contract VaultPeriphery is OwnableUpgradeable {
         sharesMinted = vault.deposit(lpToken.balanceOf(address(this)), msg.sender);
     }
 
+    function depositEth() external payable returns (uint256 sharesMinted) {
+        uint256 amount = msg.value;
+        if (amount == 0) revert ZeroValue();
+
+        uint256 beforeSwapLpPrice = lpOracle.lp_price();
+
+        stableSwap.add_liquidity([0, 0, amount], 0);
+
+        uint256 balance = lpToken.balanceOf(address(this));
+
+        if (
+            balance.mulDiv(beforeSwapLpPrice, 10**18) <
+            _getEthPrice(ethOracle).mulDiv(amount * (MAX_BPS - MAX_TOLERANCE), 10**8 * MAX_BPS)
+        ) {
+            // TODO uncomment
+            // revert SlippageToleranceBreached();
+            emit SlippageToleranceBreachedEvent(balance, beforeSwapLpPrice, amount, MAX_BPS, MAX_TOLERANCE);
+        }
+
+        sharesMinted = vault.deposit(lpToken.balanceOf(address(this)), msg.sender);
+    }
+
     function updateTolerance(uint256 newTolerance) external onlyOwner {
         if (newTolerance > MAX_BPS) revert OutOfBounds();
         MAX_TOLERANCE = newTolerance;
