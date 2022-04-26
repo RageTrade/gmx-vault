@@ -8,14 +8,52 @@ import 'solidity-coverage';
 import '@nomiclabs/hardhat-etherscan';
 import '@protodev-rage/hardhat-tenderly';
 import 'hardhat-dependency-compiler';
-import 'hardhat-tracer';
 
 import { config } from 'dotenv';
 import { ethers } from 'ethers';
+import { Fragment } from 'ethers/lib/utils';
+import { readJsonSync, writeJsonSync } from 'fs-extra';
+import { TASK_COMPILE } from 'hardhat/builtin-tasks/task-names';
 import { task } from 'hardhat/config';
+import nodePath from 'path';
 
 config();
 const { ALCHEMY_KEY } = process.env;
+
+// this compile task override is needed to copy missing abi fragments to respective artifacts (note its not aval to typechain)
+task(TASK_COMPILE, 'Compiles the entire project, building all artifacts').setAction(async (taskArgs, _, runSuper) => {
+  const compileSolOutput = await runSuper(taskArgs);
+
+  copyEventErrorAbi(
+    'artifacts/contracts/libraries/Logic.sol/Logic.json',
+    'artifacts/contracts/yieldStrategy/CurveYieldStrategy.sol/CurveYieldStrategy.json',
+  );
+  copyEventErrorAbi(
+    'artifacts/contracts/libraries/SwapManager.sol/SwapManager.json',
+    'artifacts/contracts/yieldStrategy/CurveYieldStrategy.sol/CurveYieldStrategy.json',
+  );
+
+  function copyEventErrorAbi(from: string, to: string) {
+    const fromArtifact = readJsonSync(nodePath.resolve(__dirname, from));
+    const toArtifact = readJsonSync(nodePath.resolve(__dirname, to));
+    fromArtifact.abi.forEach((fromFragment: Fragment) => {
+      if (
+        // only copy error and event fragments
+        (fromFragment.type === 'error' || fromFragment.type === 'event') &&
+        // if fragment is already in the toArtifact, don't copy it
+        !toArtifact.abi.find(
+          ({ name, type }: Fragment) => name + '-' + type === fromFragment.name + '-' + fromFragment.type,
+        )
+      ) {
+        toArtifact.abi.push(fromFragment);
+      }
+    });
+
+    writeJsonSync(nodePath.resolve(__dirname, to), toArtifact, { spaces: 2 });
+  }
+
+  return compileSolOutput;
+});
 
 if (!process.env.ALCHEMY_KEY) {
   console.warn('PLEASE NOTE: The env var ALCHEMY_KEY is not set');
