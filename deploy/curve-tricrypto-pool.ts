@@ -76,7 +76,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
       await execute(
         'CurveTriCryptoPool',
-        { from: deployer },
+        { from: deployer, gasLimit: 20_000_000 },
         'add_liquidity',
         [parseUnits('1000000000', 6), parseUnits('20000', 8), parseEther('330000')],
         0,
@@ -118,52 +118,52 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         const token0 = ERC20PresetMinterPauser__factory.connect(token0Address, uniswapFactory.signer);
         const token1 = ERC20PresetMinterPauser__factory.connect(token1Address, uniswapFactory.signer);
 
-        // try {
-        await wait(uniswapFactory.createPool(token0.address, token1.address, 500));
+        try {
+          await wait(uniswapFactory.createPool(token0.address, token1.address, 500));
 
-        const poolAddress = await uniswapFactory.getPool(token0.address, token1.address, 500);
-        console.log(
-          `Add liq to UniswapV3Pool ${await token0.symbol()}-${await token1.symbol()}, poolAddress: ${poolAddress}`,
-        );
+          const poolAddress = await uniswapFactory.getPool(token0.address, token1.address, 500);
+          console.log(
+            `Add liq to UniswapV3Pool ${await token0.symbol()}-${await token1.symbol()}, poolAddress: ${poolAddress}`,
+          );
 
-        const pool = IUniswapV3Pool__factory.connect(poolAddress, uniswapFactory.signer);
-        const decimals0 = await token0.decimals();
-        const decimals1 = await token1.decimals();
+          const pool = IUniswapV3Pool__factory.connect(poolAddress, uniswapFactory.signer);
+          const decimals0 = await token0.decimals();
+          const decimals1 = await token1.decimals();
 
-        await wait(pool.initialize(await priceToSqrtPriceX96(amount1 / amount0, decimals0, decimals1)));
+          await wait(pool.initialize(await priceToSqrtPriceX96(amount1 / amount0, decimals0, decimals1)));
 
-        const tickLower = await priceToTick((amount1 / amount0) * 1.1, decimals0, decimals1, true);
-        const tickUpper = await priceToTick((amount1 / amount0) * 0.9, decimals0, decimals1, true);
-        const nfpm = NonfungiblePositionManager__factory.connect(
-          '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
-          uniswapFactory.signer,
-        );
+          const tickLower = await priceToTick((amount1 / amount0) * 1.1, decimals0, decimals1, true);
+          const tickUpper = await priceToTick((amount1 / amount0) * 0.9, decimals0, decimals1, true);
+          const nfpm = NonfungiblePositionManager__factory.connect(
+            '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
+            uniswapFactory.signer,
+          );
 
-        await wait(
-          token0.mint(await uniswapFactory.signer.getAddress(), parseUnits(amount0.toFixed(decimals0), decimals0)),
-        );
-        await wait(
-          token1.mint(await uniswapFactory.signer.getAddress(), parseUnits(amount1.toFixed(decimals1), decimals1)),
-        );
-        await wait(token0.approve(nfpm.address, ethers.constants.MaxUint256));
-        await wait(token1.approve(nfpm.address, ethers.constants.MaxUint256));
+          await wait(
+            token0.mint(await uniswapFactory.signer.getAddress(), parseUnits(amount0.toFixed(decimals0), decimals0)),
+          );
+          await wait(
+            token1.mint(await uniswapFactory.signer.getAddress(), parseUnits(amount1.toFixed(decimals1), decimals1)),
+          );
+          await wait(token0.approve(nfpm.address, ethers.constants.MaxUint256));
+          await wait(token1.approve(nfpm.address, ethers.constants.MaxUint256));
 
-        await wait(
-          nfpm.mint({
-            token0: token0.address,
-            token1: token1.address,
-            fee: 500,
-            tickLower: Math.min(tickLower, tickUpper),
-            tickUpper: Math.max(tickLower, tickUpper),
-            amount0Desired: parseUnits(amount0.toFixed(decimals0), decimals0),
-            amount1Desired: parseUnits(amount1.toFixed(decimals1), decimals1),
-            amount0Min: 0,
-            amount1Min: 0,
-            recipient: await uniswapFactory.signer.getAddress(),
-            deadline: Date.now(), // very future date
-          }),
-        );
-        // } catch {}
+          await wait(
+            nfpm.mint({
+              token0: token0.address,
+              token1: token1.address,
+              fee: 500,
+              tickLower: Math.min(tickLower, tickUpper),
+              tickUpper: Math.max(tickLower, tickUpper),
+              amount0Desired: parseUnits(amount0.toFixed(decimals0), decimals0),
+              amount1Desired: parseUnits(amount1.toFixed(decimals1), decimals1),
+              amount0Min: 0,
+              amount1Min: 0,
+              recipient: await uniswapFactory.signer.getAddress(),
+              deadline: Date.now(), // very future date
+            }),
+          );
+        } catch {}
         async function wait(txPromise: Promise<ethers.ContractTransaction>) {
           return (await txPromise).wait();
         }
