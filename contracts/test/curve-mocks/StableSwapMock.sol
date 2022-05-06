@@ -82,7 +82,7 @@ contract StableSwapMock {
         ERC20PresetMinterPauser(lpToken).burnFrom(msg.sender, token_amount);
 
         uint256 input = (token_amount * lp_price()) / 10**18;
-        uint256 output = (input * 10**8) / _getPrice(oracles[index]);
+        uint256 output = (input * 10**decimals[index] * 10**8) / _getPrice(oracles[index]) / 10**18;
 
         IERC20(tokens[index]).transfer(msg.sender, output);
     }
