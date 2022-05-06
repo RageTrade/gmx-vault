@@ -39,9 +39,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         rageCollateralToken: collateralTokenDeployment.address,
         rageSettlementToken: settlementTokenAddress,
       },
-      closePositionSlippageSqrtToleranceBps: 0,
-      resetPositionThresholdBps: 0,
-      minNotionalPositionToCloseThreshold: 0,
+      closePositionSlippageSqrtToleranceBps: 150,
+      resetPositionThresholdBps: 2000,
+      minNotionalPositionToCloseThreshold: 100e6,
     },
     usdc: settlementTokenAddress,
     usdt: (await get('USDT')).address,
@@ -62,27 +62,20 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       proxyAdminDeployment.address,
       CurveYieldStrategy__factory.createInterface().encodeFunctionData('initialize', [initializeArg]),
     ],
+    gasLimit: 20_000_000,
   });
   await save('CurveYieldStrategy', { ...ProxyDeployment, abi: curveYieldStrategyLogicDeployment.abi });
 
   if (ProxyDeployment.newlyDeployed) {
-    await execute('CurveYieldStrategy', { from: deployer }, 'grantAllowances');
+    await execute('CurveYieldStrategy', { from: deployer, gasLimit: 20_000_000 }, 'grantAllowances');
     await execute(
       'CurveYieldStrategy',
-      { from: deployer },
+      { from: deployer, gasLimit: 20_000_000 },
       'updateDepositCap',
       parseUnits(networkInfo.DEPOSIT_CAP_C3CLT.toString(), 18),
     );
 
-    await execute(
-      'CurveTriCryptoLpToken',
-      { from: deployer },
-      'approve',
-      ProxyDeployment.address, // curveYieldStrategy
-      ethers.constants.MaxUint256,
-    );
-
-    const MINTER_ROLE = await read('USDT', 'MINTER_ROLE');
+    const MINTER_ROLE = await read('CollateralToken', 'MINTER_ROLE');
     await execute('CollateralToken', { from: deployer }, 'grantRole', MINTER_ROLE, ProxyDeployment.address);
 
     if (hre.network.config.chainId !== 31337) {
@@ -98,11 +91,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-
-// curveTriCryptoLpToken.approve(
-//   //       curveYieldStrategy.address,
-//   //       ethers.constants.MaxUint256
-//   //     )
 
 func.tags = ['CurveYieldStrategy'];
 func.dependencies = [
