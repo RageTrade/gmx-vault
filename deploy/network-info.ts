@@ -3,6 +3,8 @@ import { truncate } from '@ragetrade/sdk';
 export const skip = () => true;
 
 export interface NetworkInfo {
+  KEEPER_ADDRESS: string;
+
   DEPOSIT_CAP_C3CLT: number;
 
   UNISWAP_V3_FACTORY_ADDRESS: string;
@@ -33,6 +35,8 @@ export const UNISWAP_V3_DEFAULT_FEE_TIER = 500;
 export const UNISWAP_V3_ROUTER_ADDRESS = '0xE592427A0AEce92De3Edee1F18E0157C05861564';
 
 export const arbitrumInfo: NetworkInfo = {
+  KEEPER_ADDRESS: '0xe1829BaD81E9146E18f28E28691D930c052483bA',
+
   DEPOSIT_CAP_C3CLT: 1_000_000, // CURVE_TRICRYPTO_LP_TOKEN
 
   UNISWAP_V3_FACTORY_ADDRESS,
@@ -54,6 +58,8 @@ export const arbitrumInfo: NetworkInfo = {
 };
 
 export const arbitrumTestnetInfo: NetworkInfo = {
+  KEEPER_ADDRESS: '0xe1829BaD81E9146E18f28E28691D930c052483bA',
+
   DEPOSIT_CAP_C3CLT: 1_000_000_000,
 
   UNISWAP_V3_FACTORY_ADDRESS,
@@ -78,8 +84,8 @@ export const defaultInfo: NetworkInfo = arbitrumInfo;
 
 export function getNetworkInfo(chainId?: number): NetworkInfo {
   switch (chainId) {
-    case 42161:
-      return arbitrumInfo;
+    // case 42161:
+    //   return arbitrumInfo;
     case 421611:
       return arbitrumTestnetInfo;
     default:

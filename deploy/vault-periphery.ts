@@ -17,7 +17,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log: true,
   });
 
-  const { RAGE_SETTLEMENT_TOKEN_ADDRESS, UNISWAP_V3_ROUTER_ADDRESS, CURVE_QUOTER, ETH_USD_ORACLE } = getNetworkInfo(
+  const { RAGE_SETTLEMENT_TOKEN_ADDRESS, UNISWAP_V3_ROUTER_ADDRESS, ETH_USD_ORACLE } = getNetworkInfo(
     hre.network.config.chainId,
   );
 
@@ -28,7 +28,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     (await get('CurveTriCryptoLpToken')).address,
     (await get('CurveYieldStrategy')).address,
     UNISWAP_V3_ROUTER_ADDRESS,
-    CURVE_QUOTER ?? (await get('CurveTriCryptoPool')).address,
+    (await get('CurveQuoter')).address,
     (await get('CurveTriCryptoPool')).address,
     ETH_USD_ORACLE,
   ];
