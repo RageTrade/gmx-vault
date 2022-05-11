@@ -59,7 +59,7 @@
     "hardhat-contract-sizer": "^2.1.1",
     "hardhat-deploy": "^0.11.4",
     "hardhat-gas-reporter": "^1.0.4",
-    "hardhat-tracer": "^1.1.0-rc.3",
+    "hardhat-tracer": "^1.1.0-rc.5",
     "prettier": "^2.6.2",
     "solhint": "^3.3.6",
     "solidity-coverage": "^0.7.17",
