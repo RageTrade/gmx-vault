@@ -49,7 +49,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     crvToken: (await get('USDT')).address,
     gauge: (await get('CurveGauge')).address,
     uniV3Router: networkInfo.UNISWAP_V3_ROUTER_ADDRESS,
-    lpPriceHolder: networkInfo.CURVE_QUOTER ?? (await get('CurveTriCryptoPool')).address,
+    lpPriceHolder: (await get('CurveQuoter')).address,
     tricryptoPool: (await get('CurveTriCryptoPool')).address,
   };
 
@@ -65,6 +65,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     gasLimit: 20_000_000,
   });
   await save('CurveYieldStrategy', { ...ProxyDeployment, abi: curveYieldStrategyLogicDeployment.abi });
+
+  const currentKeeperAddress = await read('CurveYieldStrategy', 'keeper');
+  if (currentKeeperAddress.toLowerCase() !== networkInfo.KEEPER_ADDRESS.toLowerCase()) {
+    await execute('CurveYieldStrategy', { from: deployer }, 'setKeeper', networkInfo.KEEPER_ADDRESS);
+  }
 
   if (ProxyDeployment.newlyDeployed) {
     await execute('CurveYieldStrategy', { from: deployer, gasLimit: 20_000_000 }, 'grantAllowances');
@@ -94,6 +99,7 @@ export default func;
 
 func.tags = ['CurveYieldStrategy'];
 func.dependencies = [
+  'CurveQuoter',
   'CurveYieldStrategyLogic',
   'CollateralToken',
   'ProxyAdmin',
