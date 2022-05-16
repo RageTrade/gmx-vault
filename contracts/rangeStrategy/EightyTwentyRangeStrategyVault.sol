@@ -226,6 +226,8 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         } else {
             isReset = false;
         }
+
+        emit Logic.TokenPositionClosed();
     }
 
     /// @notice Close position on rage clearing house
