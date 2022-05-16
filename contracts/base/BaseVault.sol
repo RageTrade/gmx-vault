@@ -147,7 +147,6 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         (, , , vTokenPositions) = rageClearingHouse.getAccountInfo(rageAccountNo);
 
         _closeTokenPositionOnReset(vTokenPositions[0]);
-        emit Logic.TokenPositionClosed();
     }
 
     /// @notice returns the total vault asset balance + staked balance
