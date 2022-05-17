@@ -26,6 +26,8 @@ contract VaultPeriphery is OwnableUpgradeable {
     error NegativePrice();
     error SlippageToleranceBreached();
 
+    event DepositPeriphery(address indexed owner, address indexed token, uint256 amount, uint256 asset, uint256 shares);
+
     IERC20 public usdc;
     IERC20 public usdt;
     IWETH9 public weth;
@@ -112,6 +114,7 @@ contract VaultPeriphery is OwnableUpgradeable {
         }
 
         sharesMinted = vault.deposit(balance, msg.sender);
+        emit DepositPeriphery(msg.sender, address(usdc), amount, balance, sharesMinted);
     }
 
     function depositWeth(uint256 amount) public returns (uint256 sharesMinted) {
@@ -132,6 +135,7 @@ contract VaultPeriphery is OwnableUpgradeable {
         }
 
         sharesMinted = vault.deposit(lpToken.balanceOf(address(this)), msg.sender);
+        emit DepositPeriphery(msg.sender, address(usdc), amount, balance, sharesMinted);
     }
 
     function depositEth() external payable returns (uint256 sharesMinted) {
@@ -151,6 +155,7 @@ contract VaultPeriphery is OwnableUpgradeable {
         }
 
         sharesMinted = vault.deposit(lpToken.balanceOf(address(this)), msg.sender);
+        emit DepositPeriphery(msg.sender, address(0), amount, balance, sharesMinted);
     }
 
     function updateTolerance(uint256 newTolerance) external onlyOwner {
