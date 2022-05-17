@@ -94,21 +94,27 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       const CRV = (await get('CurveToken')).address;
       const CRV3CRYPTO = (await get('CurveTriCryptoLpToken')).address;
 
-      await ensurePool(USDT, WETH, 10_000_000, 10_000_000 / 4000);
-      await ensurePool(WBTC, USDT, 10_000_000 / 40000, 10_000_000);
-      await ensurePool(WBTC, WETH, 10_000_000 / 40_000, 10_000_000 / 3000);
-      await ensurePool(USDC, USDT, 10_000_000, 10_000_000);
-      await ensurePool(USDC, WETH, 10_000_000, 10_000_000 / 3000);
-      await ensurePool(USDC, WBTC, 10_000_000, 10_000_000 / 40_000);
-      await ensurePool(CRV, USDT, 10_000_000 / 40, 10_000_000);
-      await ensurePool(CRV, USDC, 10_000_000 / 40, 10_000_000);
-      await ensurePool(CRV, WETH, 10_000_000 / 40, 10_000_000 / 3000);
-      await ensurePool(CRV, WBTC, 10_000_000 / 40, 10_000_000 / 40_000);
-      await ensurePool(CRV3CRYPTO, CRV, 10_000_000 / 10, 10_000_000 / 40);
-      await ensurePool(CRV3CRYPTO, WBTC, 10_000_000 / 10, 10_000_000 / 40_000);
-      await ensurePool(CRV3CRYPTO, WETH, 10_000_000 / 10, 10_000_000 / 3000);
-      await ensurePool(CRV3CRYPTO, USDC, 10_000_000 / 10, 10_000_000);
-      await ensurePool(CRV3CRYPTO, USDT, 10_000_000 / 10, 10_000_000);
+      const tokens = [
+        { token: WETH, price: 2500 },
+        { token: WBTC, price: 30000 },
+        { token: USDT, price: 1 },
+        { token: USDC, price: 1 },
+        { token: CRV, price: 10 },
+        { token: CRV3CRYPTO, price: 10 },
+      ];
+
+      for (let i = 0; i < tokens.length; i++) {
+        for (let j = 0; j < tokens.length; j++) {
+          if (i !== j) {
+            await ensurePool(
+              tokens[i].token,
+              tokens[j].token,
+              10_000_000 / tokens[i].price,
+              10_000_000 / tokens[j].price,
+            );
+          }
+        }
+      }
 
       // await uniswapFactory.createPool((await get('USDT')).address, (await get('WETH')).address, 500);
       async function ensurePool(token0Address: string, token1Address: string, amount0: number, amount1: number) {

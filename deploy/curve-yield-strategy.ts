@@ -68,7 +68,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const currentKeeperAddress = await read('CurveYieldStrategy', 'keeper');
   if (currentKeeperAddress.toLowerCase() !== networkInfo.KEEPER_ADDRESS.toLowerCase()) {
-    await execute('CurveYieldStrategy', { from: deployer }, 'setKeeper', networkInfo.KEEPER_ADDRESS);
+    await execute(
+      'CurveYieldStrategy',
+      { from: deployer, gasLimit: 20_000_000 },
+      'setKeeper',
+      networkInfo.KEEPER_ADDRESS,
+    );
   }
 
   if (ProxyDeployment.newlyDeployed) {
@@ -81,7 +86,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     );
 
     const MINTER_ROLE = await read('CollateralToken', 'MINTER_ROLE');
-    await execute('CollateralToken', { from: deployer }, 'grantRole', MINTER_ROLE, ProxyDeployment.address);
+    await execute(
+      'CollateralToken',
+      { from: deployer, gasLimit: 20_000_000 },
+      'grantRole',
+      MINTER_ROLE,
+      ProxyDeployment.address,
+    );
 
     if (hre.network.config.chainId !== 31337) {
       try {
