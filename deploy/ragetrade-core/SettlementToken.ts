@@ -12,9 +12,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const { deployer } = await getNamedAccounts();
 
-  const { settlementTokenAddress } = getNetworkInfo(hre.network.config.chainId);
+  const { RAGE_SETTLEMENT_TOKEN_ADDRESS } = getNetworkInfo(hre.network.config.chainId);
 
-  if (settlementTokenAddress === undefined) {
+  if (RAGE_SETTLEMENT_TOKEN_ADDRESS === undefined) {
     const deployment = await deploy('SettlementToken', {
       contract: 'SettlementTokenMock',
       from: deployer,
@@ -30,7 +30,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       });
     }
   } else {
-    await save('SettlementToken', { abi: IERC20Metadata__factory.abi, address: settlementTokenAddress });
+    await save('SettlementToken', { abi: IERC20Metadata__factory.abi, address: RAGE_SETTLEMENT_TOKEN_ADDRESS });
   }
 };
 

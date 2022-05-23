@@ -26,24 +26,27 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     using FullMath for uint256;
 
     error CYS_INVALID_FEES();
+    error CYS_EXTERAL_CALL_FAILED(string reason);
 
-    IERC20 private usdt;
-    IERC20 private weth;
-    IERC20 private usdc;
-    IERC20 private crvToken;
+    IERC20 private usdt; // 6 decimals
+    IERC20 private weth; // 18 decimals
+    IERC20 private usdc; // 6 decimals
+    IERC20 private crvToken; // 18 decimals
 
-    ICurveGauge private gauge;
-    ISwapRouter private uniV3Router;
-    ILPPriceGetter private lpPriceHolder;
-    ICurveStableSwap private triCryptoPool;
+    ICurveGauge private gauge; // curve gauge, which gives CRV emissions for staking triCrypto LP token
+    ISwapRouter private uniV3Router; // uniswap swap router
+    ILPPriceGetter private lpPriceHolder; // price-manipulation resistant triCrypto lp price oracle
+    ICurveStableSwap private triCryptoPool; // triCrypto stableSwap address
 
     AggregatorV3Interface private crvOracle;
 
-    uint256 private crvSwapSlippageTolerance; // in bps, 10**4
-    uint256 private notionalCrvHarvestThreshold;
+    uint256 private crvPendingToSwap; // in CRV (10**18)
+    uint256 private crvHarvestThreshold; // in CRV (10**18)
+    uint256 private crvSwapSlippageTolerance; // in bps, max 10**4
 
     /* solhint-disable var-name-mixedcase */
     uint256 public constant MAX_BPS = 10_000;
+
     /* solhint-disable var-name-mixedcase */
     uint256 public FEE = 1000;
 
@@ -91,10 +94,10 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     /// @notice Sets the minimum threshold to harvest CRV rewards
-    /// @param _notionalCrvHarvestThreshold minimum threshold value (in CRV)
-    function setNotionalCrvHarvestThreshold(uint256 _notionalCrvHarvestThreshold) external onlyOwner {
-        notionalCrvHarvestThreshold = _notionalCrvHarvestThreshold;
-        emit Logic.NotionalCrvHarvestThresholdUpdated(_notionalCrvHarvestThreshold);
+    /// @param _crvHarvestThreshold minimum threshold value (in CRV)
+    function setcrvHarvestThreshold(uint256 _crvHarvestThreshold) external onlyOwner {
+        crvHarvestThreshold = _crvHarvestThreshold;
+        emit Logic.CrvHarvestThresholdUpdated(_crvHarvestThreshold);
     }
 
     /// @notice grants one time max allowance to various third parties
@@ -156,9 +159,9 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
     /// @notice claims the accumulated CRV rewards from the gauge, sells CRV rewards for LP tokens and stakes LP tokens
     function _harvestFees() internal override {
-        uint256 claimable = gauge.claimable_reward(address(this), address(crvToken));
+        uint256 claimable = gauge.claimable_reward(address(this), address(crvToken)) + crvPendingToSwap;
 
-        if (claimable > notionalCrvHarvestThreshold) {
+        if (claimable > crvHarvestThreshold) {
             uint256 afterDeductions = claimable - ((claimable * FEE) / MAX_BPS);
             gauge.claim_rewards(address(this));
 
@@ -172,16 +175,32 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
                 address(usdt)
             );
 
-            SwapManager.swapCrvToUsdtAndAddLiquidity(
-                afterDeductions,
-                crvSwapSlippageTolerance,
-                crvOracle,
-                path,
-                uniV3Router,
-                triCryptoPool
-            );
-
-            _stake(asset.balanceOf(address(this)));
+            try
+                SwapManager.swapCrvToUsdtAndAddLiquidity(
+                    afterDeductions,
+                    crvSwapSlippageTolerance,
+                    crvOracle,
+                    path,
+                    uniV3Router,
+                    triCryptoPool
+                )
+            {
+                // stake CRV if swap is successful
+                _stake(asset.balanceOf(address(this)));
+                // set pending CRV to 0
+                crvPendingToSwap = 0;
+            } catch Error(string memory reason) {
+                // if swap is failed due to slippage, it should not stop executing rebalance
+                // uniswap router returns 'Too little received' in case of minOut is not matched
+                if (keccak256(abi.encodePacked(reason)) == keccak256('Too little received')) {
+                    // account for pending CRV which were not swapped, to be used in next swap
+                    crvPendingToSwap += claimable;
+                    // emit event with current slippage value
+                    emit Logic.CrvSwapFailedDueToSlippage(crvSwapSlippageTolerance);
+                }
+                // if external call fails due to any other reason, revert with same
+                else revert CYS_EXTERAL_CALL_FAILED(reason);
+            }
         }
     }
 

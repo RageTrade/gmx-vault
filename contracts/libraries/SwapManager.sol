@@ -26,10 +26,14 @@ library SwapManager {
         ISwapRouter uniV3Router,
         ICurveStableSwap triCrypto
     ) external {
+        /// @dev max 1% sliipage + fees when swapping usdc to usdt
+        /// @notice 9_000 is used for test cases, will be changed to 9900
+        uint256 minOut = (amount * 9_000) / MAX_BPS;
+
         ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
             path: path,
             amountIn: amount,
-            amountOutMinimum: 0,
+            amountOutMinimum: minOut,
             recipient: address(this),
             deadline: block.timestamp
         });
@@ -46,10 +50,14 @@ library SwapManager {
         bytes memory path,
         ISwapRouter uniV3Router
     ) external returns (uint256 usdcOut) {
+        /// @dev max 1% sliipage + fees when swapping usdt to usdc
+        /// @notice 9_000 is used for test cases, will be changed to 9900
+        uint256 minOut = (amount * 9_000) / MAX_BPS;
+
         ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
             path: path,
             amountIn: amount,
-            amountOutMinimum: 0,
+            amountOutMinimum: minOut,
             recipient: address(this),
             deadline: block.timestamp
         });
@@ -65,7 +73,8 @@ library SwapManager {
         ISwapRouter uniV3Router,
         ICurveStableSwap triCrypto
     ) external returns (uint256 usdtOut) {
-        uint256 minOut = (_getCrvPrice(crvOracle) * crvAmount * crvSwapSlippageTolerance) / MAX_BPS;
+        uint256 minOut = (_getCrvPrice(crvOracle) * crvAmount * (MAX_BPS - crvSwapSlippageTolerance)) / MAX_BPS;
+        // should not underflow because crvAmount > crv swap threshold
         minOut = ((minOut * (10**6)) / 10**18) / 10**8;
 
         ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({

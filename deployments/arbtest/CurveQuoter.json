@@ -1,0 +1,19 @@
+{
+  "address": "0x95b54EC06660eC35978f9c279e3c1EdFD16e64db",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "lp_price",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "numDeployments": 3
+}

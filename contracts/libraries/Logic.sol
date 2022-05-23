@@ -34,8 +34,10 @@ library Logic {
     event FeesUpdated(uint256 fee);
 
     event CrvOracleUpdated(address indexed oracle);
+    event CrvHarvestThresholdUpdated(uint256 threshold);
     event CrvSwapSlippageToleranceUpdated(uint256 tolerance);
-    event NotionalCrvHarvestThresholdUpdated(uint256 threshold);
+    event CrvSwapFailedDueToSlippage(uint256 crvSlippageTolerance);
+
     event EightyTwentyParamsUpdated(
         uint16 closePositionSlippageSqrtToleranceBps,
         uint16 resetPositionThresholdBps,
@@ -69,6 +71,7 @@ library Logic {
 
     // 80 20
 
+    /// @notice checks if upper and lower ticks are valid for rebalacing between current twap price and rebalance threshold
     function isValidRebalanceRangeWithoutCheckReset(
         IUniswapV3Pool rageVPool,
         uint32 rageTwapDuration,
@@ -98,6 +101,7 @@ library Logic {
         if (tick < 0) roundedTick -= 10;
     }
 
+    /// @notice helper to get nearest tick for sqrtPriceX96 (tickSpacing = 10)
     function _sqrtPriceX96ToValidTick(uint160 sqrtPriceX96, bool isTickUpper)
         internal
         pure
@@ -146,8 +150,7 @@ library Logic {
         ).toUint128();
     }
 
-    // curve yeild strategy
-
+    // curve yield strategy
     function convertAssetToSettlementToken(
         uint256 amount,
         ILPPriceGetter lpPriceHolder,
