@@ -142,6 +142,8 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
 
   await curveYieldStrategyTest.setCrvOracle(addresses.CRV_ORACLE);
 
+  await curveYieldStrategyTest.setCrvSwapSlippageTolerance(4_000);
+
   return {
     crv,
     usdt,

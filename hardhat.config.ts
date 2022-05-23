@@ -77,7 +77,7 @@ export default {
       blockGasLimit: 0x1fffffffffff,
       gasPrice: 0,
       initialBaseFeePerGas: 0,
-      allowUnlimitedContractSize: true, // TODO: remove this
+      allowUnlimitedContractSize: false,
     },
     rinkeby: {
       url: `https://eth-rinkeby.alchemyapi.io/v2/${ALCHEMY_KEY}`,
@@ -104,7 +104,7 @@ export default {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 200,
+            runs: 50,
           },
           metadata: {
             // do not include the metadata hash, since this is machine dependent
