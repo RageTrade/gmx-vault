@@ -783,15 +783,14 @@
     fs-extra "^9.0.1"
     js-yaml "^3.14.0"
 
-"@ragetrade/core@^1.0.2":
+"@ragetrade/core@https://github.com/RageTrade/core.git#c6430d2df2f751e8ea8ec502377fbc73237ecb48":
   version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@ragetrade/core/-/core-1.0.2.tgz#cc3e1eaade228b44a8f01b80499270e338beca9c"
-  integrity sha512-FDtvNMVJIMTPs5eoSBqKRfwxcX1GdvlckFWfSkzZytEzC+4DEx9l95SOcAG+70RUzkQhZWlsXCDeo9DmDy8DqQ==
+  resolved "https://github.com/RageTrade/core.git#c6430d2df2f751e8ea8ec502377fbc73237ecb48"
   dependencies:
     "@chainlink/contracts" "^0.4.0"
     "@openzeppelin/contracts" "^4.5.0"
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
-    "@uniswap/v3-core-0.8-support" "https://github.com/uniswap/v3-core.git#36bc9101b91e2b8b5690f59e0911a85deb2d2480"
+    "@uniswap/v3-core-0.8-support" "https://github.com/uniswap/v3-core.git#6562c52e8f75f0c10f9deaf44861847585fc8129"
     "@uniswap/v3-periphery" "^1.4.0"
 
 "@ragetrade/sdk@^0.7.9":
@@ -1233,9 +1232,9 @@
     "@uniswap/lib" "1.1.1"
     "@uniswap/v2-core" "1.0.0"
 
-"@uniswap/v3-core-0.8-support@https://github.com/uniswap/v3-core.git#36bc9101b91e2b8b5690f59e0911a85deb2d2480":
+"@uniswap/v3-core-0.8-support@https://github.com/uniswap/v3-core.git#6562c52e8f75f0c10f9deaf44861847585fc8129":
   version "1.0.1-solc-0.8"
-  resolved "https://github.com/uniswap/v3-core.git#36bc9101b91e2b8b5690f59e0911a85deb2d2480"
+  resolved "https://github.com/uniswap/v3-core.git#6562c52e8f75f0c10f9deaf44861847585fc8129"
 
 "@uniswap/v3-core@1.0.0":
   version "1.0.0"
