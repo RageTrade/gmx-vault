@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.9;
 
+import { IWETH9 } from 'contracts/interfaces/IWETH9.sol';
 import { IERC4626 } from 'contracts/interfaces/IERC4626.sol';
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
@@ -15,6 +16,8 @@ import { AggregatorV3Interface } from '@chainlink/contracts/src/v0.8/interfaces/
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 
+/* solhint-disable not-rely-on-time */
+
 contract VaultPeriphery is OwnableUpgradeable {
     using FullMath for uint256;
 
@@ -25,7 +28,7 @@ contract VaultPeriphery is OwnableUpgradeable {
 
     IERC20 public usdc;
     IERC20 public usdt;
-    IERC20 public weth;
+    IWETH9 public weth;
     IERC20 public lpToken;
 
     IERC4626 public vault;
@@ -37,13 +40,15 @@ contract VaultPeriphery is OwnableUpgradeable {
     AggregatorV3Interface internal ethOracle;
 
     /// @dev sum of fees + slippage when swapping usdc to usdt
-    uint256 MAX_TOLERANCE = 50;
-    uint256 MAX_BPS = 10_000;
+    /* solhint-disable var-name-mixedcase */
+    uint256 public MAX_TOLERANCE = 100;
+    /* solhint-disable var-name-mixedcase */
+    uint256 public MAX_BPS = 10_000;
 
     function initialize(
         IERC20 _usdc,
         IERC20 _usdt,
-        IERC20 _weth,
+        IWETH9 _weth,
         IERC20 _lpToken,
         IERC4626 _vault,
         ISwapRouter _swapRouter,
@@ -79,14 +84,6 @@ contract VaultPeriphery is OwnableUpgradeable {
         return (uint256(answer));
     }
 
-    event SlippageToleranceBreachedEvent(
-        uint256 balance,
-        uint256 breforeSwapLpPrice,
-        uint256 amount,
-        uint256 MAX_BPS,
-        uint256 MAX_TOLERANCE
-    );
-
     function depositUsdc(uint256 amount) external returns (uint256 sharesMinted) {
         if (amount == 0) revert ZeroValue();
         usdc.transferFrom(msg.sender, address(this), amount);
@@ -109,16 +106,15 @@ contract VaultPeriphery is OwnableUpgradeable {
 
         uint256 balance = lpToken.balanceOf(address(this));
 
+        /// @dev checks combined slippage of uni v3 swap and add liquidity
         if (balance.mulDiv(beforeSwapLpPrice, 10**18) < (amount * (MAX_BPS - MAX_TOLERANCE) * 10**12) / MAX_BPS) {
-            // TODO uncomment
-            // revert SlippageToleranceBreached();
-            emit SlippageToleranceBreachedEvent(balance, beforeSwapLpPrice, amount, MAX_BPS, MAX_TOLERANCE);
+            revert SlippageToleranceBreached();
         }
 
         sharesMinted = vault.deposit(balance, msg.sender);
     }
 
-    function depositWeth(uint256 amount) external returns (uint256 sharesMinted) {
+    function depositWeth(uint256 amount) public returns (uint256 sharesMinted) {
         if (amount == 0) revert ZeroValue();
         weth.transferFrom(msg.sender, address(this), amount);
 
@@ -132,31 +128,26 @@ contract VaultPeriphery is OwnableUpgradeable {
             balance.mulDiv(beforeSwapLpPrice, 10**18) <
             _getEthPrice(ethOracle).mulDiv(amount * (MAX_BPS - MAX_TOLERANCE), 10**8 * MAX_BPS)
         ) {
-            // TODO uncomment
-            // revert SlippageToleranceBreached();
-            emit SlippageToleranceBreachedEvent(balance, beforeSwapLpPrice, amount, MAX_BPS, MAX_TOLERANCE);
+            revert SlippageToleranceBreached();
         }
 
         sharesMinted = vault.deposit(lpToken.balanceOf(address(this)), msg.sender);
     }
 
     function depositEth() external payable returns (uint256 sharesMinted) {
-        uint256 amount = msg.value;
-        if (amount == 0) revert ZeroValue();
+        weth.deposit{ value: msg.value }();
 
         uint256 beforeSwapLpPrice = lpOracle.lp_price();
 
-        stableSwap.add_liquidity([0, 0, amount], 0);
+        stableSwap.add_liquidity([0, 0, msg.value], 0);
 
         uint256 balance = lpToken.balanceOf(address(this));
 
         if (
             balance.mulDiv(beforeSwapLpPrice, 10**18) <
-            _getEthPrice(ethOracle).mulDiv(amount * (MAX_BPS - MAX_TOLERANCE), 10**8 * MAX_BPS)
+            _getEthPrice(ethOracle).mulDiv(msg.value * (MAX_BPS - MAX_TOLERANCE), 10**8 * MAX_BPS)
         ) {
-            // TODO uncomment
-            // revert SlippageToleranceBreached();
-            emit SlippageToleranceBreachedEvent(balance, beforeSwapLpPrice, amount, MAX_BPS, MAX_TOLERANCE);
+            revert SlippageToleranceBreached();
         }
 
         sharesMinted = vault.deposit(lpToken.balanceOf(address(this)), msg.sender);

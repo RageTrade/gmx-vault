@@ -184,8 +184,8 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
   await curveYieldStrategyTest.grantAllowances();
   await curveYieldStrategyTest.setCrvOracle(addresses.CRV_ORACLE);
 
-  curveYieldStrategyTest.setKeeper(admin.address);
-  collateralToken.grantRole(await collateralToken.MINTER_ROLE(), curveYieldStrategyTest.address);
+  await curveYieldStrategyTest.setKeeper(admin.address);
+  await collateralToken.grantRole(await collateralToken.MINTER_ROLE(), curveYieldStrategyTest.address);
   const vaultAccountNo = await curveYieldStrategyTest.rageAccountNo();
 
   const whale = await ethers.getSigner(addresses.LP_TOKEN_WHALE);
@@ -196,6 +196,8 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
   await lpToken.connect(user2).approve(curveYieldStrategyTest.address, parseTokenAmount(50n, 18));
 
   await curveYieldStrategyTest.updateDepositCap(parseTokenAmount(10n ** 10n, 18));
+
+  await curveYieldStrategyTest.setCrvSwapSlippageTolerance(3_000);
 
   return {
     crv,

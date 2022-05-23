@@ -277,11 +277,12 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     }
 
     /// @notice converts all non-asset balances into asset
-    /// @dev to be called before functions which allocate and deallocate shares (deposit, withdraw, mint and burn)
+    /// @dev to be called before functions which allocate and deallocate shares (deposit, withdraw, mint and redeem)
     function _beforeShareAllocation() internal virtual override {
         _rebalanceProfitAndCollateral();
     }
 
+    /// @notice assets are staked first into gauge before updating range liquidity position
     function afterDeposit(
         uint256 amount,
         uint256 /** shares **/
@@ -291,6 +292,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         _afterDepositRanges(totalAssets(), amount);
     }
 
+    /// @notice handling accounting on rage first before withdrawing assets (unstaking from gauge)
     function beforeWithdraw(
         uint256 amount,
         uint256 /** shares **/
@@ -299,6 +301,8 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         _beforeWithdrawYield(amount);
     }
 
+    /// @notice reduce withdraw/redeem amount if position is reduced on rage trade to limit slippage
+    /// @dev to be called before functions which allows to withdraw collateral (withdraw, redeem)
     function beforeWithdrawClosePosition(uint256 amount) internal virtual override returns (uint256 updatedAmount) {
         return _beforeWithdrawClosePositionRanges(totalAssets(), amount);
     }
