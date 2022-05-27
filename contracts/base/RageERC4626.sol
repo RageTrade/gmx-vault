@@ -40,6 +40,31 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
         shares = super.withdraw(updatedAmount, to, from);
     }
 
+    function maxShares() public returns (uint256) {
+        return convertToShares(maxAssets());
+    }
+
+    function maxAssets() public returns (uint256 _maxAssets) {
+        try this.maxAssetsAlwaysReverts() {
+            // should not happen as this should always revert
+            revert();
+        } catch (bytes memory data) {
+            (_maxAssets) = abi.decode(data, (uint256));
+        }
+    }
+
+    function maxAssetsAlwaysReverts() public {
+        require(msg.sender == address(this));
+        _beforeShareAllocation();
+        uint256 _maxAssets = beforeWithdrawClosePosition(totalAssets());
+        assembly {
+            // storing maxAssets in memory first slot scratch space
+            mstore(0, _maxAssets)
+            // revert these steps and return maxAssets as error data
+            revert(0, 0x20)
+        }
+    }
+
     function redeem(
         uint256 shares,
         address to,
