@@ -30,9 +30,9 @@ contract VaultPeriphery is OwnableUpgradeable {
 
     event SlippageToleranceUpdated(uint256 oldTolerance, uint256 newTolerance);
 
-    event SwapRouterUpdated(address oldSwapRouter, address newSwapRouter);
+    event SwapRouterUpdated(address indexed oldSwapRouter, address indexed newSwapRouter);
 
-    event EthOracleUpdated(address oldEthOracle, address newEthOracle);
+    event EthOracleUpdated(address indexed oldEthOracle, address indexed newEthOracle);
 
     IERC20 public usdc;
     IERC20 public usdt;
