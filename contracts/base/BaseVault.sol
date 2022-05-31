@@ -32,7 +32,7 @@ import { Logic } from '../libraries/Logic.sol';
 abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, OwnableUpgradeable, Extsload {
     using AddressHelper for address;
     using AddressHelper for IVToken;
-    using SafeCast for uint256;
+
     using SafeCast for int256;
     using SafeCast for uint256;
     using SignedMath for int256;
