@@ -172,6 +172,8 @@ contract VaultPeriphery is OwnableUpgradeable {
 
     function updateSwapRouter(address newRouter) external onlyOwner {
         if (newRouter == address(0)) revert ZeroValue();
+        usdc.approve(newRouter, 0);
+        usdc.approve(newRouter, type(uint256).max);
         emit SwapRouterUpdated(address(swapRouter), newRouter);
         swapRouter = ISwapRouter(newRouter);
     }
