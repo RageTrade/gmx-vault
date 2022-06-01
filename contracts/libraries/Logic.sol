@@ -67,12 +67,17 @@ library Logic {
     event Harvested(uint256 crvAmount);
     event Staked(uint256 amount, address indexed depositor);
 
-    event FeesWithdrawn(uint256 total);
     event FeesUpdated(uint256 fee);
+    event FeesWithdrawn(uint256 total);
 
-    event CrvOracleUpdated(address indexed oracle);
-    event CrvHarvestThresholdUpdated(uint256 threshold);
-    event CrvSwapSlippageToleranceUpdated(uint256 tolerance);
+    event SettersUpdated(
+        uint256 feeBps,
+        uint256 stablecoinSlippage,
+        uint256 crvHarvestThreshold,
+        uint256 crvSlippageTolerance,
+        address indexed crvOracle
+    );
+
     event CrvSwapFailedDueToSlippage(uint256 crvSlippageTolerance);
 
     event EightyTwentyParamsUpdated(
@@ -280,6 +285,7 @@ library Logic {
     // curve yield strategy
     function convertAssetToSettlementToken(
         uint256 amount,
+        uint256 slippage,
         ILPPriceGetter lpPriceHolder,
         ICurveGauge gauge,
         ICurveStableSwap triCryptoPool,
@@ -297,7 +303,7 @@ library Logic {
 
         bytes memory path = abi.encodePacked(usdt, uint24(500), usdc);
 
-        usdcAmount = SwapManager.swapUsdtToUsdc(balance, path, uniV3Router);
+        usdcAmount = SwapManager.swapUsdtToUsdc(balance, slippage, path, uniV3Router);
     }
 
     function getMarketValue(uint256 amount, ILPPriceGetter lpPriceHolder) external view returns (uint256 marketValue) {
