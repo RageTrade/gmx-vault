@@ -677,7 +677,7 @@ describe('CurveYieldStrategy', () => {
       const curveYieldStrategy = curveYieldStrategyTest.connect(admin);
       await curveYieldStrategy.grantAllowances();
 
-      await curveYieldStrategy.changeFee(2000);
+      await curveYieldStrategy.updateSetters(2_000, 1_000, 0, 3_000, addresses.CRV_ORACLE);
       expect(await curveYieldStrategy.FEE()).to.be.eq(BigNumber.from(2000));
     });
 
@@ -687,7 +687,9 @@ describe('CurveYieldStrategy', () => {
       const curveYieldStrategy = curveYieldStrategyTest.connect(admin);
       await curveYieldStrategy.grantAllowances();
 
-      await expect(curveYieldStrategy.changeFee(10001)).to.be.revertedWith('CYS_INVALID_FEES');
+      await expect(
+        curveYieldStrategyTest.updateSetters(2_000, 1_000, 0, 3_000, addresses.CRV_ORACLE),
+      ).to.be.revertedWith('CYS_INVALID_FEES');
     });
 
     it('should not trigger crv slippage tolerance', async () => {
