@@ -26,7 +26,7 @@ describe('CurveYieldStrategy', () => {
         usdt.allowance(curveYieldStrategy.address, addresses.TRICRYPTO_POOL),
         lpToken.allowance(curveYieldStrategy.address, addresses.TRICRYPTO_POOL),
       ]);
-      const zeroBN = Array<BigNumber>(3).fill(BigNumber.from(0))
+      const zeroBN = Array<BigNumber>(3).fill(BigNumber.from(0));
 
       await curveYieldStrategy.grantAllowances();
 
