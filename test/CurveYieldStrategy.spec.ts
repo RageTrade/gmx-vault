@@ -19,7 +19,7 @@ describe('CurveYieldStrategy', () => {
 
   after(async () => {
     await curveYieldStrategyFixture();
-  })
+  });
 
   describe('#deposit', () => {
     it('should perform approvals by vault', async () => {
