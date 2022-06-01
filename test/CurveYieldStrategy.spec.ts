@@ -1,5 +1,7 @@
+import { Logic } from '@ragetrade/sdk/dist/typechain/vaults';
 import { expect } from 'chai';
 import { BigNumber } from 'ethers';
+import { formatUnits, LogDescription, _fetchData } from 'ethers/lib/utils';
 import hre, { ethers } from 'hardhat';
 
 import addresses from './fixtures/addresses';
@@ -541,17 +543,25 @@ describe('CurveYieldStrategy', () => {
 
       await gauge.claimable_reward_write(curveYieldStrategy.address, addresses.CRV);
       const claimableReward = await gauge.claimable_reward(curveYieldStrategy.address, addresses.CRV);
+
+      const estimatedSwapOutput = await uniswapQuoter.callStatic.quoteExactInput(
+        '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978000bb882af49447d8a07e3bd95bd0d56f35241523fbab10001f4fd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9',
+        claimableReward.mul(BigNumber.from(9)).div(10),
+      );
+
+      const notionalSwapped = Number(formatUnits(estimatedSwapOutput, 6));
+
       await curveYieldStrategy.harvestFees();
+
+      const crvPrice = Number(formatUnits((await crvOracle.latestRoundData()).answer, 8));
+      const crvLeft = Number(formatUnits(await crv.balanceOf(curveYieldStrategy.address), 18));
+
+      expect(crvPrice * crvLeft).to.be.gt(notionalSwapped / 9);
 
       const [totalAssetsAfterHarvest, crvBalanceAfterHarvest] = await Promise.all([
         curveYieldStrategy.convertToAssets(amount),
         crv.balanceOf(curveYieldStrategy.address),
       ]);
-
-      // const out = await uniswapQuoter.quoteExactInput(
-      //   '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978000bb882af49447d8a07e3bd95bd0d56f35241523fbab10001f4fd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9',
-      //   claimableReward.mul(BigNumber.from(9)).div(10)
-      // )
 
       await curveYieldStrategy.withdrawFees();
 
@@ -565,42 +575,6 @@ describe('CurveYieldStrategy', () => {
 
       expect(crvBalanceBefore).to.be.eq(BigNumber.from(0));
       expect(crvBalanceAfterWithdrawFees).to.be.eq(BigNumber.from(0));
-
-      // admin fees : 0.1 * total crv rewards
-      // total crv rewards : admin fees + converted into LP
-      // therefore, converted into LP : 9 * admin fees
-
-      // total crv rewards : increase in value of shares
-
-      // total earned : total crv * price of crv
-      // total fees : total earned * 0.1
-      // total increase in value of shares : total earned * 0.9
-      // total value of shares : old value of shares + new value of shares
-
-      const pricePerLP = await lpOracle.lp_price();
-      // console.log('PRICE PER LP : ', pricePerLP);
-
-      const { answer } = await crvOracle.latestRoundData();
-      // console.log('PRICE PER CRV : ', answer.div(10 ** 8));
-
-      const fees = crvBalanceAfterHarvest.mul(answer).div(BigNumber.from(10).pow(8));
-      // console.log('FEES : ', fees);
-
-      const convertedToLp = BigNumber.from(9).mul(fees);
-      // console.log('CONVERTED TO LP : ', convertedToLp);
-
-      const increaseInvalueOfShares = totalAssetsAfterHarvest.sub(totalAssetsBefore);
-      // console.log('INCREASE IN VALUE OF SHARES : ', increaseInvalueOfShares);
-
-      // expect(convertedToLp.mul(10).div(11)).to.be.eq(
-      //   increaseInvalueOfShares.mul(pricePerLP).div(BigNumber.from(10).pow(18)),
-      // );
-
-      // const notionalIncrease = totalAssetsAfterHarvest.sub(totalAssetsBefore).mul(pricePerLP);
-
-      // const netCrvValue = answer.div().mul(crvBalanceAfterHarvest);
-
-      // expect(notionalIncrease).to.be.eq(netCrvValue.mul(11));
     });
   });
 
@@ -711,6 +685,94 @@ describe('CurveYieldStrategy', () => {
       await expect(
         curveYieldStrategyTest.updateCurveParams(10_001, 1_000, 0, 3_000, addresses.CRV_ORACLE),
       ).to.be.revertedWith('CYS_INVALID_SETTER_VALUE(10001)');
+    });
+
+    it('should not trigger crv slippage tolerance', async () => {
+      const [admin, user] = await hre.ethers.getSigners();
+      const { gauge, lpToken, crv, curveYieldStrategyTest: curveYieldStrategy } = await curveYieldStrategyFixture();
+      await curveYieldStrategy.grantAllowances();
+
+      await hre.network.provider.request({
+        method: 'hardhat_impersonateAccount',
+        params: [addresses.LP_TOKEN_WHALE],
+      });
+
+      const whale = await ethers.getSigner(addresses.LP_TOKEN_WHALE);
+
+      const amount = BigNumber.from(10).pow(18).mul(50);
+
+      await curveYieldStrategy.connect(admin).updateDepositCap(ethers.constants.MaxUint256);
+
+      await lpToken.connect(whale).transfer(user.address, amount);
+      await lpToken.connect(user).approve(curveYieldStrategy.address, amount);
+
+      await curveYieldStrategy.connect(user).deposit(amount, user.address);
+
+      await hre.network.provider.send('evm_increaseTime', [10_000_000]);
+      await hre.network.provider.send('evm_mine', []);
+
+      await gauge.claimable_reward_write(curveYieldStrategy.address, crv.address);
+      const claimable = await gauge.claimable_reward(curveYieldStrategy.address, crv.address);
+
+      await curveYieldStrategy.harvestFees();
+      const balBeforeWithdraw = await crv.balanceOf(curveYieldStrategy.address);
+
+      await curveYieldStrategy.withdrawFees();
+      const balAfterWithdraw = await crv.balanceOf(curveYieldStrategy.address);
+
+      expect(claimable).to.be.eq(balBeforeWithdraw.mul(10));
+      expect(balAfterWithdraw).to.be.eq(0);
+    });
+
+    it('should trigger crv slippage tolerance & withdraw correct fees', async () => {
+      const [admin, user] = await hre.ethers.getSigners();
+      const { gauge, lpToken, crv, curveYieldStrategyTest: curveYieldStrategy } = await curveYieldStrategyFixture();
+      await curveYieldStrategy.grantAllowances();
+
+      await hre.network.provider.request({
+        method: 'hardhat_impersonateAccount',
+        params: [addresses.LP_TOKEN_WHALE],
+      });
+
+      const whale = await ethers.getSigner(addresses.LP_TOKEN_WHALE);
+
+      const amount = BigNumber.from(10).pow(18).mul(50);
+
+      await curveYieldStrategy.connect(admin).updateDepositCap(ethers.constants.MaxUint256);
+
+      await lpToken.connect(whale).transfer(user.address, amount);
+      await lpToken.connect(user).approve(curveYieldStrategy.address, amount);
+
+      await curveYieldStrategy.connect(user).deposit(amount, user.address);
+
+      await hre.network.provider.send('evm_increaseTime', [10_000_000]);
+      await hre.network.provider.send('evm_mine', []);
+
+      await curveYieldStrategy.setCrvSwapSlippageTolerance(100);
+
+      await gauge.claimable_reward_write(curveYieldStrategy.address, crv.address);
+      const claimable_ = await gauge.claimable_reward(curveYieldStrategy.address, crv.address);
+
+      const logInterface = new ethers.utils.Interface([
+        'event CrvSwapFailedDueToSlippage(uint256 crvSlippageTolerance)',
+      ]);
+      const reqTopic = logInterface.getEventTopic('CrvSwapFailedDueToSlippage');
+
+      const tx = await (await curveYieldStrategy.harvestFees()).wait();
+
+      const balBeforeWithdraw_ = await crv.balanceOf(curveYieldStrategy.address);
+
+      expect(tx.logs.find(item => item.topics[0] === reqTopic)?.topics.length).to.be.eq(1);
+
+      await curveYieldStrategy.withdrawFees();
+      const balAfterWithdraw_ = await crv.balanceOf(curveYieldStrategy.address);
+
+      // console.log('CLAIMABLE : ', claimable_)
+      // console.log('BEFORE WITHDRAW AFTER HARVEST : ', balBeforeWithdraw_)
+      // console.log('AFTER WITHDRAW : ', balAfterWithdraw_)
+
+      expect(claimable_).to.be.eq(balBeforeWithdraw_);
+      expect(balAfterWithdraw_).to.be.eq(claimable_.mul(9).div(10));
     });
   });
 });
