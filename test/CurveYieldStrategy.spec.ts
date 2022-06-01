@@ -32,6 +32,7 @@ describe('CurveYieldStrategy', () => {
         usdt.allowance(curveYieldStrategy.address, addresses.TRICRYPTO_POOL),
         lpToken.allowance(curveYieldStrategy.address, addresses.TRICRYPTO_POOL),
       ]);
+      const zeroBN = Array<BigNumber>(3).fill(BigNumber.from(0))
 
       await curveYieldStrategy.grantAllowances();
 
@@ -41,10 +42,8 @@ describe('CurveYieldStrategy', () => {
         lpToken.allowance(curveYieldStrategy.address, addresses.TRICRYPTO_POOL),
       ]);
 
-      expect(before.toString()).to.be.eql([BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)].toString());
-      expect(after.toString()).to.be.eql(
-        [ethers.constants.MaxUint256, ethers.constants.MaxUint256, ethers.constants.MaxUint256].toString(),
-      );
+      expect(before.toString()).to.be.eql(zeroBN.toString());
+      expect(after.toString()).to.be.eql([ethers.constants.MaxUint256, ethers.constants.MaxUint256, ethers.constants.MaxUint256].toString());
     });
 
     it('should transfer lp tokens & mint shares', async () => {
@@ -688,7 +687,7 @@ describe('CurveYieldStrategy', () => {
       await curveYieldStrategy.grantAllowances();
 
       await expect(
-        curveYieldStrategyTest.updateSetters(2_000, 1_000, 0, 3_000, addresses.CRV_ORACLE),
+        curveYieldStrategyTest.updateSetters(10_001, 1_000, 0, 3_000, addresses.CRV_ORACLE),
       ).to.be.revertedWith('CYS_INVALID_FEES');
     });
 
