@@ -17,6 +17,10 @@ describe('CurveYieldStrategy', () => {
     await curveYieldStrategyFixture();
   });
 
+  after(async () => {
+    await curveYieldStrategyFixture();
+  })
+
   describe('#deposit', () => {
     it('should perform approvals by vault', async () => {
       const [admin] = await hre.ethers.getSigners();
