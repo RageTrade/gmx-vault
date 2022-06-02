@@ -11,9 +11,15 @@ import { UniswapV3PoolHelper } from '@ragetrade/core/contracts/libraries/Uniswap
 import { FixedPoint96 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint96.sol';
 import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
+import { SignedMath } from '@ragetrade/core/contracts/libraries/SignedMath.sol';
+import { SignedFullMath } from '@ragetrade/core/contracts/libraries/SignedFullMath.sol';
 import { ISwapRouter } from '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
 import { TickMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/TickMath.sol';
 import { IUniswapV3Pool } from '@uniswap/v3-core-0.8-support/contracts/interfaces/IUniswapV3Pool.sol';
+
+import { IClearingHouse } from '@ragetrade/core/contracts/interfaces/IClearingHouse.sol';
+import { ClearingHouseExtsload } from '@ragetrade/core/contracts/extsloads/ClearingHouseExtsload.sol';
+import { IClearingHouseStructures } from '@ragetrade/core/contracts/interfaces/clearinghouse/IClearingHouseStructures.sol';
 
 import { ICurveGauge } from '../interfaces/curve/ICurveGauge.sol';
 import { ILPPriceGetter } from '../interfaces/curve/ILPPriceGetter.sol';
@@ -22,10 +28,26 @@ import { ICurveStableSwap } from '../interfaces/curve/ICurveStableSwap.sol';
 import { SwapManager } from '../libraries/SwapManager.sol';
 import { SafeCast } from '../libraries/SafeCast.sol';
 
+interface IBaseVaultGetters {
+    function ethPoolId() external view returns (uint32);
+
+    function rageAccountNo() external view returns (uint256);
+
+    function rageVPool() external view returns (IUniswapV3Pool);
+
+    function rageClearingHouse() external view returns (address);
+
+    function closePositionSlippageSqrtToleranceBps() external view returns (uint16);
+}
+
 library Logic {
     using SafeCast for uint256;
     using FullMath for uint256;
+    using SignedMath for int256;
+    using SignedFullMath for int256;
+
     using UniswapV3PoolHelper for IUniswapV3Pool;
+    using ClearingHouseExtsload for IClearingHouse;
 
     event Harvested(uint256 crvAmount);
     event Staked(uint256 amount, address indexed depositor);
@@ -75,6 +97,61 @@ library Logic {
     }
 
     // 80 20
+
+    function simulateBeforeWithdraw(
+        address vault,
+        uint256 amountBeforeWithdraw,
+        uint256 amountWithdrawn
+    ) external view returns (uint256) {
+        uint160 sqrtPriceLimitX96;
+
+        uint32 ethPoolId = IBaseVaultGetters(vault).ethPoolId();
+        IClearingHouse clearingHouse = IClearingHouse(IBaseVaultGetters(vault).rageClearingHouse());
+
+        uint160 sqrtPriceX96 = _getTwapSqrtPriceX96(
+            IBaseVaultGetters(vault).rageVPool(),
+            clearingHouse.getTwapDuration(ethPoolId)
+        );
+
+        int256 netPosition = clearingHouse.getAccountNetTokenPosition(
+            IBaseVaultGetters(vault).rageAccountNo(),
+            IBaseVaultGetters(vault).ethPoolId()
+        );
+        int256 tokensToTrade = -netPosition.mulDiv(amountWithdrawn, amountBeforeWithdraw);
+        uint256 tokensToTradeNotionalAbs = _getTokenNotionalAbs(netPosition, sqrtPriceX96);
+
+        uint16 slippageSqrtToleranceBps = IBaseVaultGetters(vault).closePositionSlippageSqrtToleranceBps();
+
+        if (tokensToTrade > 0) {
+            sqrtPriceLimitX96 = uint256(sqrtPriceX96).mulDiv(1e4 + slippageSqrtToleranceBps, 1e4).toUint160();
+        } else {
+            sqrtPriceLimitX96 = uint256(sqrtPriceX96).mulDiv(1e4 - slippageSqrtToleranceBps, 1e4).toUint160();
+        }
+
+        IClearingHouseStructures.SwapParams memory swapParams = IClearingHouseStructures.SwapParams({
+            amount: tokensToTrade,
+            sqrtPriceLimit: sqrtPriceLimitX96,
+            isNotional: false,
+            isPartialAllowed: true,
+            settleProfit: false
+        });
+
+        return 0; // TODO: remove
+    }
+
+    /// @notice Get token notional absolute
+    /// @param tokenAmount Token amount
+    /// @param sqrtPriceX96 Sqrt of price in X96
+    function _getTokenNotionalAbs(int256 tokenAmount, uint160 sqrtPriceX96)
+        internal
+        pure
+        returns (uint256 tokenNotionalAbs)
+    {
+        tokenNotionalAbs = tokenAmount
+            .mulDiv(sqrtPriceX96, FixedPoint96.Q96)
+            .mulDiv(sqrtPriceX96, FixedPoint96.Q96)
+            .absUint();
+    }
 
     /// @notice checks if upper and lower ticks are valid for rebalacing between current twap price and rebalance threshold
     function isValidRebalanceRangeWithoutCheckReset(
