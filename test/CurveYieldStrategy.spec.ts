@@ -710,7 +710,7 @@ describe('CurveYieldStrategy', () => {
 
       await expect(
         curveYieldStrategyTest.updateSetters(10_001, 1_000, 0, 3_000, addresses.CRV_ORACLE),
-      ).to.be.revertedWith('CYS_INVALID_FEES');
+      ).to.be.revertedWith('CYS_INVALID_SETTER_VALUE(10001)');
     });
   });
 });
