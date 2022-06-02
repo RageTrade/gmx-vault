@@ -50,7 +50,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     uint256 public rageAccountNo;
     IUniswapV3Pool public rageVPool;
 
-    uint256 public depositCap; // in vault shares
+    uint256 public depositCap; // in vault assets
 
     uint64 public lastRebalanceTS;
     uint16 public rebalancePriceThresholdBps;

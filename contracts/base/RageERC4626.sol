@@ -8,6 +8,12 @@ import { Logic } from '../libraries/Logic.sol';
 import { ERC4626Upgradeable } from '../utils/ERC4626Upgradeable.sol';
 import { FixedPointMathLib } from '@rari-capital/solmate/src/utils/FixedPointMathLib.sol';
 
+interface IBaseVaultGetters {
+    function depositCap() external view returns (uint256);
+
+    function totalAssets() external view returns (uint256);
+}
+
 abstract contract RageERC4626 is ERC4626Upgradeable {
     using SafeERC20 for IERC20Metadata;
     using FixedPointMathLib for uint256;
@@ -106,6 +112,14 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
 
     function maxRedeem(address owner) public view override returns (uint256) {
         return previewRedeem(balanceOf(owner));
+    }
+
+    function maxDeposit(address) public view virtual override returns (uint256) {
+        return IBaseVaultGetters(address(this)).depositCap() - IBaseVaultGetters(address(this)).totalAssets();
+    }
+
+    function maxMint(address) public view virtual override returns (uint256) {
+        return convertToShares(maxDeposit(address(0)));
     }
 
     function _beforeShareAllocation() internal virtual;
