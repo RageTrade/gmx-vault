@@ -136,6 +136,7 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
     settlementTokenTreasury,
     ethPoolId,
     ethPool: pool0,
+    swapSimulator: pool0.SwapSimulator,
     user0,
     user1,
     trader0,
