@@ -73,6 +73,8 @@ export const rageTradeFixture = deployments.createFixture(async hre => {
     const vPool = await hre.ethers.getContractAt('IUniswapV3Pool', event.args.vPool);
     const vPoolWrapper = await hre.ethers.getContractAt('VPoolWrapper', event.args.vPoolWrapper);
 
-    return { vToken, vPool, vPoolWrapper, oracle };
+    const SwapSimulator = await (await hre.ethers.getContractFactory('SwapSimulator')).deploy();
+
+    return { vToken, vPool, vPoolWrapper, oracle, SwapSimulator };
   }
 });

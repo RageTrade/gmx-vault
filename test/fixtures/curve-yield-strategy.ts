@@ -15,7 +15,7 @@ import addresses from './addresses';
 import { eightyTwentyRangeStrategyFixture } from './eighty-twenty-range-strategy-vault';
 
 export const curveYieldStrategyFixture = deployments.createFixture(async hre => {
-  const { clearingHouse, collateralToken, settlementToken, settlementTokenTreasury, ethPoolId } =
+  const { clearingHouse, collateralToken, settlementToken, settlementTokenTreasury, ethPoolId, swapSimulator } =
     await eightyTwentyRangeStrategyFixture();
 
   const [signer, user1, user2] = await hre.ethers.getSigners();

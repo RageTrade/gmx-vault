@@ -17,6 +17,7 @@ import { ISwapRouter } from '@uniswap/v3-periphery/contracts/interfaces/ISwapRou
 import { TickMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/TickMath.sol';
 import { IUniswapV3Pool } from '@uniswap/v3-core-0.8-support/contracts/interfaces/IUniswapV3Pool.sol';
 
+import { IVPoolWrapper } from '@ragetrade/core/contracts/interfaces/IVPoolWrapper.sol';
 import { IClearingHouse } from '@ragetrade/core/contracts/interfaces/IClearingHouse.sol';
 import { ClearingHouseExtsload } from '@ragetrade/core/contracts/extsloads/ClearingHouseExtsload.sol';
 import { IClearingHouseStructures } from '@ragetrade/core/contracts/interfaces/clearinghouse/IClearingHouseStructures.sol';
@@ -37,7 +38,19 @@ interface IBaseVaultGetters {
 
     function rageClearingHouse() external view returns (address);
 
+    function minNotionalPositionToCloseThreshold() external view returns (uint64);
+
     function closePositionSlippageSqrtToleranceBps() external view returns (uint16);
+}
+
+interface ISwapSimulator {
+    function simulateSwapView(
+        IClearingHouse clearingHouse,
+        uint32 poolId,
+        int256 amount,
+        uint160 sqrtPriceLimitX96,
+        bool isNotional
+    ) external view returns (IVPoolWrapper.SwapResult memory swapResult);
 }
 
 library Logic {
@@ -98,13 +111,39 @@ library Logic {
 
     // 80 20
 
-    function simulateBeforeWithdraw(
-        address vault,
-        uint256 amountBeforeWithdraw,
-        uint256 amountWithdrawn
-    ) external view returns (uint256) {
+    function _simulateClose(
+        uint32 ethPoolId,
+        int256 tokensToTrade,
+        uint160 sqrtPriceX96,
+        IClearingHouse clearingHouse,
+        ISwapSimulator swapSimulator,
+        uint16 slippageSqrtToleranceBps
+    ) internal view returns (int256 vTokenAmountOut, int256 vQuoteAmountOut) {
         uint160 sqrtPriceLimitX96;
 
+        if (tokensToTrade > 0) {
+            sqrtPriceLimitX96 = uint256(sqrtPriceX96).mulDiv(1e4 + slippageSqrtToleranceBps, 1e4).toUint160();
+        } else {
+            sqrtPriceLimitX96 = uint256(sqrtPriceX96).mulDiv(1e4 - slippageSqrtToleranceBps, 1e4).toUint160();
+        }
+
+        IVPoolWrapper.SwapResult memory swapResult = swapSimulator.simulateSwapView(
+            clearingHouse,
+            ethPoolId,
+            tokensToTrade,
+            sqrtPriceLimitX96,
+            false
+        );
+
+        return (-swapResult.vTokenIn, -swapResult.vQuoteIn);
+    }
+
+    function simulateBeforeWithdraw(
+        address vault,
+        address swapSimulator,
+        uint256 amountBeforeWithdraw,
+        uint256 amountWithdrawn
+    ) external view returns (uint256 updatedAmountWithdrawn) {
         uint32 ethPoolId = IBaseVaultGetters(vault).ethPoolId();
         IClearingHouse clearingHouse = IClearingHouse(IBaseVaultGetters(vault).rageClearingHouse());
 
@@ -117,26 +156,39 @@ library Logic {
             IBaseVaultGetters(vault).rageAccountNo(),
             IBaseVaultGetters(vault).ethPoolId()
         );
+
         int256 tokensToTrade = -netPosition.mulDiv(amountWithdrawn, amountBeforeWithdraw);
         uint256 tokensToTradeNotionalAbs = _getTokenNotionalAbs(netPosition, sqrtPriceX96);
 
-        uint16 slippageSqrtToleranceBps = IBaseVaultGetters(vault).closePositionSlippageSqrtToleranceBps();
+        uint64 minNotionalPositionToCloseThreshold = IBaseVaultGetters(vault).minNotionalPositionToCloseThreshold();
+        uint16 closePositionSlippageSqrtToleranceBps = IBaseVaultGetters(vault).closePositionSlippageSqrtToleranceBps();
 
-        if (tokensToTrade > 0) {
-            sqrtPriceLimitX96 = uint256(sqrtPriceX96).mulDiv(1e4 + slippageSqrtToleranceBps, 1e4).toUint160();
-        } else {
-            sqrtPriceLimitX96 = uint256(sqrtPriceX96).mulDiv(1e4 - slippageSqrtToleranceBps, 1e4).toUint160();
+        /// @dev to avoid stack too deep errors
+        ISwapSimulator swapSimulatorCopied = ISwapSimulator(swapSimulator);
+
+        {
+            if (tokensToTradeNotionalAbs > minNotionalPositionToCloseThreshold) {
+                (int256 vTokenAmountOut, ) = _simulateClose(
+                    ethPoolId,
+                    tokensToTrade,
+                    sqrtPriceX96,
+                    clearingHouse,
+                    swapSimulatorCopied,
+                    closePositionSlippageSqrtToleranceBps
+                );
+
+                if (vTokenAmountOut == tokensToTrade) updatedAmountWithdrawn = amountWithdrawn;
+                else {
+                    int256 updatedAmountWithdrawnInt = -vTokenAmountOut.mulDiv(
+                        amountBeforeWithdraw.toInt256(),
+                        netPosition
+                    );
+                    updatedAmountWithdrawn = uint256(updatedAmountWithdrawnInt);
+                }
+            } else {
+                updatedAmountWithdrawn = amountWithdrawn;
+            }
         }
-
-        IClearingHouseStructures.SwapParams memory swapParams = IClearingHouseStructures.SwapParams({
-            amount: tokensToTrade,
-            sqrtPriceLimit: sqrtPriceLimitX96,
-            isNotional: false,
-            isPartialAllowed: true,
-            settleProfit: false
-        });
-
-        return 0; // TODO: remove
     }
 
     /// @notice Get token notional absolute

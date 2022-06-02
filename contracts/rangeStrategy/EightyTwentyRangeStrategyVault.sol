@@ -36,7 +36,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     bool public isReset;
     uint16 public closePositionSlippageSqrtToleranceBps;
     uint16 private resetPositionThresholdBps;
-    uint64 private minNotionalPositionToCloseThreshold;
+    uint64 public minNotionalPositionToCloseThreshold;
     uint64 private constant SQRT_PRICE_FACTOR_PIPS = 800000; // scaled by 1e6
 
     struct EightyTwentyRangeStrategyVaultInitParams {
