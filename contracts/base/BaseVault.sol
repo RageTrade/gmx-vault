@@ -40,13 +40,13 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     using UniswapV3PoolHelper for IUniswapV3Pool;
     using ClearingHouseExtsload for IClearingHouse;
 
+    IClearingHouse public rageClearingHouse;
     IERC20Metadata internal rageSettlementToken;
-    IClearingHouse internal rageClearingHouse;
     CollateralToken internal rageCollateralToken;
 
+    uint32 public ethPoolId;
     uint256 public rageAccountNo;
-    uint32 internal ethPoolId;
-    IUniswapV3Pool internal rageVPool;
+    IUniswapV3Pool public rageVPool;
 
     uint256 public depositCap; // in vault shares
 
