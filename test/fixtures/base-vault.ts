@@ -23,7 +23,7 @@ export const baseVaultFixture = deployments.createFixture(async hre => {
     await hre.ethers.getContractFactory('BaseVaultTest', {
       libraries: {
         ['contracts/libraries/Logic.sol:Logic']: logic.address,
-      }
+      },
     })
   ).deploy(asset.address, clearingHouse.address);
 
