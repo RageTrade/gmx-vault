@@ -40,7 +40,9 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     using UniswapV3PoolHelper for IUniswapV3Pool;
     using ClearingHouseExtsload for IClearingHouse;
 
+    address public swapSimulator;
     IClearingHouse public rageClearingHouse;
+
     IERC20Metadata internal rageSettlementToken;
     CollateralToken internal rageCollateralToken;
 
@@ -68,6 +70,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     struct BaseVaultInitParams {
         RageERC4626InitParams rageErc4626InitParams;
         uint32 ethPoolId;
+        address swapSimulator;
         address rageClearingHouse;
         address rageCollateralToken;
         address rageSettlementToken;
@@ -77,7 +80,10 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     function __BaseVault_init(BaseVaultInitParams memory params) internal onlyInitializing {
         __Ownable_init();
         __RageERC4626_init(params.rageErc4626InitParams);
+
         ethPoolId = params.ethPoolId;
+        swapSimulator = params.swapSimulator;
+
         rageClearingHouse = IClearingHouse(params.rageClearingHouse);
         rageAccountNo = rageClearingHouse.createAccount();
         rageCollateralToken = CollateralToken(params.rageCollateralToken);

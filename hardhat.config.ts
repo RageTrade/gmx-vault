@@ -77,7 +77,7 @@ export default {
       blockGasLimit: 0x1fffffffffff,
       gasPrice: 0,
       initialBaseFeePerGas: 0,
-      allowUnlimitedContractSize: false,
+      allowUnlimitedContractSize: true,
     },
     rinkeby: {
       url: `https://eth-rinkeby.alchemyapi.io/v2/${ALCHEMY_KEY}`,

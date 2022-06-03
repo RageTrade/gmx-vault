@@ -4,10 +4,13 @@ pragma solidity >=0.8.0;
 import { IERC20Metadata } from '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
 import { SafeERC20 } from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
+import { Logic } from '../libraries/Logic.sol';
 import { ERC4626Upgradeable } from '../utils/ERC4626Upgradeable.sol';
+import { FixedPointMathLib } from '@rari-capital/solmate/src/utils/FixedPointMathLib.sol';
 
 abstract contract RageERC4626 is ERC4626Upgradeable {
     using SafeERC20 for IERC20Metadata;
+    using FixedPointMathLib for uint256;
 
     struct RageERC4626InitParams {
         IERC20Metadata asset;
@@ -18,6 +21,20 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
     /* solhint-disable-next-line func-name-mixedcase */
     function __RageERC4626_init(RageERC4626InitParams memory params) internal {
         __ERC4626Upgradeable_init(params.asset, params.name, params.symbol);
+    }
+
+    function previewWithdraw(uint256 assets) public view virtual override returns (uint256) {
+        uint256 supply = totalSupply(); // Saves an extra SLOAD if totalSupply is non-zero.
+        uint256 adjustedAssets = Logic.simulateBeforeWithdraw(address(this), totalAssets(), assets);
+
+        return supply == 0 ? adjustedAssets : adjustedAssets.mulDivUp(supply, totalAssets());
+    }
+
+    function previewRedeem(uint256 shares) public view virtual override returns (uint256) {
+        uint256 assets = convertToAssets(shares);
+        uint256 adjustedAssets = Logic.simulateBeforeWithdraw(address(this), totalAssets(), assets);
+
+        return adjustedAssets;
     }
 
     function deposit(uint256 amount, address to) public virtual override returns (uint256 shares) {
@@ -36,8 +53,8 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
         address from
     ) public override returns (uint256 shares) {
         _beforeShareAllocation();
-        uint256 updatedAmount = beforeWithdrawClosePosition(amount);
-        shares = super.withdraw(updatedAmount, to, from);
+        shares = super.withdraw(amount, to, from);
+        beforeWithdrawClosePosition(amount);
     }
 
     function redeem(
@@ -46,30 +63,9 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
         address from
     ) public override returns (uint256 amount) {
         _beforeShareAllocation();
-
-        if (msg.sender != from) {
-            uint256 allowed = allowance(from, msg.sender); // Saves gas for limited approvals.
-            if (allowed != type(uint256).max) _approve(from, msg.sender, allowed - shares);
-        }
-
-        // Check for rounding error since we round down in previewRedeem.
-        require((amount = previewRedeem(shares)) != 0, 'ZERO_ASSETS');
-
-        //Additional cap on withdraw to ensure the position closed does not breach slippage tolerance
-        //In case tolerance is reached only partial withdraw is executed
-        uint256 updatedAmount = beforeWithdrawClosePosition(amount);
-        if (updatedAmount != amount) {
-            amount = updatedAmount;
-            shares = previewWithdraw(updatedAmount);
-        }
-
-        beforeWithdraw(amount, shares);
-
-        _burn(from, shares);
-
-        emit Withdraw(msg.sender, to, from, amount, shares);
-
-        asset.safeTransfer(to, amount);
+        uint256 amountBefore = convertToAssets(shares);
+        amount = super.redeem(shares, to, from);
+        beforeWithdrawClosePosition(amountBefore);
     }
 
     function _beforeShareAllocation() internal virtual;

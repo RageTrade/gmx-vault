@@ -64,6 +64,7 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
         ethPoolId,
         // owner: admin.address,
         rageClearingHouse: clearingHouse.address,
+        swapSimulator: pool0.SwapSimulator.address,
         rageCollateralToken: collateralToken.address,
         rageSettlementToken: settlementToken.address,
       },

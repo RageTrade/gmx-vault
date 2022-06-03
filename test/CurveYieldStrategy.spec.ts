@@ -35,8 +35,8 @@ describe('CurveYieldStrategy', () => {
         lpToken.allowance(curveYieldStrategy.address, addresses.TRICRYPTO_POOL),
       ]);
 
-      expect(before).to.be.eql([BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
-      expect(after).to.be.eql([ethers.constants.MaxUint256, ethers.constants.MaxUint256, ethers.constants.MaxUint256]);
+      expect(before.toString()).to.be.eql([BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)].toString());
+      expect(after.toString()).to.be.eql([ethers.constants.MaxUint256, ethers.constants.MaxUint256, ethers.constants.MaxUint256].toString());
     });
 
     it('should transfer lp tokens & mint shares', async () => {
