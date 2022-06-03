@@ -18,6 +18,7 @@ contract BaseVaultTest is BaseVault {
             BaseVaultInitParams({
                 rageErc4626InitParams: RageERC4626InitParams({ asset: token, name: 'name', symbol: 'symbol' }),
                 ethPoolId: 0,
+                swapSimulator: address(0),
                 rageClearingHouse: rageClearingHouse,
                 rageCollateralToken: address(token),
                 rageSettlementToken: address(token)

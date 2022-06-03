@@ -164,6 +164,7 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
         },
         ethPoolId,
         rageClearingHouse: clearingHouse.address,
+        swapSimulator: pool0.SwapSimulator.address,
         rageCollateralToken: collateralToken.address,
         rageSettlementToken: settlementToken.address,
       },

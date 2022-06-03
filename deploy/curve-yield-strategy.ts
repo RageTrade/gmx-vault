@@ -35,6 +35,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           symbol: 'TCS',
         },
         ethPoolId,
+        swapSimulator: await (await get('SwapSimulator')).address,
         rageClearingHouse: clearingHouseAddress,
         rageCollateralToken: collateralTokenDeployment.address,
         rageSettlementToken: settlementTokenAddress,

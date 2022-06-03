@@ -101,7 +101,7 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
           symbol: 'TCS',
         },
         ethPoolId,
-        // owner: signer.address,
+        swapSimulator: swapSimulator.address,
         rageClearingHouse: clearingHouse.address,
         rageCollateralToken: collateralToken.address,
         rageSettlementToken: settlementToken.address,
