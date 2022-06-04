@@ -87,7 +87,6 @@ contract BaseVaultTest is BaseVault {
         internal
         virtual
         override
-        returns (uint256 updatedAmountWithdrawn)
     {}
 
     function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal virtual override {}
