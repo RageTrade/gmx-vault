@@ -162,7 +162,6 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     function _beforeWithdrawClosePositionRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn)
         internal
         override
-        returns (uint256 updatedAmountWithdrawn)
     {
         uint160 sqrtPriceX96 = _getTwapSqrtPriceX96();
         int256 netPosition = rageClearingHouse.getAccountNetTokenPosition(rageAccountNo, ethPoolId);
@@ -170,23 +169,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         uint256 tokensToTradeNotionalAbs = _getTokenNotionalAbs(netPosition, sqrtPriceX96);
 
         if (tokensToTradeNotionalAbs > minNotionalPositionToCloseThreshold) {
-            (int256 vTokenAmountOut, ) = _closeTokenPosition(
-                tokensToTrade,
-                sqrtPriceX96,
-                closePositionSlippageSqrtToleranceBps
-            );
-
-            if (vTokenAmountOut == tokensToTrade) updatedAmountWithdrawn = amountWithdrawn;
-            else {
-                int256 updatedAmountWithdrawnInt = -vTokenAmountOut.mulDiv(
-                    amountBeforeWithdraw.toInt256(),
-                    netPosition
-                );
-                // assert(updatedAmountWithdrawnInt > 0);
-                updatedAmountWithdrawn = uint256(updatedAmountWithdrawnInt);
-            }
-        } else {
-            updatedAmountWithdrawn = amountWithdrawn;
+            _closeTokenPosition(tokensToTrade, sqrtPriceX96, closePositionSlippageSqrtToleranceBps);
         }
     }
 

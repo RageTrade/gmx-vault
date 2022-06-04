@@ -309,8 +309,8 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
     /// @notice reduce withdraw/redeem amount if position is reduced on rage trade to limit slippage
     /// @dev to be called before functions which allows to withdraw collateral (withdraw, redeem)
-    function beforeWithdrawClosePosition(uint256 amount) internal virtual override returns (uint256 updatedAmount) {
-        return _beforeWithdrawClosePositionRanges(totalAssets(), amount);
+    function beforeWithdrawClosePosition(uint256 amount) internal virtual override {
+        _beforeWithdrawClosePositionRanges(totalAssets(), amount);
     }
 
     function _blockTimestamp() internal view virtual returns (uint256) {
@@ -380,10 +380,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     /// @notice Closes net token position before withdrawal
     /// @param amountBeforeWithdraw The amount of asset tokens before withdrawal
     /// @param amountWithdrawn The amount of asset tokens withdrawn
-    function _beforeWithdrawClosePositionRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn)
-        internal
-        virtual
-        returns (uint256 updatedAmountWithdrawn);
+    function _beforeWithdrawClosePositionRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal virtual;
 
     /// @notice Updates liquidity position and collateral in rage core before withdrawal
     /// @param amountBeforeWithdraw The amount of asset tokens before withdrawal
