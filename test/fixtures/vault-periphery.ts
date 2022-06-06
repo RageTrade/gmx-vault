@@ -26,7 +26,7 @@ export const vaultPeripheryFixture = deployments.createFixture(async hre => {
     addresses.WETH_ORACLE,
   );
 
-  await vault.updateDepositCap(ethers.constants.MaxUint256);
+  await vault.updateBaseParams(ethers.constants.MaxUint256, ethers.constants.AddressZero, 0, 0);
 
   return {
     weth,

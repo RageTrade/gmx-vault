@@ -22,7 +22,7 @@ const { ALCHEMY_KEY } = process.env;
 
 // this compile task override is needed to copy missing abi fragments to respective artifacts (note its not aval to typechain)
 task(TASK_COMPILE, 'Compiles the entire project, building all artifacts').setAction(async (taskArgs, _, runSuper) => {
-  const compileSolOutput = await runSuper(taskArgs);
+  const compileSolOutput: any = await runSuper(taskArgs);
 
   copyEventErrorAbi(
     'artifacts/contracts/libraries/Logic.sol/Logic.json',
@@ -102,9 +102,10 @@ export default {
       {
         version: '0.8.13',
         settings: {
+          viaIR: true,
           optimizer: {
             enabled: true,
-            runs: 46,
+            runs: 12
           },
           metadata: {
             // do not include the metadata hash, since this is machine dependent

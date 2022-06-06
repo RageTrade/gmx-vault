@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { BigNumber } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import hre from 'hardhat';
 
 import { parseTokenAmount, priceToPriceX128 } from '@ragetrade/sdk';
@@ -70,7 +70,12 @@ describe('EightyTwentyRangeStrategyVault', () => {
       const [, user0] = await hre.ethers.getSigners();
       const { eightyTwentyRangeStrategyVaultTest } = await eightyTwentyRangeStrategyFixture();
 
-      await eightyTwentyRangeStrategyVaultTest.updateDepositCap(parseTokenAmount(1, 18));
+      await eightyTwentyRangeStrategyVaultTest.updateBaseParams(
+        parseTokenAmount(1, 18),
+        ethers.constants.AddressZero,
+        0,
+        0,
+      );
       await expect(
         eightyTwentyRangeStrategyVaultTest.connect(user0).deposit(parseTokenAmount(1, 18).add(1), user0.address),
       ).to.be.revertedWith('BV_DepositCap(1000000000000000000, 1000000000000000001)');

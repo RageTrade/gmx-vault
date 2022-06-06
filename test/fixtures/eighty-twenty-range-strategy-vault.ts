@@ -75,7 +75,7 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
     settlementTokenTreasury.address,
   );
 
-  eightyTwentyRangeStrategyVaultTest.setKeeper(admin.address);
+  eightyTwentyRangeStrategyVaultTest.updateBaseParams(ethers.constants.MaxUint256, admin.address, 0, 0);
   await eightyTwentyRangeStrategyVaultTest.grantAllowances();
   collateralToken.grantRole(await collateralToken.MINTER_ROLE(), eightyTwentyRangeStrategyVaultTest.address);
   const collateralTokenOracle = await (await hre.ethers.getContractFactory('OracleMock')).deploy();
@@ -122,8 +122,6 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
 
   await settlementToken.approve(clearingHouse.address, parseTokenAmount(10n ** 5n, 6));
   await clearingHouse.updateMargin(adminAccountNo, truncate(settlementToken.address), parseTokenAmount(10n ** 5n, 6));
-
-  await eightyTwentyRangeStrategyVaultTest.updateDepositCap(parseTokenAmount(10n ** 10n, 18));
 
   return {
     eightyTwentyRangeStrategyVaultTest,

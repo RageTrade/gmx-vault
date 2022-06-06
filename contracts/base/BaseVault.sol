@@ -4,20 +4,15 @@ pragma solidity ^0.8.9;
 
 import { ERC20PresetMinterPauser as CollateralToken } from '@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol';
 import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
-import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadata.sol';
 
 import { IClearingHouse } from '@ragetrade/core/contracts/interfaces/IClearingHouse.sol';
-import { IClearingHouseStructures } from '@ragetrade/core/contracts/interfaces/clearinghouse/IClearingHouseStructures.sol';
-import { IVToken } from '@ragetrade/core/contracts/interfaces/IVToken.sol';
 import { SignedMath } from '@ragetrade/core/contracts/libraries/SignedMath.sol';
 import { SignedFullMath } from '@ragetrade/core/contracts/libraries/SignedFullMath.sol';
 import { AddressHelper } from '@ragetrade/core/contracts/libraries/AddressHelper.sol';
 import { UniswapV3PoolHelper, IUniswapV3Pool } from '@ragetrade/core/contracts/libraries/UniswapV3PoolHelper.sol';
 import { Extsload } from '@ragetrade/core/contracts/utils/Extsload.sol';
 import { ClearingHouseExtsload } from '@ragetrade/core/contracts/extsloads/ClearingHouseExtsload.sol';
-
-import { ERC20 } from '@rari-capital/solmate/src/tokens/ERC20.sol';
 
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 import { FixedPoint96 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint96.sol';
@@ -31,13 +26,10 @@ import { Logic } from '../libraries/Logic.sol';
 
 abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, OwnableUpgradeable, Extsload {
     using AddressHelper for address;
-    using AddressHelper for IVToken;
 
-    using SafeCast for int256;
     using SafeCast for uint256;
     using SignedMath for int256;
     using SignedFullMath for int256;
-    using UniswapV3PoolHelper for IUniswapV3Pool;
     using ClearingHouseExtsload for IClearingHouse;
 
     IERC20Metadata internal rageSettlementToken;
@@ -60,6 +52,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     error BV_NoPositionToRebalance();
     error BV_DepositCap(uint256 depositCap, uint256 depositAmount);
     error BV_OnlyKeeperAllowed(address msgSender, address authorisedKeeperAddress);
+
     modifier onlyKeeper() {
         if (msg.sender != keeper) revert BV_OnlyKeeperAllowed(msg.sender, keeper);
         _;
@@ -87,29 +80,26 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
         rebalancePriceThresholdBps = 500; //5%
         rebalanceTimeThreshold = 1 days;
-        emit Logic.RebalanceThresholdUpdated(rebalanceTimeThreshold, rebalancePriceThresholdBps);
         // Give rageClearingHouse full allowance of rageCollateralToken and usdc
     }
 
-    function setRebalanceThreshold(uint32 _rebalanceTimeThreshold, uint16 _rebalancePriceThresholdBps)
-        external
-        onlyOwner
-    {
+    function updateBaseParams(
+        uint256 newDepositCap,
+        address newKeeperAddress,
+        uint32 _rebalanceTimeThreshold,
+        uint16 _rebalancePriceThresholdBps
+    ) external onlyOwner {
+        keeper = newKeeperAddress;
+        depositCap = newDepositCap;
         rebalanceTimeThreshold = _rebalanceTimeThreshold;
         rebalancePriceThresholdBps = _rebalancePriceThresholdBps;
-        emit Logic.RebalanceThresholdUpdated(_rebalanceTimeThreshold, _rebalancePriceThresholdBps);
-    }
 
-    /// @notice Set the deposit cap for the vault in asset amount
-    /// @param newDepositCap The new deposit cap in asset amount
-    function updateDepositCap(uint256 newDepositCap) external onlyOwner {
-        depositCap = newDepositCap;
-        emit Logic.DepositCapUpdated(newDepositCap);
-    }
-
-    function setKeeper(address newKeeperAddress) external onlyOwner {
-        keeper = newKeeperAddress;
-        emit Logic.KeeperUpdated(newKeeperAddress);
+        emit Logic.BaseParamsUpdated(
+            newDepositCap,
+            newKeeperAddress,
+            _rebalanceTimeThreshold,
+            _rebalancePriceThresholdBps
+        );
     }
 
     /// @notice grants relevant allowances

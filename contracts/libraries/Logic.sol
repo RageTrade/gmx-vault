@@ -48,9 +48,14 @@ library Logic {
         uint16 resetPositionThresholdBps,
         uint64 minNotionalPositionToCloseThreshold
     );
-    event KeeperUpdated(address keeper);
-    event DepositCapUpdated(uint256 depositCap);
-    event RebalanceThresholdUpdated(uint32 rebalanceTimeThreshold, uint16 rebalancePriceThresholdBps);
+
+    event BaseParamsUpdated(
+        uint256 newDepositCap,
+        address newKeeperAddress,
+        uint32 rebalanceTimeThreshold,
+        uint16 rebalancePriceThresholdBps
+    );
+
     event Rebalance();
     event TokenPositionClosed();
 
