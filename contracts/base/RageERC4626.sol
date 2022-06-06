@@ -100,6 +100,14 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
         asset.safeTransfer(to, amount);
     }
 
+    function maxWithdraw(address owner) public view override returns (uint256) {
+        return previewWithdraw(convertToAssets(balanceOf(owner)));
+    }
+
+    function maxRedeem(address owner) public view override returns (uint256) {
+        return previewRedeem(balanceOf(owner));
+    }
+
     function _beforeShareAllocation() internal virtual;
 
     function beforeWithdrawClosePosition(uint256 amount) internal virtual;
