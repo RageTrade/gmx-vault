@@ -97,6 +97,7 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
         uint256 assets = convertToAssets(shares);
         int256 tokensToTrade;
         (amount, tokensToTrade) = _simulateBeforeWithdraw(assets);
+        uint256 adjustedShares = convertToShares(amount);
         require(amount != 0, 'ZERO_ASSETS');
 
         //Additional cap on withdraw to ensure the position closed does not breach slippage tolerance
@@ -104,11 +105,11 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
 
         beforeWithdrawClosePosition(tokensToTrade);
 
-        beforeWithdraw(amount, shares);
+        beforeWithdraw(amount, adjustedShares);
 
-        _burn(from, shares);
+        _burn(from, adjustedShares);
 
-        emit Withdraw(msg.sender, to, from, amount, shares);
+        emit Withdraw(msg.sender, to, from, amount, adjustedShares);
 
         asset.safeTransfer(to, amount);
     }
