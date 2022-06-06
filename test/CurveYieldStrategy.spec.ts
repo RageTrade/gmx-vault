@@ -8,6 +8,9 @@ import addresses from './fixtures/addresses';
 import { curveYieldStrategyFixture } from './fixtures/curve-yield-strategy';
 
 const within = (value: BigNumber, start: BigNumber, end: BigNumber): Boolean => {
+  console.log('VALUE :', value);
+  console.log('START :', start);
+  console.log('END :', end);
   if (value.gte(start) && value.lte(end)) return true;
   return false;
 };
