@@ -8,6 +8,9 @@ import addresses from './fixtures/addresses';
 import { curveYieldStrategyFixture } from './fixtures/curve-yield-strategy';
 
 const within = (value: BigNumber, start: BigNumber, end: BigNumber): Boolean => {
+  console.log('VALUE :', value);
+  console.log('START :', start);
+  console.log('END :', end);
   if (value.gte(start) && value.lte(end)) return true;
   return false;
 };
@@ -43,7 +46,9 @@ describe('CurveYieldStrategy', () => {
       ]);
 
       expect(before.toString()).to.be.eql(zeroBN.toString());
-      expect(after).to.be.eql([ethers.constants.MaxUint256, ethers.constants.MaxUint256, ethers.constants.MaxUint256]);
+      expect(after.toString()).to.be.eql(
+        [ethers.constants.MaxUint256, ethers.constants.MaxUint256, ethers.constants.MaxUint256].toString(),
+      );
     });
 
     it('should transfer lp tokens & mint shares', async () => {
@@ -397,13 +402,17 @@ describe('CurveYieldStrategy', () => {
       const fraction1 = user1SharesBalBefore.mul(totalAssetvalueBefore).div(totalSharesMintedBefore);
       const shareFraction1 = await curveYieldStrategy.convertToShares(fraction1);
 
+      console.log('A');
       expect(within(user1SharesBalAfterFirstWithdraw, BigNumber.from(0), user1SharesBalBefore.sub(shareFraction1))).to
         .be.true;
+      console.log('X');
       expect(user2SharesBalAfterFirstWithdraw).to.be.eq(user2SharesBalBefore);
 
+      console.log('B');
       expect(within(totalAssetvalueBefore.sub(totalAssetvalueAfterFirstWithdraw), BigNumber.from(0), shareFraction1)).to
         .be.true;
 
+      console.log('C');
       expect(
         within(
           totalSharesMintedAfterFirstWithdraw.sub(user1SharesBalBefore),
@@ -422,6 +431,8 @@ describe('CurveYieldStrategy', () => {
       expect(gaugeLpBalAfterSecondWithdraw).to.be.lt(gaugeLpBalAfterFirstWithdraw);
 
       expect(user1SharesBalAfterSecondWithdraw).to.be.eq(user1SharesBalAfterFirstWithdraw);
+
+      console.log('D');
       expect(
         within(
           user2SharesBalAfterSecondWithdraw,
@@ -433,6 +444,8 @@ describe('CurveYieldStrategy', () => {
       expect(totalAssetvalueAfterSecondWithdraw).to.be.eq(
         totalAssetvalueAfterFirstWithdraw.sub(user2LpBalAfterSecondWithdraw),
       );
+
+      console.log('E');
       expect(
         within(
           totalSharesMintedAfterSecondWithdraw,
@@ -688,7 +701,7 @@ describe('CurveYieldStrategy', () => {
 
       await expect(
         curveYieldStrategyTest.updateCurveParams(10_001, 1_000, 0, 3_000, addresses.CRV_ORACLE),
-      ).to.be.revertedWith('CYS_INVALID_SETTER_VALUE(10001)');
+      ).to.be.revertedWith('CYS_INVALID_SETTER_VALUE()');
     });
 
     it('should not trigger crv slippage tolerance', async () => {
@@ -756,7 +769,7 @@ describe('CurveYieldStrategy', () => {
       await hre.network.provider.send('evm_increaseTime', [10_000_000]);
       await hre.network.provider.send('evm_mine', []);
 
-      await curveYieldStrategy.updateCurveParams(0, 100, 0, 100, addresses.CRV_ORACLE);
+      await curveYieldStrategy.connect(admin).updateCurveParams(1000, 4_000, 0, 100, addresses.CRV_ORACLE);
 
       await gauge.claimable_reward_write(curveYieldStrategy.address, crv.address);
       const claimable_ = await gauge.claimable_reward(curveYieldStrategy.address, crv.address);
