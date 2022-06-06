@@ -23,16 +23,22 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
     }
 
     function previewWithdraw(uint256 assets) public view virtual override returns (uint256) {
-        uint256 supply = totalSupply(); // Saves an extra SLOAD if totalSupply is non-zero.
-        (uint256 adjustedAssets, ) = Logic.simulateBeforeWithdraw(address(this), totalAssets(), assets);
-
-        return supply == 0 ? adjustedAssets : adjustedAssets.mulDivUp(supply, totalAssets());
+        (uint256 adjustedAssets, ) = _simulateBeforeWithdraw(assets);
+        return convertToShares(adjustedAssets);
     }
 
     function previewRedeem(uint256 shares) public view virtual override returns (uint256) {
         uint256 assets = convertToAssets(shares);
-        (uint256 adjustedAssets, ) = Logic.simulateBeforeWithdraw(address(this), totalAssets(), assets);
+        (uint256 adjustedAssets, ) = _simulateBeforeWithdraw(assets);
         return adjustedAssets;
+    }
+
+    function _simulateBeforeWithdraw(uint256 assets)
+        internal
+        view
+        returns (uint256 adjustedAssets, int256 tokensToTrade)
+    {
+        return Logic.simulateBeforeWithdraw(address(this), totalAssets(), assets);
     }
 
     function deposit(uint256 amount, address to) public virtual override returns (uint256 shares) {
@@ -51,15 +57,9 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
         address from
     ) public override returns (uint256 shares) {
         _beforeShareAllocation();
-        uint256 supply = totalSupply(); // Saves an extra SLOAD if totalSupply is non-zero.
+        (uint256 adjustedAmount, int256 tokensToTrade) = _simulateBeforeWithdraw(amount);
 
-        (uint256 adjustedAmount, int256 tokensToTrade) = Logic.simulateBeforeWithdraw(
-            address(this),
-            totalAssets(),
-            amount
-        );
-
-        shares = supply == 0 ? adjustedAmount : adjustedAmount.mulDivUp(supply, totalAssets());
+        shares = convertToShares(adjustedAmount);
 
         beforeWithdrawClosePosition(tokensToTrade);
 
@@ -93,7 +93,7 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
         // Check for rounding error since we round down in previewRedeem.
         uint256 assets = convertToAssets(shares);
         int256 tokensToTrade;
-        (amount, tokensToTrade) = Logic.simulateBeforeWithdraw(address(this), totalAssets(), assets);
+        (amount, tokensToTrade) = _simulateBeforeWithdraw(assets);
         require(amount != 0, 'ZERO_ASSETS');
 
         //Additional cap on withdraw to ensure the position closed does not breach slippage tolerance
