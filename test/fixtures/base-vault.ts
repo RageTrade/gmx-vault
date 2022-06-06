@@ -11,7 +11,7 @@ export const baseVaultFixture = deployments.createFixture(async hre => {
     await hre.ethers.getContractFactory('BaseVaultTest')
   ).deploy(asset.address, clearingHouse.address);
 
-  await baseVaultTest.updateBaseParams(0, keeper.address, 0, 0);
+  await baseVaultTest.updateBaseParams(0, keeper.address, 86400, 0);
 
   return { baseVaultTest, asset, admin, keeper };
 });

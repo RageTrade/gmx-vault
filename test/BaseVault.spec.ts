@@ -13,19 +13,19 @@ describe('Base Vault', () => {
 
       expect(await baseVaultTest.depositCap()).to.eq(0, 'deposit cap should be 0 initially');
 
-      await baseVaultTest.updateBaseParams(1, ethers.constants.AddressZero, 0, 0);
+      await baseVaultTest.updateBaseParams(1, ethers.constants.AddressZero, 86400, 0);
       expect(await baseVaultTest.depositCap()).to.eq(1, 'deposit cap should be 1 now');
 
       const [, other] = await hre.ethers.getSigners();
       await expect(
-        baseVaultTest.connect(other).updateBaseParams(1, ethers.constants.AddressZero, 0, 0),
+        baseVaultTest.connect(other).updateBaseParams(1, ethers.constants.AddressZero, 86400, 0),
       ).to.be.revertedWith('Ownable: caller is not the owner');
     });
 
     it('should not allow to deposit more than deposit cap', async () => {
       const { baseVaultTest, asset } = await baseVaultFixture();
 
-      await baseVaultTest.updateBaseParams(10, ethers.constants.AddressZero, 0, 0);
+      await baseVaultTest.updateBaseParams(10, ethers.constants.AddressZero, 86400, 0);
 
       const [admin, user] = await hre.ethers.getSigners();
 
@@ -42,7 +42,7 @@ describe('Base Vault', () => {
       const { baseVaultTest } = await baseVaultFixture();
 
       const [admin, other, keeper, keeperNew] = await hre.ethers.getSigners();
-      await expect(baseVaultTest.connect(other).updateBaseParams(0, keeperNew.address, 0, 0)).to.be.revertedWith(
+      await expect(baseVaultTest.connect(other).updateBaseParams(0, keeperNew.address, 86400, 0)).to.be.revertedWith(
         'Ownable: caller is not the owner',
       );
 
@@ -102,7 +102,7 @@ describe('Base Vault', () => {
     it('should not allow to rebalance before rebalance time threshold', async () => {
       const { baseVaultTest, keeper } = await baseVaultFixture();
 
-      await baseVaultTest.updateBaseParams(0, ethers.constants.AddressZero, 10, 0);
+      await baseVaultTest.updateBaseParams(0, keeper.address, 10, 0);
 
       const [admin] = await hre.ethers.getSigners();
 
