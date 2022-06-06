@@ -182,7 +182,7 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
     tricryptoPool: addresses.TRICRYPTO_POOL,
   });
 
-  await curveYieldStrategyTest.setKeeper(admin.address);
+  await curveYieldStrategyTest.updateBaseParams(ethers.constants.MaxUint256, admin.address, 0, 0);
   await collateralToken.grantRole(await collateralToken.MINTER_ROLE(), curveYieldStrategyTest.address);
   const vaultAccountNo = await curveYieldStrategyTest.rageAccountNo();
 
@@ -192,8 +192,6 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
 
   await lpToken.connect(whale).transfer(user2.address, parseTokenAmount(25n, 18));
   await lpToken.connect(user2).approve(curveYieldStrategyTest.address, parseTokenAmount(50n, 18));
-
-  await curveYieldStrategyTest.updateDepositCap(parseTokenAmount(10n ** 10n, 18));
 
   await curveYieldStrategyTest.updateCurveParams(1_000, 1_000, 0, 3_000, addresses.CRV_ORACLE);
 
