@@ -26,6 +26,8 @@ import { ICurveGauge } from '../interfaces/curve/ICurveGauge.sol';
 import { ILPPriceGetter } from '../interfaces/curve/ILPPriceGetter.sol';
 import { ICurveStableSwap } from '../interfaces/curve/ICurveStableSwap.sol';
 
+import { console } from 'hardhat/console.sol';
+
 import { SwapManager } from '../libraries/SwapManager.sol';
 import { SafeCast } from '../libraries/SafeCast.sol';
 
@@ -149,7 +151,7 @@ library Logic {
         address vault,
         uint256 amountBeforeWithdraw,
         uint256 amountWithdrawn
-    ) external view returns (uint256 updatedAmountWithdrawn) {
+    ) external view returns (uint256 updatedAmountWithdrawn, int256 tokensToTrade) {
         uint32 ethPoolId = IBaseVaultGetters(vault).ethPoolId();
         IClearingHouse clearingHouse = IClearingHouse(IBaseVaultGetters(vault).rageClearingHouse());
 
@@ -163,7 +165,8 @@ library Logic {
             ethPoolId
         );
 
-        int256 tokensToTrade = -netPosition.mulDiv(amountWithdrawn, amountBeforeWithdraw);
+        tokensToTrade = -netPosition.mulDiv(amountWithdrawn, amountBeforeWithdraw);
+
         uint256 tokensToTradeNotionalAbs = _getTokenNotionalAbs(netPosition, sqrtPriceX96);
 
         uint64 minNotionalPositionToCloseThreshold = IBaseVaultGetters(vault).minNotionalPositionToCloseThreshold();
@@ -188,9 +191,11 @@ library Logic {
                     netPosition
                 );
                 updatedAmountWithdrawn = uint256(updatedAmountWithdrawnInt);
+                tokensToTrade = vTokenAmountOut;
             }
         } else {
             updatedAmountWithdrawn = amountWithdrawn;
+            tokensToTrade = 0;
         }
     }
 

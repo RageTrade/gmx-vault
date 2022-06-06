@@ -155,17 +155,9 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     }
 
     /// @inheritdoc BaseVault
-    function _beforeWithdrawClosePositionRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn)
-        internal
-        override
-    {
-        uint160 sqrtPriceX96 = _getTwapSqrtPriceX96();
-        int256 netPosition = rageClearingHouse.getAccountNetTokenPosition(rageAccountNo, ethPoolId);
-        int256 tokensToTrade = -netPosition.mulDiv(amountWithdrawn, amountBeforeWithdraw);
-        uint256 tokensToTradeNotionalAbs = _getTokenNotionalAbs(netPosition, sqrtPriceX96);
-
-        if (tokensToTradeNotionalAbs > minNotionalPositionToCloseThreshold) {
-            _closeTokenPosition(tokensToTrade, sqrtPriceX96, closePositionSlippageSqrtToleranceBps);
+    function _beforeWithdrawClosePositionRanges(int256 tokensToTrade) internal override {
+        if (tokensToTrade != 0) {
+            _swapToken(tokensToTrade, 0);
         }
     }
 
@@ -227,6 +219,13 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         } else {
             sqrtPriceLimitX96 = uint256(sqrtPriceX96).mulDiv(1e4 - slippageSqrtToleranceBps, 1e4).toUint160();
         }
+        (vTokenAmountOut, vQuoteAmountOut) = _swapToken(tokensToTrade, sqrtPriceLimitX96);
+    }
+
+    function _swapToken(int256 tokensToTrade, uint160 sqrtPriceLimitX96)
+        internal
+        returns (int256 vTokenAmountOut, int256 vQuoteAmountOut)
+    {
         IClearingHouseStructures.SwapParams memory swapParams = IClearingHouseStructures.SwapParams({
             amount: tokensToTrade,
             sqrtPriceLimit: sqrtPriceLimitX96,

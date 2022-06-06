@@ -31,14 +31,15 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
 
     function previewWithdraw(uint256 assets) public view virtual override returns (uint256) {
         uint256 supply = totalSupply(); // Saves an extra SLOAD if totalSupply is non-zero.
-        uint256 adjustedAssets = Logic.simulateBeforeWithdraw(address(this), totalAssets(), assets);
+        (uint256 adjustedAssets, ) = Logic.simulateBeforeWithdraw(address(this), totalAssets(), assets);
 
         return supply == 0 ? adjustedAssets : adjustedAssets.mulDivUp(supply, totalAssets());
     }
 
     function previewRedeem(uint256 shares) public view virtual override returns (uint256) {
         uint256 assets = convertToAssets(shares);
-        return Logic.simulateBeforeWithdraw(address(this), totalAssets(), assets);
+        (uint256 adjustedAssets, ) = Logic.simulateBeforeWithdraw(address(this), totalAssets(), assets);
+        return adjustedAssets;
     }
 
     function deposit(uint256 amount, address to) public virtual override returns (uint256 shares) {
@@ -57,11 +58,17 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
         address from
     ) public override returns (uint256 shares) {
         _beforeShareAllocation();
+        uint256 supply = totalSupply(); // Saves an extra SLOAD if totalSupply is non-zero.
 
-        shares = previewWithdraw(amount); // No need to check for rounding error, previewWithdraw rounds up.
-        uint256 adjustedAmount = convertToAssets(shares);
+        (uint256 adjustedAmount, int256 tokensToTrade) = Logic.simulateBeforeWithdraw(
+            address(this),
+            totalAssets(),
+            amount
+        );
 
-        beforeWithdrawClosePosition(adjustedAmount);
+        shares = supply == 0 ? adjustedAmount : adjustedAmount.mulDivUp(supply, totalAssets());
+
+        beforeWithdrawClosePosition(tokensToTrade);
 
         if (msg.sender != from) {
             uint256 allowed = allowance(from, msg.sender); // Saves gas for limited approvals.
@@ -91,11 +98,15 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
         }
 
         // Check for rounding error since we round down in previewRedeem.
-        require((amount = previewRedeem(shares)) != 0, 'ZERO_ASSETS');
+        uint256 assets = convertToAssets(shares);
+        int256 tokensToTrade;
+        (amount, tokensToTrade) = Logic.simulateBeforeWithdraw(address(this), totalAssets(), assets);
+        require(amount != 0, 'ZERO_ASSETS');
 
         //Additional cap on withdraw to ensure the position closed does not breach slippage tolerance
         //In case tolerance is reached only partial withdraw is executed
-        beforeWithdrawClosePosition(amount);
+
+        beforeWithdrawClosePosition(tokensToTrade);
 
         beforeWithdraw(amount, shares);
 
@@ -124,5 +135,5 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
 
     function _beforeShareAllocation() internal virtual;
 
-    function beforeWithdrawClosePosition(uint256 amount) internal virtual;
+    function beforeWithdrawClosePosition(int256 tokensToTrade) internal virtual;
 }
