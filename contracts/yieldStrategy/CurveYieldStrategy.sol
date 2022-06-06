@@ -25,7 +25,7 @@ import { Logic } from '../libraries/Logic.sol';
 contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     using FullMath for uint256;
 
-    error CYS_INVALID_SETTER_VALUE(uint256 value);
+    error CYS_INVALID_SETTER_VALUE();
     error CYS_EXTERAL_CALL_FAILED(string reason);
 
     IERC20 private usdt; // 6 decimals
@@ -87,19 +87,13 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         uint256 _crvSlippageTolerance,
         AggregatorV3Interface _crvOracle
     ) external onlyOwner {
-        if (_feeBps < MAX_BPS) FEE = _feeBps;
-        else revert CYS_INVALID_SETTER_VALUE(_feeBps);
-
-        if (_stablecoinSlippage < MAX_BPS) stablecoinSlippageTolerance = _stablecoinSlippage;
-        else revert CYS_INVALID_SETTER_VALUE(_stablecoinSlippage);
-
-        crvHarvestThreshold = _crvHarvestThreshold;
-
-        if (_crvSlippageTolerance < MAX_BPS) crvSwapSlippageTolerance = _crvSlippageTolerance;
-        else revert CYS_INVALID_SETTER_VALUE(_stablecoinSlippage);
-
-        if (address(_crvOracle) != address(0)) crvOracle = _crvOracle;
-        else revert CYS_INVALID_SETTER_VALUE(0);
+        if (_feeBps < MAX_BPS && _stablecoinSlippage < MAX_BPS && _crvSlippageTolerance < MAX_BPS) {
+            FEE = _feeBps;
+            crvOracle = _crvOracle;
+            crvHarvestThreshold = _crvHarvestThreshold;
+            crvSwapSlippageTolerance = _crvSlippageTolerance;
+            stablecoinSlippageTolerance = _stablecoinSlippage;
+        } else revert CYS_INVALID_SETTER_VALUE();
 
         emit Logic.CurveParamsUpdated(
             _feeBps,

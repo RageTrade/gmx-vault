@@ -27,7 +27,7 @@ export const baseVaultFixture = deployments.createFixture(async hre => {
     })
   ).deploy(asset.address, clearingHouse.address);
 
-  await baseVaultTest.setKeeper(keeper.address);
+  await baseVaultTest.updateBaseParams(0, keeper.address, 0, 0);
 
   return { baseVaultTest, asset, admin, keeper };
 });

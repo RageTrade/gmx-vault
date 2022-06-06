@@ -62,7 +62,7 @@ describe('CurveYieldStrategy', () => {
       const amount2 = BigNumber.from(10).pow(18).mul(10);
       const amount = amount1.add(amount2);
 
-      await curveYieldStrategy.connect(admin).updateDepositCap(amount);
+      await curveYieldStrategy.connect(admin).updateBaseParams(amount, ethers.constants.AddressZero, 0, 0);
 
       await lpToken.connect(whale).transfer(user1.address, amount1);
       await lpToken.connect(whale).transfer(user2.address, amount2);
@@ -280,7 +280,7 @@ describe('CurveYieldStrategy', () => {
       const amount2 = BigNumber.from(10).pow(18).mul(25);
       const amount = amount1.add(amount2);
 
-      await curveYieldStrategy.connect(admin).updateDepositCap(amount);
+      await curveYieldStrategy.connect(admin).updateBaseParams(amount, ethers.constants.AddressZero, 0, 0);
 
       await lpToken.connect(whale).transfer(user1.address, amount1);
       await lpToken.connect(whale).transfer(user2.address, amount2);
@@ -457,7 +457,7 @@ describe('CurveYieldStrategy', () => {
       const amount = BigNumber.from(10).pow(18).mul(50);
       // console.log('AMOUNT OF LP DEPOSITED : ', amount.toBigInt());
 
-      await curveYieldStrategy.connect(admin).updateDepositCap(amount);
+      await curveYieldStrategy.connect(admin).updateBaseParams(amount, ethers.constants.AddressZero, 0, 0);
 
       await lpToken.connect(whale).transfer(user.address, amount);
       await lpToken.connect(user).approve(curveYieldStrategy.address, amount);
@@ -526,7 +526,7 @@ describe('CurveYieldStrategy', () => {
       const amount2 = BigNumber.from(10).pow(18).mul(10);
       const amount = amount1.add(amount2);
 
-      await curveYieldStrategy.connect(admin).updateDepositCap(amount);
+      await curveYieldStrategy.connect(admin).updateBaseParams(amount, ethers.constants.AddressZero, 0, 0);
 
       await lpToken.connect(whale).transfer(user1.address, amount1);
       await lpToken.connect(whale).transfer(user2.address, amount2);
@@ -599,7 +599,7 @@ describe('CurveYieldStrategy', () => {
       const amount2 = BigNumber.from(10).pow(18).mul(10);
       const amount = amount1.add(amount2);
 
-      await curveYieldStrategy.connect(admin).updateDepositCap(amount);
+      await curveYieldStrategy.connect(admin).updateBaseParams(amount, ethers.constants.AddressZero, 0, 0);
 
       await lpToken.connect(whale).transfer(user1.address, amount1);
       await lpToken.connect(whale).transfer(user2.address, amount2);
@@ -646,7 +646,7 @@ describe('CurveYieldStrategy', () => {
 
       const amount = BigNumber.from(10).pow(18).mul(40);
 
-      await curveYieldStrategy.connect(admin).updateDepositCap(amount);
+      await curveYieldStrategy.connect(admin).updateBaseParams(amount, ethers.constants.AddressZero, 0, 0);
 
       await lpToken.connect(whale).transfer(user1.address, amount);
 
@@ -705,7 +705,9 @@ describe('CurveYieldStrategy', () => {
 
       const amount = BigNumber.from(10).pow(18).mul(50);
 
-      await curveYieldStrategy.connect(admin).updateDepositCap(ethers.constants.MaxUint256);
+      await curveYieldStrategy
+        .connect(admin)
+        .updateBaseParams(ethers.constants.MaxUint256, ethers.constants.AddressZero, 0, 0);
 
       await lpToken.connect(whale).transfer(user.address, amount);
       await lpToken.connect(user).approve(curveYieldStrategy.address, amount);
@@ -742,7 +744,9 @@ describe('CurveYieldStrategy', () => {
 
       const amount = BigNumber.from(10).pow(18).mul(50);
 
-      await curveYieldStrategy.connect(admin).updateDepositCap(ethers.constants.MaxUint256);
+      await curveYieldStrategy
+        .connect(admin)
+        .updateBaseParams(ethers.constants.MaxUint256, ethers.constants.AddressZero, 0, 0);
 
       await lpToken.connect(whale).transfer(user.address, amount);
       await lpToken.connect(user).approve(curveYieldStrategy.address, amount);
@@ -752,7 +756,7 @@ describe('CurveYieldStrategy', () => {
       await hre.network.provider.send('evm_increaseTime', [10_000_000]);
       await hre.network.provider.send('evm_mine', []);
 
-      await curveYieldStrategy.setCrvSwapSlippageTolerance(100);
+      await curveYieldStrategy.updateCurveParams(0, 100, 0, 100, addresses.CRV_ORACLE);
 
       await gauge.claimable_reward_write(curveYieldStrategy.address, crv.address);
       const claimable_ = await gauge.claimable_reward(curveYieldStrategy.address, crv.address);
