@@ -195,7 +195,7 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
 
   await curveYieldStrategyTest.updateDepositCap(parseTokenAmount(10n ** 10n, 18));
 
-  await curveYieldStrategyTest.updateSetters(1_000, 1_000, 0, 3_000, addresses.CRV_ORACLE);
+  await curveYieldStrategyTest.updateCurveParams(1_000, 1_000, 0, 3_000, addresses.CRV_ORACLE);
 
   await curveYieldStrategyTest.grantAllowances();
 

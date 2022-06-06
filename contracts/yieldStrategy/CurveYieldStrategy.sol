@@ -80,7 +80,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         lpPriceHolder = params.lpPriceHolder;
     }
 
-    function updateSetters(
+    function updateCurveParams(
         uint256 _feeBps,
         uint256 _stablecoinSlippage,
         uint256 _crvHarvestThreshold,
@@ -101,7 +101,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         if (address(_crvOracle) != address(0)) crvOracle = _crvOracle;
         else revert CYS_INVALID_SETTER_VALUE(0);
 
-        emit Logic.SettersUpdated(
+        emit Logic.CurveParamsUpdated(
             _feeBps,
             _stablecoinSlippage,
             _crvHarvestThreshold,
