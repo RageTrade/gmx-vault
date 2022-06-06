@@ -22,9 +22,15 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
         __ERC4626Upgradeable_init(params.asset, params.name, params.symbol);
     }
 
+    function _convertToSharesRoundUp(uint256 assets) internal view returns (uint256) {
+        uint256 supply = totalSupply(); // Saves an extra SLOAD if totalSupply is non-zero.
+
+        return supply == 0 ? assets : assets.mulDivUp(supply, totalAssets());
+    }
+
     function previewWithdraw(uint256 assets) public view virtual override returns (uint256) {
         (uint256 adjustedAssets, ) = _simulateBeforeWithdraw(assets);
-        return convertToShares(adjustedAssets);
+        return _convertToSharesRoundUp(adjustedAssets);
     }
 
     function previewRedeem(uint256 shares) public view virtual override returns (uint256) {
@@ -59,7 +65,7 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
         _beforeShareAllocation();
         (uint256 adjustedAmount, int256 tokensToTrade) = _simulateBeforeWithdraw(amount);
 
-        shares = convertToShares(adjustedAmount);
+        shares = _convertToSharesRoundUp(adjustedAmount);
 
         beforeWithdrawClosePosition(tokensToTrade);
 
@@ -94,7 +100,7 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
         uint256 assets = convertToAssets(shares);
         int256 tokensToTrade;
         (amount, tokensToTrade) = _simulateBeforeWithdraw(assets);
-        uint256 adjustedShares = convertToShares(amount);
+        uint256 adjustedShares = _convertToSharesRoundUp(amount);
         require(amount != 0, 'ZERO_ASSETS');
 
         //Additional cap on withdraw to ensure the position closed does not breach slippage tolerance
