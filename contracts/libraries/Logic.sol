@@ -19,6 +19,8 @@ import { ICurveGauge } from '../interfaces/curve/ICurveGauge.sol';
 import { ILPPriceGetter } from '../interfaces/curve/ILPPriceGetter.sol';
 import { ICurveStableSwap } from '../interfaces/curve/ICurveStableSwap.sol';
 
+import { console } from 'hardhat/console.sol';
+
 import { SwapManager } from '../libraries/SwapManager.sol';
 import { SafeCast } from '../libraries/SafeCast.sol';
 
@@ -80,6 +82,99 @@ library Logic {
     }
 
     // 80 20
+
+    function _simulateClose(
+        uint32 ethPoolId,
+        int256 tokensToTrade,
+        uint160 sqrtPriceX96,
+        IClearingHouse clearingHouse,
+        ISwapSimulator swapSimulator,
+        uint16 slippageSqrtToleranceBps
+    ) internal view returns (int256 vTokenAmountOut, int256 vQuoteAmountOut) {
+        uint160 sqrtPriceLimitX96;
+
+        if (tokensToTrade > 0) {
+            sqrtPriceLimitX96 = uint256(sqrtPriceX96).mulDiv(1e4 + slippageSqrtToleranceBps, 1e4).toUint160();
+        } else {
+            sqrtPriceLimitX96 = uint256(sqrtPriceX96).mulDiv(1e4 - slippageSqrtToleranceBps, 1e4).toUint160();
+        }
+
+        IVPoolWrapper.SwapResult memory swapResult = swapSimulator.simulateSwapView(
+            clearingHouse,
+            ethPoolId,
+            tokensToTrade,
+            sqrtPriceLimitX96,
+            false
+        );
+
+        return (-swapResult.vTokenIn, -swapResult.vQuoteIn);
+    }
+
+    function simulateBeforeWithdraw(
+        address vault,
+        uint256 amountBeforeWithdraw,
+        uint256 amountWithdrawn
+    ) external view returns (uint256 updatedAmountWithdrawn, int256 tokensToTrade) {
+        uint32 ethPoolId = IBaseVaultGetters(vault).ethPoolId();
+        IClearingHouse clearingHouse = IClearingHouse(IBaseVaultGetters(vault).rageClearingHouse());
+
+        uint160 sqrtPriceX96 = _getTwapSqrtPriceX96(
+            IBaseVaultGetters(vault).rageVPool(),
+            clearingHouse.getTwapDuration(ethPoolId)
+        );
+
+        int256 netPosition = clearingHouse.getAccountNetTokenPosition(
+            IBaseVaultGetters(vault).rageAccountNo(),
+            ethPoolId
+        );
+
+        tokensToTrade = -netPosition.mulDiv(amountWithdrawn, amountBeforeWithdraw);
+
+        uint256 tokensToTradeNotionalAbs = _getTokenNotionalAbs(netPosition, sqrtPriceX96);
+
+        uint64 minNotionalPositionToCloseThreshold = IBaseVaultGetters(vault).minNotionalPositionToCloseThreshold();
+        uint16 closePositionSlippageSqrtToleranceBps = IBaseVaultGetters(vault).closePositionSlippageSqrtToleranceBps();
+
+        ISwapSimulator swapSimulatorCopied = IBaseVaultGetters(vault).swapSimulator();
+
+        if (tokensToTradeNotionalAbs > minNotionalPositionToCloseThreshold) {
+            (int256 vTokenAmountOut, ) = _simulateClose(
+                ethPoolId,
+                tokensToTrade,
+                sqrtPriceX96,
+                clearingHouse,
+                swapSimulatorCopied,
+                closePositionSlippageSqrtToleranceBps
+            );
+
+            if (vTokenAmountOut == tokensToTrade) updatedAmountWithdrawn = amountWithdrawn;
+            else {
+                int256 updatedAmountWithdrawnInt = -vTokenAmountOut.mulDiv(
+                    amountBeforeWithdraw.toInt256(),
+                    netPosition
+                );
+                updatedAmountWithdrawn = uint256(updatedAmountWithdrawnInt);
+                tokensToTrade = vTokenAmountOut;
+            }
+        } else {
+            updatedAmountWithdrawn = amountWithdrawn;
+            tokensToTrade = 0;
+        }
+    }
+
+    /// @notice Get token notional absolute
+    /// @param tokenAmount Token amount
+    /// @param sqrtPriceX96 Sqrt of price in X96
+    function _getTokenNotionalAbs(int256 tokenAmount, uint160 sqrtPriceX96)
+        internal
+        pure
+        returns (uint256 tokenNotionalAbs)
+    {
+        tokenNotionalAbs = tokenAmount
+            .mulDiv(sqrtPriceX96, FixedPoint96.Q96)
+            .mulDiv(sqrtPriceX96, FixedPoint96.Q96)
+            .absUint();
+    }
 
     /// @notice checks if upper and lower ticks are valid for rebalacing between current twap price and rebalance threshold
     function isValidRebalanceRangeWithoutCheckReset(

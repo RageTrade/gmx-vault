@@ -82,12 +82,7 @@ contract BaseVaultTest is BaseVault {
 
     function _afterDepositRanges(uint256 amountAfterDeposit, uint256 amountDeposited) internal virtual override {}
 
-    function _beforeWithdrawClosePositionRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn)
-        internal
-        virtual
-        override
-        returns (uint256 updatedAmountWithdrawn)
-    {}
+    function _beforeWithdrawClosePositionRanges(int256 tokensToTrade) internal virtual override {}
 
     function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal virtual override {}
 
