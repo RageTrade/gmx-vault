@@ -141,7 +141,7 @@ contract VaultPeriphery is OwnableUpgradeable {
         }
 
         sharesMinted = vault.deposit(lpToken.balanceOf(address(this)), msg.sender);
-        emit DepositPeriphery(msg.sender, address(usdc), amount, balance, sharesMinted);
+        emit DepositPeriphery(msg.sender, address(weth), amount, balance, sharesMinted);
     }
 
     function depositEth() external payable returns (uint256 sharesMinted) {
