@@ -676,7 +676,7 @@ describe('CurveYieldStrategy', () => {
       const curveYieldStrategy = curveYieldStrategyTest.connect(admin);
       await curveYieldStrategy.grantAllowances();
 
-      await curveYieldStrategy.updateSetters(2_000, 1_000, 0, 3_000, addresses.CRV_ORACLE);
+      await curveYieldStrategy.updateCurveParams(2_000, 1_000, 0, 3_000, addresses.CRV_ORACLE);
       expect(await curveYieldStrategy.FEE()).to.be.eq(BigNumber.from(2000));
     });
 
@@ -687,7 +687,7 @@ describe('CurveYieldStrategy', () => {
       await curveYieldStrategy.grantAllowances();
 
       await expect(
-        curveYieldStrategyTest.updateSetters(10_001, 1_000, 0, 3_000, addresses.CRV_ORACLE),
+        curveYieldStrategyTest.updateCurveParams(10_001, 1_000, 0, 3_000, addresses.CRV_ORACLE),
       ).to.be.revertedWith('CYS_INVALID_SETTER_VALUE(10001)');
     });
 

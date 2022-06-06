@@ -19,7 +19,7 @@ export const rageTradeFixture = deployments.createFixture(async hre => {
   const clearingHouse = (await hre.ethers.getContractAt(
     '@ragetrade/core/contracts/protocol/clearinghouse/ClearingHouse.sol:ClearingHouse',
     rageTradeDeployments.ClearingHouse.address,
-  )) as ClearingHouse;
+  )) as unknown as ClearingHouse;
   const settlementToken = await hre.ethers.getContractAt(
     'SettlementTokenMock',
     rageTradeDeployments.SettlementToken.address,

@@ -116,7 +116,7 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
   const crvOracle = (await hre.ethers.getContractAt(
     '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface',
     addresses.CRV_ORACLE,
-  )) as AggregatorV3Interface;
+  )) as unknown as AggregatorV3Interface;
 
   const lpOracle = (await hre.ethers.getContractAt(
     'contracts/interfaces/curve/ILPPriceGetter.sol:ILPPriceGetter',
@@ -194,7 +194,7 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
 
   await curveYieldStrategyTest.updateDepositCap(parseTokenAmount(10n ** 10n, 18));
 
-  await curveYieldStrategyTest.updateSetters(1_000, 1_000, 0, 3_000, addresses.CRV_ORACLE);
+  await curveYieldStrategyTest.updateCurveParams(1_000, 1_000, 0, 3_000, addresses.CRV_ORACLE);
 
   await curveYieldStrategyTest.grantAllowances();
 

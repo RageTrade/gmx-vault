@@ -134,7 +134,7 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
 
   await settlementToken.approve(clearingHouse.address, parseTokenAmount(10n ** 5n, 6));
 
-  await curveYieldStrategyTest.updateSetters(1_000, 1_000, 0, 4_000, addresses.CRV_ORACLE);
+  await curveYieldStrategyTest.updateCurveParams(1_000, 1_000, 0, 4_000, addresses.CRV_ORACLE);
 
   return {
     crv,

@@ -33,7 +33,7 @@ library Logic {
     event FeesUpdated(uint256 fee);
     event FeesWithdrawn(uint256 total);
 
-    event SettersUpdated(
+    event CurveParamsUpdated(
         uint256 feeBps,
         uint256 stablecoinSlippage,
         uint256 crvHarvestThreshold,
