@@ -53,7 +53,7 @@ task(TASK_COMPILE, 'Compiles the entire project, building all artifacts').setAct
   }
 
   return compileSolOutput;
-});
+} );
 
 if (!process.env.ALCHEMY_KEY) {
   console.warn('PLEASE NOTE: The env var ALCHEMY_KEY is not set');
@@ -77,7 +77,7 @@ export default {
       blockGasLimit: 0x1fffffffffff,
       gasPrice: 0,
       initialBaseFeePerGas: 0,
-      allowUnlimitedContractSize: true,
+      allowUnlimitedContractSize: false,
     },
     rinkeby: {
       url: `https://eth-rinkeby.alchemyapi.io/v2/${ALCHEMY_KEY}`,
@@ -102,10 +102,9 @@ export default {
       {
         version: '0.8.13',
         settings: {
-          // viaIR: true, 
           optimizer: {
             enabled: true,
-            runs: 12
+            runs: 340
           },
           metadata: {
             // do not include the metadata hash, since this is machine dependent
@@ -129,6 +128,7 @@ export default {
       '@ragetrade/core/contracts/protocol/RageTradeFactory.sol',
       '@ragetrade/core/contracts/protocol/wrapper/VPoolWrapper.sol',
       '@ragetrade/core/contracts/protocol/insurancefund/InsuranceFund.sol',
+      '@ragetrade/core/contracts/lens/SwapSimulator.sol',
       '@ragetrade/core/contracts/oracles/ChainlinkOracle.sol',
       '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol',
       '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol',
