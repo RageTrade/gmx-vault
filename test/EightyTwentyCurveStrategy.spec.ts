@@ -4,7 +4,6 @@ import { expect } from 'chai';
 import { BigNumber } from 'ethers';
 import hre, { ethers } from 'hardhat';
 
-import addresses from './fixtures/addresses';
 import { eightyTwentyCurveStrategyFixture } from './fixtures/eighty-twenty-curve-strategy';
 import {
   checkAccountNetProfit,
@@ -64,9 +63,10 @@ describe('EightyTwentyCurveStrategy', () => {
 
       await curveYieldStrategy.connect(user1).deposit(parseTokenAmount(10n, 18), user1.address);
 
+      // console.log('protocolInfo', await clearingHouseLens.getProtocolInfo())
 
-      console.log('vPool', await clearingHouseLens.getVPool(ethPoolId))
-      console.log('CH', await clearingHouseLens.clearingHouse(), clearingHouse.address, ethPool.vToken.address)
+      // console.log('vPool', await clearingHouseLens.getVPool(ethPoolId));
+      // console.log('CH', await clearingHouseLens.clearingHouse(), clearingHouse.address, ethPool.vToken.address);
       await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
       await checkLiquidityPosition(clearingHouseLens, vaultAccountNo, ethPoolId, 0, -197850, -188910, 131437400051827n);
       await checkVaultRangeParams(curveYieldStrategy, -197850, -188910, 131437400051827n);
