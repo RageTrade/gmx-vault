@@ -83,9 +83,9 @@ export const rageTradeFixture = deployments.createFixture(async hre => {
 
     const SwapSimulator = await (await hre.ethers.getContractFactory('SwapSimulator')).deploy();
 
-    const clearingHouseLens = await (await hre.ethers.getContractFactory('ClearingHouseLens')).deploy(
-      clearingHouse.address
-    );
+    const clearingHouseLens = await (
+      await hre.ethers.getContractFactory('ClearingHouseLens')
+    ).deploy(clearingHouse.address);
 
     return { vToken, vPool, vPoolWrapper, oracle, SwapSimulator, clearingHouseLens };
   }

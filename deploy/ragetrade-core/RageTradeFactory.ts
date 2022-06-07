@@ -11,6 +11,7 @@ import {
   ProxyAdmin__factory,
   VQuote__factory,
   ClearingHouseLens__factory,
+  RageTradeFactory
 } from '../../typechain-types';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -23,12 +24,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const clearingHouseLogic = await get('ClearingHouseLogic');
   const vPoolWrapperLogic = await get('VPoolWrapperLogic');
   const insuranceFundLogic = await get('InsuranceFundLogic');
+  const settlementTokenOracle = await get('SettlementTokenOracle');
   const settlementToken = await get('SettlementToken');
 
   const deployment = await deploy('RageTradeFactory', {
     from: deployer,
     log: true,
-    args: [clearingHouseLogic.address, vPoolWrapperLogic.address, insuranceFundLogic.address, settlementToken.address],
+    args: [
+      clearingHouseLogic.address,
+      vPoolWrapperLogic.address,
+      insuranceFundLogic.address,
+      settlementToken.address,
+      // settlementTokenOracle.address,
+    ]
   });
 
   if (deployment.newlyDeployed && hre.network.config.chainId !== 31337) {
@@ -123,4 +131,10 @@ export default func;
 func.skip = async hre => hre.network.config.chainId !== 31337;
 
 func.tags = ['RageTradeFactory'];
-func.dependencies = ['ClearingHouseLogic', 'VPoolWrapperLogic', 'InsuranceFundLogic', 'SettlementToken'];
+func.dependencies = [
+  'ClearingHouseLogic',
+  'VPoolWrapperLogic',
+  'InsuranceFundLogic',
+  'SettlementToken',
+  'SettlementTokenOracle',
+];
