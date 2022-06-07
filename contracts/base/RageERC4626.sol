@@ -94,17 +94,17 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
     ) public override returns (uint256 amount) {
         _beforeShareAllocation();
 
-        if (msg.sender != from) {
-            uint256 allowed = allowance(from, msg.sender); // Saves gas for limited approvals.
-            if (allowed != type(uint256).max) _approve(from, msg.sender, allowed - shares);
-        }
-
         // Check for rounding error since we round down in previewRedeem.
         uint256 assets = convertToAssets(shares);
         int256 tokensToTrade;
         (amount, tokensToTrade) = _simulateBeforeWithdraw(assets);
         uint256 adjustedShares = _convertToSharesRoundUp(amount);
         require(amount != 0, 'ZERO_ASSETS');
+
+        if (msg.sender != from) {
+            uint256 allowed = allowance(from, msg.sender); // Saves gas for limited approvals.
+            if (allowed != type(uint256).max) _approve(from, msg.sender, allowed - adjustedShares);
+        }
 
         //Additional cap on withdraw to ensure the position closed does not breach slippage tolerance
         //In case tolerance is reached only partial withdraw is executed
