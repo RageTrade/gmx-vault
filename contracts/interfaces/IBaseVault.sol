@@ -8,5 +8,4 @@ interface IBaseVault {
     function closeTokenPosition() external;
 
     function depositCap() external view returns (uint256);
-
 }
