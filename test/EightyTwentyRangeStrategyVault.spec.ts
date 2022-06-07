@@ -47,8 +47,8 @@ describe('EightyTwentyRangeStrategyVault', () => {
         clearingHouseLens,
       } = await eightyTwentyRangeStrategyFixture();
 
-      console.log('vPool', await clearingHouseLens.getVPool(ethPoolId))
-      console.log('CH', await clearingHouseLens.clearingHouse(), clearingHouse.address, ethPool.vToken.address)
+      console.log('vPool', await clearingHouseLens.getVPool(ethPoolId));
+      console.log('CH', await clearingHouseLens.clearingHouse(), clearingHouse.address, ethPool.vToken.address);
 
       await eightyTwentyRangeStrategyVaultTest.connect(user0).deposit(parseTokenAmount(10n ** 3n, 18), user0.address);
       await checkTotalAssets(eightyTwentyRangeStrategyVaultTest, parseTokenAmount(10n ** 3n, 18));
