@@ -5,7 +5,7 @@ import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/t
 import { rageTradeFixture } from './ragetrade-core';
 
 export const baseVaultFixture = deployments.createFixture(async hre => {
-  const { clearingHouse } = await rageTradeFixture();
+  const { clearingHouse, pool0 } = await rageTradeFixture();
   const asset = (await (await hre.ethers.getContractFactory('SettlementTokenMock')).deploy()) as SettlementTokenMock;
 
   const [admin, , keeper] = await hre.ethers.getSigners();
@@ -25,7 +25,7 @@ export const baseVaultFixture = deployments.createFixture(async hre => {
         ['contracts/libraries/Logic.sol:Logic']: logic.address,
       },
     })
-  ).deploy(asset.address, clearingHouse.address);
+  ).deploy(asset.address, clearingHouse.address, pool0.clearingHouseLens.address);
 
   await baseVaultTest.updateBaseParams(0, keeper.address, 86400, 0);
 

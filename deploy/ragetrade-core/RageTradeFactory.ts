@@ -10,8 +10,8 @@ import {
   IOracle__factory,
   ProxyAdmin__factory,
   VQuote__factory,
+  ClearingHouseLens__factory,
 } from '../../typechain-types';
-import { IClearingHouseStructures } from '../../typechain-types/artifacts/@ragetrade/core/contracts/protocol/clearinghouse/ClearingHouse';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
@@ -58,6 +58,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     });
   }
 
+  await deploy('ClearingHouseLens', {
+    from: deployer,
+    log: true,
+    args: [clearingHouseAddress]
+  });
+
   await execute(
     'ClearingHouse',
     { from: deployer },
@@ -96,8 +102,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       address: insuranceFundAddress,
     });
   }
-  const collateralInfo: IClearingHouseStructures.CollateralStruct = await read(
-    'ClearingHouse',
+  const collateralInfo = await read(
+    'ClearingHouseLens',
     'getCollateralInfo',
     truncate(settlementToken.address),
   );

@@ -4,8 +4,8 @@ import { BigNumber, BigNumberish, ContractTransaction } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { amountsForLiquidity, ClearingHouse, IUniswapV3Pool, sqrtPriceX96ToPrice, truncate } from '@ragetrade/sdk';
 
-import { IClearingHouseStructures } from '../../typechain-types/artifacts/@ragetrade/core/contracts/interfaces/IClearingHouse';
 import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
+import { ClearingHouseLens } from '../../typechain-types';
 
 export async function updateSettlementTokenMargin(
   clearingHouse: ClearingHouse,
@@ -39,46 +39,44 @@ export async function swapToken(
 }
 
 export async function getLiquidityPosition(
-  clearingHouse: ClearingHouse,
+  clearingHouseLens: ClearingHouseLens,
   accountNo: BigNumber,
-  poolSerialNo: number,
+  poolId: BigNumberish,
   liquidityPositionSerialNo: number,
-): Promise<IClearingHouseStructures.LiquidityPositionViewStructOutput> {
-  const accountInfo = await clearingHouse.getAccountInfo(accountNo);
-  return accountInfo.tokenPositions[poolSerialNo].liquidityPositions[liquidityPositionSerialNo];
+) {
+  const accountInfo = await clearingHouseLens.getAccountLiquidityPositionList(accountNo, poolId);
+  return accountInfo[liquidityPositionSerialNo];
 }
 
 export async function getRealTokenBalances(
-  clearingHouse: ClearingHouse,
+  clearingHouseLens: ClearingHouseLens,
   accountNo: BigNumber,
-  collateralTokenAddress: String,
-  settlementTokenAddress: String,
+  collateralTokenAddress: string,
+  settlementTokenAddress: string,
 ): Promise<{ collateralTokenBalance: BigNumber; settlementTokenBalance: BigNumber }> {
-  const accountInfo = await clearingHouse.getAccountInfo(accountNo);
-  const deposits = accountInfo.collateralDeposits;
-  let i = 0;
-  let collateralTokenBalance = BigNumber.from(0);
-  let settlementTokenBalance = BigNumber.from(0);
-  for (i; i < deposits.length; i++) {
-    if (deposits[i].collateral == collateralTokenAddress) collateralTokenBalance = deposits[i].balance;
-    else if (deposits[i].collateral == settlementTokenAddress) settlementTokenBalance = deposits[i].balance;
-  }
+  const collateralTokenBalance = await clearingHouseLens.getAccountCollateralBalance(
+    accountNo,
+    truncate(collateralTokenAddress),
+  );
+  const settlementTokenBalance = await clearingHouseLens.getAccountCollateralBalance(
+    accountNo,
+    truncate(settlementTokenAddress),
+  );
+
   return { collateralTokenBalance, settlementTokenBalance };
 }
 
 export async function getLiquidityPositionNum(
-  clearingHouse: ClearingHouse,
+  clearingHouseLens: ClearingHouseLens,
   accountNo: BigNumber,
-  poolSerialNo: number,
+  poolId: BigNumberish,
 ): Promise<number> {
-  const accountInfo = await clearingHouse.getAccountInfo(accountNo);
-  if (
-    typeof accountInfo.tokenPositions === 'undefined' ||
-    typeof accountInfo.tokenPositions[poolSerialNo] === 'undefined' ||
-    typeof accountInfo.tokenPositions[poolSerialNo].liquidityPositions === 'undefined'
-  )
-    return 0;
-  return accountInfo.tokenPositions[poolSerialNo].liquidityPositions.length;
+  console.log('POOL ID :', poolId);
+  console.log(await clearingHouseLens.getAccountPositionInfo(accountNo, poolId));
+  const accountInfo = await clearingHouseLens.getAccountLiquidityPositionList(accountNo, poolId);
+  console.log('accountInfo', accountInfo);
+  if (typeof accountInfo === 'undefined') return 0;
+  return accountInfo.length;
 }
 
 export async function getNetTokenPosition(
@@ -94,53 +92,58 @@ export async function getAccountNetProfit(clearingHouse: ClearingHouse, accountN
 }
 
 export async function checkLiquidityPositionNum(
-  clearingHouse: ClearingHouse,
+  clearingHouseLens: ClearingHouseLens,
   accountNo: BigNumber,
-  poolSerialNo: number,
+  poolId: BigNumberish,
   expectedLiquidityPositionNum: number,
 ) {
-  const liquidityPositionNum = await getLiquidityPositionNum(clearingHouse, accountNo, poolSerialNo);
+  const liquidityPositionNum = await getLiquidityPositionNum(clearingHouseLens, accountNo, poolId);
   expect(liquidityPositionNum).to.eq(expectedLiquidityPositionNum);
 }
 
 export async function checkLiquidityPosition(
-  clearingHouse: ClearingHouse,
+  clearingHouseLens: ClearingHouseLens,
   accountNo: BigNumber,
-  poolSerialNo: number,
+  poolId: BigNumberish,
   liquidityPositionSerialNo: number,
   baseTickLower: number,
   baseTickUpper: number,
   baseLiquidity: BigNumberish,
 ) {
-  const liquidityPosition = await getLiquidityPosition(
-    clearingHouse,
+  const liquidityPosition = await getLiquidityPosition(clearingHouseLens, accountNo, poolId, liquidityPositionSerialNo);
+
+  const liquidityInfo = await clearingHouseLens.getAccountLiquidityPositionInfo(
     accountNo,
-    poolSerialNo,
-    liquidityPositionSerialNo,
+    poolId,
+    liquidityPosition.tickLower,
+    liquidityPosition.tickUpper,
   );
+  expect(liquidityInfo.liquidity).to.eq(baseLiquidity);
   expect(liquidityPosition.tickLower).to.eq(baseTickLower);
   expect(liquidityPosition.tickUpper).to.eq(baseTickUpper);
-  expect(liquidityPosition.liquidity).to.eq(baseLiquidity);
 }
 
 export async function checkLiquidityPositionApproximate(
-  clearingHouse: ClearingHouse,
+  clearingHouseLens: ClearingHouseLens,
   accountNo: BigNumber,
-  poolSerialNo: number,
+  poolId: BigNumberish,
   liquidityPositionSerialNo: number,
   baseTickLower: number,
   baseTickUpper: number,
   baseLiquidity: BigNumberish,
 ) {
-  const liquidityPosition = await getLiquidityPosition(
-    clearingHouse,
+  const liquidityPosition = await getLiquidityPosition(clearingHouseLens, accountNo, poolId, liquidityPositionSerialNo);
+
+  const liquidityInfo = await clearingHouseLens.getAccountLiquidityPositionInfo(
     accountNo,
-    poolSerialNo,
-    liquidityPositionSerialNo,
+    poolId,
+    liquidityPosition.tickLower,
+    liquidityPosition.tickUpper,
   );
+
   expect(liquidityPosition.tickLower).to.eq(baseTickLower);
   expect(liquidityPosition.tickUpper).to.eq(baseTickUpper);
-  expect(liquidityPosition.liquidity.sub(baseLiquidity).abs()).to.lte(10n ** 10n);
+  expect(liquidityInfo.liquidity.sub(baseLiquidity).abs()).to.lte(10n ** 10n);
 }
 
 export async function checkNetTokenPosition(
@@ -173,15 +176,15 @@ export async function checkAccountNetProfit(
 }
 
 export async function checkRealTokenBalances(
-  clearingHouse: ClearingHouse,
+  clearingHouseLens: ClearingHouseLens,
   accountNo: BigNumber,
-  collateralTokenAddress: String,
-  settlementTokenAddress: String,
+  collateralTokenAddress: string,
+  settlementTokenAddress: string,
   expectedCollateralTokenBalance: BigNumberish,
   expectedSettlementTokenBalance: BigNumberish,
 ) {
   const { collateralTokenBalance, settlementTokenBalance } = await getRealTokenBalances(
-    clearingHouse,
+    clearingHouseLens,
     accountNo,
     collateralTokenAddress,
     settlementTokenAddress,
