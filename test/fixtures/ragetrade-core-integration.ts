@@ -10,7 +10,6 @@ import { priceToPriceX128 } from '@ragetrade/sdk';
 import addresses from './addresses';
 import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
 import { ClearingHouse } from '@ragetrade/sdk/dist/typechain/core';
-import { ClearingHouseLens__factory } from '../../typechain-types';
 
 const { get } = deployments;
 
