@@ -13,13 +13,17 @@ import { BaseVault } from '../base/BaseVault.sol';
 contract BaseVaultTest is BaseVault {
     uint64 blockTimestamp_ = uint64(block.timestamp);
 
-    constructor(IERC20Metadata token, address rageClearingHouse) initializer {
+    constructor(
+        IERC20Metadata token,
+        address rageClearingHouse,
+        address clearingHouseLens
+    ) initializer {
         __BaseVault_init(
             BaseVaultInitParams({
                 rageErc4626InitParams: RageERC4626InitParams({ asset: token, name: 'name', symbol: 'symbol' }),
                 ethPoolId: 0,
                 swapSimulator: address(0),
-                clearingHouseLens: address(0),
+                clearingHouseLens: clearingHouseLens,
                 rageClearingHouse: rageClearingHouse,
                 rageCollateralToken: address(token),
                 rageSettlementToken: address(token)

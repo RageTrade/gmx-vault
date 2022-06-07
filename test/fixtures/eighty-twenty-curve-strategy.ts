@@ -28,7 +28,6 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
   const collateralToken = await tokenFactory.deploy('Collateral Token', 'CT');
 
   const ethPoolId = truncate(pool0.vToken.address);
-  const pool = await clearingHouse.getPoolInfo(truncate(pool0.vToken.address));
 
   const [admin, user1, user2, trader0] = await hre.ethers.getSigners();
 
@@ -167,6 +166,7 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
         swapSimulator: pool0.SwapSimulator.address,
         rageCollateralToken: collateralToken.address,
         rageSettlementToken: settlementToken.address,
+        clearingHouseLens: pool0.clearingHouseLens.address,
       },
       closePositionSlippageSqrtToleranceBps: closePositionSlippageSqrtToleranceBps,
       resetPositionThresholdBps: resetPositionThresholdBps,
@@ -216,6 +216,7 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
     vaultAccountNo,
     ethPoolId,
     ethPool: pool0,
+    clearingHouseLens: pool0.clearingHouseLens,
     swapSimulator: pool0.SwapSimulator,
     user1,
     user2,

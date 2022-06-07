@@ -1,9 +1,8 @@
 import { truncate } from '@ragetrade/sdk';
-import { ethers } from 'ethers';
 import { parseUnits } from 'ethers/lib/utils';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { CurveYieldStrategy, CurveYieldStrategy__factory } from '../typechain-types';
+import { CurveYieldStrategy, CurveYieldStrategy__factory, ClearingHouseLens__factory } from '../typechain-types';
 import { getNetworkInfo } from './network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -26,6 +25,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const collateralTokenDeployment = await get('CollateralToken');
 
+  const clearingHouseLens = ClearingHouseLens__factory.connect(
+    (await get('ClearingHouseLens')).address,
+    await hre.ethers.getSigner(deployer)
+  )
+
   const initializeArg: CurveYieldStrategy.CurveYieldStrategyInitParamsStruct = {
     eightyTwentyRangeStrategyVaultInitParams: {
       baseVaultInitParams: {
@@ -36,6 +40,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         },
         ethPoolId,
         swapSimulator: await (await get('SwapSimulator')).address,
+        clearingHouseLens: clearingHouseLens.address,
         rageClearingHouse: clearingHouseAddress,
         rageCollateralToken: collateralTokenDeployment.address,
         rageSettlementToken: settlementTokenAddress,

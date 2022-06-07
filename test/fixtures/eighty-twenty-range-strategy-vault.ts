@@ -20,7 +20,6 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
   const [admin, user0, user1, trader0, settlementTokenTreasury] = await hre.ethers.getSigners();
 
   const ethPoolId = truncate(pool0.vToken.address);
-  const pool = await clearingHouse.getPoolInfo(truncate(pool0.vToken.address));
 
   const closePositionSlippageSqrtToleranceBps = 500; //5%
   const resetPositionThresholdBps = 2000; //20%
