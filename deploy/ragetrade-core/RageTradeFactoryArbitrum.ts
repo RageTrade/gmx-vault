@@ -97,11 +97,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       address: insuranceFundAddress,
     });
   }
-  const collateralInfo: IClearingHouseStructures.CollateralStruct = await read(
-    'ClearingHouseArbitrum',
+  const collateralInfo = await read(
+    'ClearingHouseLens',
     'getCollateralInfo',
     truncate(addresses.USDC),
   );
+
   await save('SettlementTokenOracleArbitrum', { abi: IOracle__factory.abi, address: collateralInfo.settings.oracle });
   console.log('saved "SettlementTokenOracleArbitrum":', collateralInfo.settings.oracle);
   if (hre.network.config.chainId !== 31337) {
@@ -118,4 +119,4 @@ export default func;
 func.skip = async hre => hre.network.config.chainId !== 31337;
 
 func.tags = ['RageTradeFactoryArbitrum'];
-func.dependencies = ['ClearingHouseLogic', 'VPoolWrapperLogic', 'InsuranceFundLogic', 'SettlementToken'];
+func.dependencies = ['ClearingHouseLogic', 'VPoolWrapperLogic', 'InsuranceFundLogic', 'SettlementToken', 'RageTradeFactory'];

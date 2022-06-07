@@ -1,7 +1,7 @@
 import { truncate } from '@ragetrade/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { ClearingHouse__factory } from '../typechain-types';
+import { ClearingHouseLens__factory, ClearingHouse__factory } from '../typechain-types';
 import { getNetworkInfo } from './network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -19,6 +19,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     args: ['RageTradeVaultsCollateralToken', 'RTVC'],
   });
 
+  const clearingHouseLens = ClearingHouseLens__factory.connect(
+    (await get('ClearingHouseLens')).address,
+    await hre.ethers.getSigner(deployer)
+  )
+
   const { RAGE_CLEARING_HOUSE_ADDRESS, RAGE_SETTLEMENT_TOKEN_ADDRESS } = getNetworkInfo(hre.network.config.chainId);
   if (CollateralTokenDeployment.newlyDeployed && RAGE_CLEARING_HOUSE_ADDRESS) {
     const clearingHouse = ClearingHouse__factory.connect(
@@ -27,7 +32,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     );
     await clearingHouse.updateCollateralSettings(CollateralTokenDeployment.address, {
       oracle: (
-        await clearingHouse.getCollateralInfo(
+        await clearingHouseLens.getCollateralInfo(
           truncate(RAGE_SETTLEMENT_TOKEN_ADDRESS ?? (await get('SettlementToken')).address),
         )
       )[1].oracle,

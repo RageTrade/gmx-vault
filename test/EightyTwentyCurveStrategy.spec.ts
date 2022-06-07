@@ -59,12 +59,13 @@ describe('EightyTwentyCurveStrategy', () => {
         lpOracle,
         triCrypto,
         trader0AccountNo,
+        clearingHouseLens,
       } = await eightyTwentyCurveStrategyFixture();
 
       await curveYieldStrategy.connect(user1).deposit(parseTokenAmount(10n, 18), user1.address);
 
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 131437400051827n);
+      await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
+      await checkLiquidityPosition(clearingHouseLens, vaultAccountNo, ethPoolId, 0, -197850, -188910, 131437400051827n);
       await checkVaultRangeParams(curveYieldStrategy, -197850, -188910, 131437400051827n);
       await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -1n);
       await checkTotalAssets(curveYieldStrategy, parseTokenAmount(10n, 18));
@@ -97,8 +98,8 @@ describe('EightyTwentyCurveStrategy', () => {
 
       await checkAccountNetProfit(clearingHouse, vaultAccountNo, -30163108n);
       await curveYieldStrategy.rebalance();
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -196670, -187730, 131437400051827n);
+      await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
+      await checkLiquidityPosition(clearingHouseLens, vaultAccountNo, ethPoolId, 0, -196670, -187730, 131437400051827n);
       await checkVaultRangeParams(curveYieldStrategy, -196670, -187730, 131437400051827n);
       await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -119065130813353002n);
       await checkTotalSupply(curveYieldStrategy, parseTokenAmount(10n, 18));
@@ -127,12 +128,13 @@ describe('EightyTwentyCurveStrategy', () => {
         lpOracle,
         triCrypto,
         trader0AccountNo,
+        clearingHouseLens,
       } = await eightyTwentyCurveStrategyFixture();
 
       await curveYieldStrategy.connect(user1).deposit(parseTokenAmount(10n, 18), user1.address);
 
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 131437400051827n);
+      await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
+      await checkLiquidityPosition(clearingHouseLens, vaultAccountNo, ethPoolId, 0, -197850, -188910, 131437400051827n);
       await checkVaultRangeParams(curveYieldStrategy, -197850, -188910, 131437400051827n);
       await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -1n);
       await checkTotalAssets(curveYieldStrategy, parseTokenAmount(10n, 18));
@@ -168,8 +170,16 @@ describe('EightyTwentyCurveStrategy', () => {
 
       await checkTotalAssetsApproximate(curveYieldStrategy, 19989164205961000000n);
       await checkTotalSupplyApproximate(curveYieldStrategy, 20010847548218700000n);
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPositionApproximate(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 263017376982064n);
+      await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
+      await checkLiquidityPositionApproximate(
+        clearingHouseLens,
+        vaultAccountNo,
+        ethPoolId,
+        0,
+        -197850,
+        -188910,
+        263017376982064n,
+      );
       await checkVaultRangeParamsApproximate(curveYieldStrategy, -197850, -188910, 263017376982064n);
       await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -119065130813353001n);
       // await logVaultParams('Deposit', curveYieldStrategy);
@@ -195,12 +205,13 @@ describe('EightyTwentyCurveStrategy', () => {
         lpOracle,
         triCrypto,
         trader0AccountNo,
+        clearingHouseLens,
       } = await eightyTwentyCurveStrategyFixture();
 
       await curveYieldStrategy.connect(user1).deposit(parseTokenAmount(10n, 18), user1.address);
 
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 131437400051827n);
+      await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
+      await checkLiquidityPosition(clearingHouseLens, vaultAccountNo, ethPoolId, 0, -197850, -188910, 131437400051827n);
       await checkVaultRangeParams(curveYieldStrategy, -197850, -188910, 131437400051827n);
       await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -1n);
       await checkTotalAssets(curveYieldStrategy, parseTokenAmount(10n, 18));
@@ -234,10 +245,18 @@ describe('EightyTwentyCurveStrategy', () => {
       );
 
       await curveYieldStrategy.connect(user1).withdraw(parseTokenAmount(5n, 18), user1.address, user1.address);
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
+      await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
       await checkTotalAssetsApproximate(curveYieldStrategy, 4989164205961090000n);
       await checkTotalSupplyApproximate(curveYieldStrategy, 4994576225890620000n);
-      await checkLiquidityPositionApproximate(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 65647411349174n);
+      await checkLiquidityPositionApproximate(
+        clearingHouseLens,
+        vaultAccountNo,
+        ethPoolId,
+        0,
+        -197850,
+        -188910,
+        65647411349174n,
+      );
       await checkVaultRangeParamsApproximate(curveYieldStrategy, -197850, -188910, 65647411349174n);
       // await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -59467986586889700n);
       // await logVaultParams('Withdraw', curveYieldStrategy);
@@ -264,6 +283,7 @@ describe('EightyTwentyCurveStrategy', () => {
         lpOracle,
         triCrypto,
         trader0AccountNo,
+        clearingHouseLens,
       } = await eightyTwentyCurveStrategyFixture();
 
       // Initial Deposit - user1
@@ -272,8 +292,8 @@ describe('EightyTwentyCurveStrategy', () => {
       // await logVaultParams('Initial Deposit - user1', curveYieldStrategy);
       // await logRageParams('Initial Deposit - user1', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 131437400051827n);
+      await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
+      await checkLiquidityPosition(clearingHouseLens, vaultAccountNo, ethPoolId, 0, -197850, -188910, 131437400051827n);
       await checkVaultRangeParams(curveYieldStrategy, -197850, -188910, 131437400051827n);
       await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -1n);
       await checkTotalAssets(curveYieldStrategy, parseTokenAmount(10n, 18));
@@ -310,8 +330,16 @@ describe('EightyTwentyCurveStrategy', () => {
 
       await checkTotalAssetsApproximate(curveYieldStrategy, 19983017869055200000n);
       await checkTotalSupplyApproximate(curveYieldStrategy, 20017011019280500000n);
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPositionApproximate(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 263098388518300n);
+      await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
+      await checkLiquidityPositionApproximate(
+        clearingHouseLens,
+        vaultAccountNo,
+        ethPoolId,
+        0,
+        -197850,
+        -188910,
+        263098388518300n,
+      );
       await checkVaultRangeParamsApproximate(curveYieldStrategy, -197850, -188910, 263098388518300n);
       await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -119065130813353002n);
 
@@ -346,8 +374,16 @@ describe('EightyTwentyCurveStrategy', () => {
 
       await checkTotalAssetsApproximate(curveYieldStrategy, 29922966458878300000n);
       await checkTotalSupplyApproximate(curveYieldStrategy, 30064215114411800000n);
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPositionApproximate(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 395156226923712n);
+      await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
+      await checkLiquidityPositionApproximate(
+        clearingHouseLens,
+        vaultAccountNo,
+        ethPoolId,
+        0,
+        -197850,
+        -188910,
+        395156226923712n,
+      );
       await checkVaultRangeParamsApproximate(curveYieldStrategy, -197850, -188910, 395156226923712n);
       await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -319573983064666000n);
 
@@ -380,8 +416,16 @@ describe('EightyTwentyCurveStrategy', () => {
       // await logVaultParams('24hr Rebalance', curveYieldStrategy);
       // await logRageParams('24hr Rebalance', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPositionApproximate(clearingHouse, vaultAccountNo, 0, 0, -194670, -185730, 395156226923712n);
+      await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
+      await checkLiquidityPositionApproximate(
+        clearingHouseLens,
+        vaultAccountNo,
+        ethPoolId,
+        0,
+        -194670,
+        -185730,
+        395156226923712n,
+      );
       await checkVaultRangeParamsApproximate(curveYieldStrategy, -194670, -185730, 395156226923712n);
       await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -579364592632167000n);
       await checkTotalAssetsApproximate(curveYieldStrategy, 29800825979922700000n);
@@ -416,8 +460,16 @@ describe('EightyTwentyCurveStrategy', () => {
       // await logVaultParams('Partial Withdraw - user1', curveYieldStrategy);
       // await logRageParams('Partial Withdraw - user1', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPositionApproximate(clearingHouse, vaultAccountNo, 0, 0, -194670, -185730, 329118900714233n);
+      await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
+      await checkLiquidityPositionApproximate(
+        clearingHouseLens,
+        vaultAccountNo,
+        ethPoolId,
+        0,
+        -194670,
+        -185730,
+        329118900714233n,
+      );
       await checkVaultRangeParamsApproximate(curveYieldStrategy, -194670, -185730, 329118900714233n);
       await checkTotalAssetsApproximate(curveYieldStrategy, 24919157059011200000n);
       await checkTotalSupplyApproximate(curveYieldStrategy, 25039973446253400000n);
@@ -454,8 +506,16 @@ describe('EightyTwentyCurveStrategy', () => {
       // await logVaultParams('Partial Withdraw - user2', curveYieldStrategy);
       // await logRageParams('Partial Withdraw - user2', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPositionApproximate(clearingHouse, vaultAccountNo, 0, 0, -194670, -185730, 263081272024017n);
+      await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
+      await checkLiquidityPositionApproximate(
+        clearingHouseLens,
+        vaultAccountNo,
+        ethPoolId,
+        0,
+        -194670,
+        -185730,
+        263081272024017n,
+      );
       await checkVaultRangeParamsApproximate(curveYieldStrategy, -194670, -185730, 263081272024017n);
       await checkTotalAssetsApproximate(curveYieldStrategy, 19918971646489091783n);
       await checkTotalSupplyApproximate(curveYieldStrategy, 20015708764802261312n);
@@ -494,6 +554,7 @@ describe('EightyTwentyCurveStrategy', () => {
         lpOracle,
         triCrypto,
         trader0AccountNo,
+        clearingHouseLens,
       } = await eightyTwentyCurveStrategyFixture();
 
       let priceX128;
@@ -503,8 +564,8 @@ describe('EightyTwentyCurveStrategy', () => {
       // await logVaultParams('Initial Deposit - user1', curveYieldStrategy);
       // await logRageParams('Initial Deposit - user1', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 131437400051827n);
+      await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
+      await checkLiquidityPosition(clearingHouseLens, vaultAccountNo, ethPoolId, 0, -197850, -188910, 131437400051827n);
       await checkVaultRangeParams(curveYieldStrategy, -197850, -188910, 131437400051827n);
       await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -1n);
       await checkTotalAssets(curveYieldStrategy, parseTokenAmount(10n, 18));
@@ -541,8 +602,8 @@ describe('EightyTwentyCurveStrategy', () => {
       // await logVaultParams('Rebalance', curveYieldStrategy);
       // await logRageParams('Rebalance', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -193470, -184530, 131437400051827n);
+      await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
+      await checkLiquidityPosition(clearingHouseLens, vaultAccountNo, ethPoolId, 0, -193470, -184530, 131437400051827n);
       await checkVaultRangeParams(curveYieldStrategy, -193470, -184530, 131437400051827n);
       await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -408732660730720003n);
       await checkTotalSupply(curveYieldStrategy, parseTokenAmount(10n, 18));
@@ -578,8 +639,16 @@ describe('EightyTwentyCurveStrategy', () => {
       // await logVaultParams('Reset', curveYieldStrategy);
       // await logRageParams('Reset', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPositionApproximate(clearingHouse, vaultAccountNo, 0, 0, -189500, -180560, 75299034736216n);
+      await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
+      await checkLiquidityPositionApproximate(
+        clearingHouseLens,
+        vaultAccountNo,
+        ethPoolId,
+        0,
+        -189500,
+        -180560,
+        75299034736216n,
+      );
       await checkVaultRangeParamsApproximate(curveYieldStrategy, -189500, -180560, 75299034736216n);
       await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -709303296928167000n);
       await checkTotalSupply(curveYieldStrategy, parseTokenAmount(10n, 18));
@@ -812,10 +881,11 @@ describe('EightyTwentyCurveStrategy', () => {
         lpOracle,
         triCrypto,
         trader0AccountNo,
+        clearingHouseLens,
       } = await eightyTwentyCurveStrategyFixture();
       await curveYieldStrategy.connect(user1).deposit(parseTokenAmount(10n, 18), user1.address);
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
-      await checkLiquidityPosition(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 131437400051827n);
+      await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
+      await checkLiquidityPosition(clearingHouseLens, vaultAccountNo, ethPoolId, 0, -197850, -188910, 131437400051827n);
       await checkVaultRangeParams(curveYieldStrategy, -197850, -188910, 131437400051827n);
       await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -1n);
       await checkTotalAssets(curveYieldStrategy, parseTokenAmount(10n, 18));
@@ -854,10 +924,18 @@ describe('EightyTwentyCurveStrategy', () => {
       await increaseBlockTimestamp(10000);
 
       await curveYieldStrategy.connect(user1).withdraw(parseTokenAmount(8n, 18), user1.address, user1.address);
-      await checkLiquidityPositionNum(clearingHouse, vaultAccountNo, 0, 1);
+      await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
       await checkTotalAssetsApproximate(curveYieldStrategy, 2167358348789560000n);
       await checkTotalSupplyApproximate(curveYieldStrategy, 2169709422412270000n);
-      await checkLiquidityPositionApproximate(clearingHouse, vaultAccountNo, 0, 0, -197850, -188910, 28518096536276n);
+      await checkLiquidityPositionApproximate(
+        clearingHouseLens,
+        vaultAccountNo,
+        ethPoolId,
+        0,
+        -197850,
+        -188910,
+        28518096536276n,
+      );
       await checkVaultRangeParamsApproximate(curveYieldStrategy, -197850, -188910, 28518096536276n);
       await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -119065130813353000n);
 

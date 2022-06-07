@@ -19,8 +19,6 @@ import { ICurveGauge } from '../interfaces/curve/ICurveGauge.sol';
 import { ILPPriceGetter } from '../interfaces/curve/ILPPriceGetter.sol';
 import { ICurveStableSwap } from '../interfaces/curve/ICurveStableSwap.sol';
 
-import { console } from 'hardhat/console.sol';
-
 import { SwapManager } from '../libraries/SwapManager.sol';
 import { SafeCast } from '../libraries/SafeCast.sol';
 
