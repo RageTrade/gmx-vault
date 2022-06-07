@@ -10,7 +10,6 @@ import { priceToPriceX128 } from '@ragetrade/sdk';
 import addresses from './addresses';
 import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
 import { ClearingHouse } from '@ragetrade/sdk/dist/typechain/core';
-import { ClearingHouseLens__factory } from '../../typechain-types';
 
 const { get } = deployments;
 
@@ -84,7 +83,9 @@ export const rageTradeFixture = deployments.createFixture(async hre => {
 
     const SwapSimulator = await (await hre.ethers.getContractFactory('SwapSimulator')).deploy();
 
-    const clearingHouseLens = ClearingHouseLens__factory.connect((await get('ClearingHouseLens')).address, admin);
+    const clearingHouseLens = await (await hre.ethers.getContractFactory('ClearingHouseLens')).deploy(
+      clearingHouse.address
+    );
 
     return { vToken, vPool, vPoolWrapper, oracle, SwapSimulator, clearingHouseLens };
   }
