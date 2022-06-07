@@ -6,4 +6,7 @@ interface IBaseVault {
     function rebalance() external;
 
     function closeTokenPosition() external;
+
+    function depositCap() external view returns (uint256);
+
 }
