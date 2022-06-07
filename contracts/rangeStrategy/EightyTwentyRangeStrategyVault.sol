@@ -162,10 +162,7 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     }
 
     /// @inheritdoc BaseVault
-    function _rebalanceRanges(IClearingHouse.VTokenPositionView memory vTokenPosition, int256 vaultMarketValue)
-        internal
-        override
-    {
+    function _rebalanceRanges(int256 netTraderPosition, int256 vaultMarketValue) internal override {
         isReset = checkIsReset(vaultMarketValue);
         IClearingHouseStructures.LiquidityChangeParams[2]
             memory liquidityChangeParamList = _getLiquidityChangeParamsOnRebalance(vaultMarketValue);
@@ -175,13 +172,13 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
             rageClearingHouse.updateRangeOrder(rageAccountNo, ethPoolId, liquidityChangeParamList[i]);
         }
 
-        if (isReset) _closeTokenPositionOnReset(vTokenPosition);
+        if (isReset) _closeTokenPositionOnReset(netTraderPosition);
     }
 
     /// @inheritdoc BaseVault
-    function _closeTokenPositionOnReset(IClearingHouse.VTokenPositionView memory vTokenPosition) internal override {
+    function _closeTokenPositionOnReset(int256 netTraderPosition) internal override {
         if (!isReset) revert ETRS_INVALID_CLOSE();
-        int256 tokensToTrade = -vTokenPosition.netTraderPosition;
+        int256 tokensToTrade = -netTraderPosition;
         uint160 sqrtTwapPriceX96 = _getTwapSqrtPriceX96();
         uint256 tokensToTradeNotionalAbs = _getTokenNotionalAbs(tokensToTrade, sqrtTwapPriceX96);
 
