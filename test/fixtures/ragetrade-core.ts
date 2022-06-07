@@ -8,6 +8,7 @@ import {
 } from '../../typechain-types/artifacts/@ragetrade/core/contracts/protocol/RageTradeFactory';
 import { priceToPriceX128 } from '@ragetrade/sdk';
 import { ClearingHouse } from '@ragetrade/sdk/dist/typechain/core';
+import { clearinghouse } from '@ragetrade/sdk/dist/typechain/core/contracts/interfaces';
 
 export const rageTradeFixture = deployments.createFixture(async hre => {
   const rageTradeDeployments = await deployments.fixture('RageTradeFactory');
@@ -75,6 +76,10 @@ export const rageTradeFixture = deployments.createFixture(async hre => {
 
     const SwapSimulator = await (await hre.ethers.getContractFactory('SwapSimulator')).deploy();
 
-    return { vToken, vPool, vPoolWrapper, oracle, SwapSimulator };
+    const clearingHouseLens = await (
+      await hre.ethers.getContractFactory('ClearingHouseLens')
+    ).deploy(rageTradeDeployments.ClearingHouse.address);
+
+    return { vToken, vPool, vPoolWrapper, oracle, SwapSimulator, clearingHouseLens };
   }
 });
