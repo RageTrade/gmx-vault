@@ -28,6 +28,12 @@ contract VaultPeriphery is OwnableUpgradeable {
 
     event DepositPeriphery(address indexed owner, address indexed token, uint256 amount, uint256 asset, uint256 shares);
 
+    event SlippageToleranceUpdated(uint256 oldTolerance, uint256 newTolerance);
+
+    event SwapRouterUpdated(address indexed oldSwapRouter, address indexed newSwapRouter);
+
+    event EthOracleUpdated(address indexed oldEthOracle, address indexed newEthOracle);
+
     IERC20 public usdc;
     IERC20 public usdt;
     IWETH9 public weth;
@@ -135,7 +141,7 @@ contract VaultPeriphery is OwnableUpgradeable {
         }
 
         sharesMinted = vault.deposit(lpToken.balanceOf(address(this)), msg.sender);
-        emit DepositPeriphery(msg.sender, address(usdc), amount, balance, sharesMinted);
+        emit DepositPeriphery(msg.sender, address(weth), amount, balance, sharesMinted);
     }
 
     function depositEth() external payable returns (uint256 sharesMinted) {
@@ -160,6 +166,7 @@ contract VaultPeriphery is OwnableUpgradeable {
 
     function updateTolerance(uint256 newTolerance) external onlyOwner {
         if (newTolerance > MAX_BPS) revert OutOfBounds();
+        emit SlippageToleranceUpdated(MAX_TOLERANCE, newTolerance);
         MAX_TOLERANCE = newTolerance;
     }
 
@@ -167,11 +174,13 @@ contract VaultPeriphery is OwnableUpgradeable {
         if (newRouter == address(0)) revert ZeroValue();
         usdc.approve(newRouter, 0);
         usdc.approve(newRouter, type(uint256).max);
+        emit SwapRouterUpdated(address(swapRouter), newRouter);
         swapRouter = ISwapRouter(newRouter);
     }
 
     function updateEthOracle(address newOracle) external onlyOwner {
         if (newOracle == address(0)) revert ZeroValue();
+        emit EthOracleUpdated(address(ethOracle), newOracle);
         ethOracle = AggregatorV3Interface(newOracle);
     }
 }
