@@ -3,7 +3,6 @@ import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/t
 import {
   AggregatorV3Interface,
   CurveYieldStrategyTest__factory,
-  CurveYieldStrategy__factory,
   ICurveGauge,
   ICurveStableSwap,
   ILPPriceGetter,
@@ -71,11 +70,6 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
     addresses.QUOTER,
   )) as ILPPriceGetter;
 
-  // const crvWethPool = (await hre.ethers.getContractAt(
-  //   '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol:IUniswapV3Pool',
-  //   '0xa95b0f5a65a769d82ab4f3e82842e45b8bbaf101',
-  // )) as IUniswapV3Pool;
-
   const uniswapQuoter = (await hre.ethers.getContractAt(
     '@uniswap/v3-periphery/contracts/interfaces/IQuoter.sol:IQuoter',
     '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6',
@@ -140,9 +134,7 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
 
   await settlementToken.approve(clearingHouse.address, parseTokenAmount(10n ** 5n, 6));
 
-  await curveYieldStrategyTest.setCrvOracle(addresses.CRV_ORACLE);
-
-  await curveYieldStrategyTest.setCrvSwapSlippageTolerance(4_000);
+  await curveYieldStrategyTest.updateCurveParams(1_000, 1_000, 0, 4_000, addresses.CRV_ORACLE);
 
   return {
     crv,
@@ -155,7 +147,6 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
     wethOracle,
     triCrypto,
     crvOracle,
-    // crvWethPool,
     uniswapQuoter,
     curveYieldStrategyTest,
   };

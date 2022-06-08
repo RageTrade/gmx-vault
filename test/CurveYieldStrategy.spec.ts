@@ -32,6 +32,7 @@ describe('CurveYieldStrategy', () => {
         usdt.allowance(curveYieldStrategy.address, addresses.TRICRYPTO_POOL),
         lpToken.allowance(curveYieldStrategy.address, addresses.TRICRYPTO_POOL),
       ]);
+      const zeroBN = Array<BigNumber>(3).fill(BigNumber.from(0));
 
       await curveYieldStrategy.grantAllowances();
 
@@ -41,7 +42,7 @@ describe('CurveYieldStrategy', () => {
         lpToken.allowance(curveYieldStrategy.address, addresses.TRICRYPTO_POOL),
       ]);
 
-      expect(before.toString()).to.be.eql([BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)].toString());
+      expect(before.toString()).to.be.eql(zeroBN.toString());
       expect(after.toString()).to.be.eql(
         [ethers.constants.MaxUint256, ethers.constants.MaxUint256, ethers.constants.MaxUint256].toString(),
       );
@@ -677,7 +678,7 @@ describe('CurveYieldStrategy', () => {
       const curveYieldStrategy = curveYieldStrategyTest.connect(admin);
       await curveYieldStrategy.grantAllowances();
 
-      await curveYieldStrategy.changeFee(2000);
+      await curveYieldStrategy.updateCurveParams(2_000, 1_000, 0, 3_000, addresses.CRV_ORACLE);
       expect(await curveYieldStrategy.FEE()).to.be.eq(BigNumber.from(2000));
     });
 
@@ -687,7 +688,9 @@ describe('CurveYieldStrategy', () => {
       const curveYieldStrategy = curveYieldStrategyTest.connect(admin);
       await curveYieldStrategy.grantAllowances();
 
-      await expect(curveYieldStrategy.changeFee(10001)).to.be.revertedWith('CYS_INVALID_FEES');
+      await expect(
+        curveYieldStrategyTest.updateCurveParams(10_001, 1_000, 0, 3_000, addresses.CRV_ORACLE),
+      ).to.be.revertedWith('CYS_INVALID_SETTER_VALUE(10001)');
     });
 
     it('should not trigger crv slippage tolerance', async () => {
@@ -751,7 +754,7 @@ describe('CurveYieldStrategy', () => {
       await hre.network.provider.send('evm_increaseTime', [10_000_000]);
       await hre.network.provider.send('evm_mine', []);
 
-      await curveYieldStrategy.setCrvSwapSlippageTolerance(100);
+      await curveYieldStrategy.connect(admin).updateCurveParams(1000, 4_000, 0, 100, addresses.CRV_ORACLE);
 
       await gauge.claimable_reward_write(curveYieldStrategy.address, crv.address);
       const claimable_ = await gauge.claimable_reward(curveYieldStrategy.address, crv.address);
