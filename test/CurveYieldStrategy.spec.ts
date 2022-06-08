@@ -43,7 +43,9 @@ describe('CurveYieldStrategy', () => {
       ]);
 
       expect(before.toString()).to.be.eql(zeroBN.toString());
-      expect(after.toString()).to.be.eql([ethers.constants.MaxUint256, ethers.constants.MaxUint256, ethers.constants.MaxUint256].toString());
+      expect(after.toString()).to.be.eql(
+        [ethers.constants.MaxUint256, ethers.constants.MaxUint256, ethers.constants.MaxUint256].toString(),
+      );
     });
 
     it('should transfer lp tokens & mint shares', async () => {
@@ -752,7 +754,7 @@ describe('CurveYieldStrategy', () => {
       await hre.network.provider.send('evm_increaseTime', [10_000_000]);
       await hre.network.provider.send('evm_mine', []);
 
-      await curveYieldStrategy.setCrvSwapSlippageTolerance(100);
+      await curveYieldStrategy.connect(admin).updateCurveParams(1000, 4_000, 0, 100, addresses.CRV_ORACLE);
 
       await gauge.claimable_reward_write(curveYieldStrategy.address, crv.address);
       const claimable_ = await gauge.claimable_reward(curveYieldStrategy.address, crv.address);
