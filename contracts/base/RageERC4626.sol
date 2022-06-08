@@ -4,6 +4,8 @@ pragma solidity >=0.8.0;
 import { IERC20Metadata } from '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
 import { SafeERC20 } from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
+import { IBaseVault } from 'contracts/interfaces/IBaseVault.sol';
+
 import { ERC4626Upgradeable } from '../utils/ERC4626Upgradeable.sol';
 
 abstract contract RageERC4626 is ERC4626Upgradeable {
@@ -70,6 +72,14 @@ abstract contract RageERC4626 is ERC4626Upgradeable {
         emit Withdraw(msg.sender, to, from, amount, shares);
 
         asset.safeTransfer(to, amount);
+    }
+
+    function maxDeposit(address) public view virtual override returns (uint256) {
+        return IBaseVault(address(this)).depositCap() - totalAssets();
+    }
+
+    function maxMint(address) public view virtual override returns (uint256) {
+        return convertToShares(maxDeposit(address(0)));
     }
 
     function _beforeShareAllocation() internal virtual;
