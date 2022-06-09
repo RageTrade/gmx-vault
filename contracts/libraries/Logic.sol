@@ -31,6 +31,12 @@ import { ICurveStableSwap } from '../interfaces/curve/ICurveStableSwap.sol';
 import { SafeCast } from '../libraries/SafeCast.sol';
 import { SwapManager } from '../libraries/SwapManager.sol';
 
+interface IBaseVaultGetters {
+    function minNotionalPositionToCloseThreshold() external view returns (uint64);
+
+    function closePositionSlippageSqrtToleranceBps() external view returns (uint16);
+}
+
 library Logic {
     using SafeCast for uint256;
     using FullMath for uint256;
@@ -140,8 +146,8 @@ library Logic {
 
         uint256 tokensToTradeNotionalAbs = _getTokenNotionalAbs(netPosition, sqrtPriceX96);
 
-        uint64 minNotionalPositionToCloseThreshold = IBaseVault(vault).minNotionalPositionToCloseThreshold();
-        uint16 closePositionSlippageSqrtToleranceBps = IBaseVault(vault).closePositionSlippageSqrtToleranceBps();
+        uint64 minNotionalPositionToCloseThreshold = IBaseVaultGetters(vault).minNotionalPositionToCloseThreshold();
+        uint16 closePositionSlippageSqrtToleranceBps = IBaseVaultGetters(vault).closePositionSlippageSqrtToleranceBps();
 
         ISwapSimulator swapSimulatorCopied = IBaseVault(vault).swapSimulator();
 

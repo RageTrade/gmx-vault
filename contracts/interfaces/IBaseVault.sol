@@ -3,6 +3,7 @@
 pragma solidity ^0.8.9;
 
 import { ISwapSimulator } from './ISwapSimulator.sol';
+import { IClearingHouse } from '@ragetrade/core/contracts/interfaces/IClearingHouse.sol';
 import { IUniswapV3Pool } from '@uniswap/v3-core-0.8-support/contracts/interfaces/IUniswapV3Pool.sol';
 
 interface IBaseVault {
@@ -18,11 +19,7 @@ interface IBaseVault {
 
     function rageVPool() external view returns (IUniswapV3Pool);
 
-    function rageClearingHouse() external view returns (address);
-
     function swapSimulator() external view returns (ISwapSimulator);
 
-    function minNotionalPositionToCloseThreshold() external view returns (uint64);
-
-    function closePositionSlippageSqrtToleranceBps() external view returns (uint16);
+    function rageClearingHouse() external view returns (IClearingHouse);
 }
