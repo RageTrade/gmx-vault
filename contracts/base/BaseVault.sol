@@ -18,6 +18,7 @@ import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullM
 import { FixedPoint96 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint96.sol';
 
 import { IBaseVault } from '../interfaces/IBaseVault.sol';
+import { ISwapSimulator } from '../interfaces/ISwapSimulator.sol';
 import { IBaseYieldStrategy } from '../interfaces/IBaseYieldStrategy.sol';
 
 import { ClearingHouseLens } from '@ragetrade/core/contracts/lens/ClearingHouseLens.sol';
@@ -34,8 +35,8 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     using SignedFullMath for int256;
     using ClearingHouseExtsload for IClearingHouse;
 
-    address public swapSimulator;
     ClearingHouseLens internal lens;
+    ISwapSimulator public swapSimulator;
     IClearingHouse public rageClearingHouse;
 
     IERC20Metadata internal rageSettlementToken;
@@ -81,7 +82,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
 
         ethPoolId = params.ethPoolId;
         lens = ClearingHouseLens(params.clearingHouseLens);
-        swapSimulator = params.swapSimulator;
+        swapSimulator = ISwapSimulator(params.swapSimulator);
 
         rageClearingHouse = IClearingHouse(params.rageClearingHouse);
         rageAccountNo = rageClearingHouse.createAccount();

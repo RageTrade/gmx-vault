@@ -13,8 +13,6 @@ import { ClearingHouse } from '@ragetrade/sdk/dist/typechain/core';
 
 const { get } = deployments;
 
-const { get } = deployments;
-
 export const rageTradeFixture = deployments.createFixture(async hre => {
   const rageTradeDeployments = await deployments.fixture('RageTradeFactoryArbitrum');
 

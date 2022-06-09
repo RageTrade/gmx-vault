@@ -35,7 +35,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       vPoolWrapperLogic.address,
       insuranceFundLogic.address,
       addresses.USDC,
-      // settlementTokenOracle.address
+      settlementTokenOracle.address
     ],
   });
 
