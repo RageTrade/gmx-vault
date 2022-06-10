@@ -26,7 +26,7 @@
     "@134dd3v/arbos-precompiles": "^1.0.4",
     "@openzeppelin/contracts": "^4.0.0",
     "@openzeppelin/contracts-upgradeable": "^4.1.0",
-    "@ragetrade/core": "https://github.com/RageTrade/core.git#f88c848e838d223b1f7b6697c28ccb5d1826ed46",
+    "@ragetrade/core": "https://github.com/RageTrade/core.git#b97f3b9e49fc18cb975f745261eb3b5ccb4fd3cf",
     "@rari-capital/solmate": "https://github.com/Rari-Capital/solmate.git#25015a1d18e75921f8cb1bacd4beb9f364e788a9",
     "@uniswap/v2-core": "^1.0.1",
     "@uniswap/v2-periphery": "^1.1.0-beta.0",
