@@ -8,8 +8,6 @@ import { AggregatorV3Interface } from '@chainlink/contracts/src/v0.8/interfaces/
 
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 
-import 'hardhat/console.sol';
-
 interface IMintable {
     function mint(address to, uint256 amount) external;
 }

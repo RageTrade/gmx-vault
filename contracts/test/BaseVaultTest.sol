@@ -13,11 +13,17 @@ import { BaseVault } from '../base/BaseVault.sol';
 contract BaseVaultTest is BaseVault {
     uint64 blockTimestamp_ = uint64(block.timestamp);
 
-    constructor(IERC20Metadata token, address rageClearingHouse) initializer {
+    constructor(
+        IERC20Metadata token,
+        address rageClearingHouse,
+        address clearingHouseLens
+    ) initializer {
         __BaseVault_init(
             BaseVaultInitParams({
                 rageErc4626InitParams: RageERC4626InitParams({ asset: token, name: 'name', symbol: 'symbol' }),
                 ethPoolId: 0,
+                swapSimulator: address(0),
+                clearingHouseLens: clearingHouseLens,
                 rageClearingHouse: rageClearingHouse,
                 rageCollateralToken: address(token),
                 rageSettlementToken: address(token)
@@ -68,26 +74,13 @@ contract BaseVaultTest is BaseVault {
         RANGE STRATEGY
     */
 
-    function _rebalanceRanges(IClearingHouse.VTokenPositionView memory vTokenPosition, int256 vaultMarketValue)
-        internal
-        virtual
-        override
-    {}
+    function _rebalanceRanges(int256 netTraderPosition, int256 vaultMarketValue) internal virtual override {}
 
-    function _closeTokenPositionOnReset(IClearingHouse.VTokenPositionView memory vTokenPosition)
-        internal
-        virtual
-        override
-    {}
+    function _closeTokenPositionOnReset(int256 netTraderPosition) internal virtual override {}
 
     function _afterDepositRanges(uint256 amountAfterDeposit, uint256 amountDeposited) internal virtual override {}
 
-    function _beforeWithdrawClosePositionRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn)
-        internal
-        virtual
-        override
-        returns (uint256 updatedAmountWithdrawn)
-    {}
+    function _beforeWithdrawClosePositionRanges(int256 tokensToTrade) internal virtual override {}
 
     function _beforeWithdrawRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn) internal virtual override {}
 

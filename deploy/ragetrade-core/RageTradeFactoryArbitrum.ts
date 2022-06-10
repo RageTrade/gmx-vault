@@ -24,12 +24,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const clearingHouseLogic = await get('ClearingHouseLogic');
   const vPoolWrapperLogic = await get('VPoolWrapperLogic');
   const insuranceFundLogic = await get('InsuranceFundLogic');
+  const settlementTokenOracle = await get('SettlementTokenOracle');
 
   const deployment = await deploy('RageTradeFactoryArbitrum', {
     contract: 'RageTradeFactory',
     from: deployer,
     log: true,
-    args: [clearingHouseLogic.address, vPoolWrapperLogic.address, insuranceFundLogic.address, addresses.USDC],
+    args: [
+      clearingHouseLogic.address,
+      vPoolWrapperLogic.address,
+      insuranceFundLogic.address,
+      addresses.USDC,
+      settlementTokenOracle.address
+    ],
   });
 
   if (deployment.newlyDeployed && hre.network.config.chainId !== 31337) {
@@ -56,8 +63,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await hre.tenderly.push({
       name: 'TransparentUpgradeableProxy',
       address: clearingHouseAddress,
-    });
+    }); 
   }
+
+  await deploy('ClearingHouseLensArbitrum', {
+    contract: 'ClearingHouseLens',
+    from: deployer,
+    log: true,
+    args: [clearingHouseAddress]
+  });
 
   await execute(
     'ClearingHouseArbitrum',
@@ -97,11 +111,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       address: insuranceFundAddress,
     });
   }
-  const collateralInfo: IClearingHouseStructures.CollateralStruct = await read(
-    'ClearingHouseArbitrum',
+  const collateralInfo = await read(
+    'ClearingHouseLensArbitrum',
     'getCollateralInfo',
     truncate(addresses.USDC),
   );
+
+  console.log('collateralInfo', collateralInfo);
+
   await save('SettlementTokenOracleArbitrum', { abi: IOracle__factory.abi, address: collateralInfo.settings.oracle });
   console.log('saved "SettlementTokenOracleArbitrum":', collateralInfo.settings.oracle);
   if (hre.network.config.chainId !== 31337) {
@@ -118,4 +135,11 @@ export default func;
 func.skip = async hre => hre.network.config.chainId !== 31337;
 
 func.tags = ['RageTradeFactoryArbitrum'];
-func.dependencies = ['ClearingHouseLogic', 'VPoolWrapperLogic', 'InsuranceFundLogic', 'SettlementToken'];
+func.dependencies = [
+  'ClearingHouseLogic',
+  'VPoolWrapperLogic',
+  'InsuranceFundLogic',
+  'SettlementToken',
+  'RageTradeFactory',
+  'SettlementTokenOracle'
+];
