@@ -723,16 +723,15 @@
     fs-extra "^9.0.1"
     js-yaml "^3.14.0"
 
-"@ragetrade/core@https://github.com/RageTrade/core.git#f88c848e838d223b1f7b6697c28ccb5d1826ed46":
+"@ragetrade/core@https://github.com/RageTrade/core.git#cfe8baa1011a860f462d8dc8ba7349f6ed474e52":
   version "1.0.1"
-  resolved "https://github.com/RageTrade/core.git#f88c848e838d223b1f7b6697c28ccb5d1826ed46"
+  resolved "https://github.com/RageTrade/core.git#cfe8baa1011a860f462d8dc8ba7349f6ed474e52"
   dependencies:
     "@chainlink/contracts" "^0.4.0"
     "@openzeppelin/contracts" "^4.5.0"
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
     "@uniswap/v3-core-0.8-support" "https://github.com/uniswap/v3-core.git#d55e297b938e5b56fd1cf9fe668f5bd385be85b5"
     "@uniswap/v3-periphery" "^1.4.0"
-    patch-package "^6.4.7"
 
 "@ragetrade/sdk@^0.7.9":
   version "0.7.21"
@@ -7354,7 +7353,7 @@ patch-package@6.2.2:
     slash "^2.0.0"
     tmp "^0.0.33"
 
-patch-package@^6.2.2, patch-package@^6.4.7:
+patch-package@^6.2.2:
   version "6.4.7"
   resolved "https://registry.yarnpkg.com/patch-package/-/patch-package-6.4.7.tgz#2282d53c397909a0d9ef92dae3fdeb558382b148"
   integrity sha512-S0vh/ZEafZ17hbhgqdnpunKDfzHQibQizx9g8yEf5dcVk3KOflOfdufRXQX8CSEkyOQwuM/bNz1GwKvFj54kaQ==
