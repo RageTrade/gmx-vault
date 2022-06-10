@@ -168,7 +168,7 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     }
 
     /// @notice settles profit and collateral for the vault
-    /// @param collateralDeposited The amount of collateral deposited to rage core
+    /// @param collateralDeposited The amount of rage collateral token deposited to rage core
     /// @param vaultMarketValue The market value of the vault in USDC
     function _settleProfitAndCollateral(uint256 collateralDeposited, int256 vaultMarketValue) internal {
         // Settle net profit made from ranges and deposit/withdraw profits in USDC
