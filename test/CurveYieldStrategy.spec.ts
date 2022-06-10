@@ -399,17 +399,13 @@ describe('CurveYieldStrategy', () => {
       const fraction1 = user1SharesBalBefore.mul(totalAssetvalueBefore).div(totalSharesMintedBefore);
       const shareFraction1 = await curveYieldStrategy.convertToShares(fraction1);
 
-      console.log('A');
       expect(within(user1SharesBalAfterFirstWithdraw, BigNumber.from(0), user1SharesBalBefore.sub(shareFraction1))).to
         .be.true;
-      console.log('X');
       expect(user2SharesBalAfterFirstWithdraw).to.be.eq(user2SharesBalBefore);
 
-      console.log('B');
       expect(within(totalAssetvalueBefore.sub(totalAssetvalueAfterFirstWithdraw), BigNumber.from(0), shareFraction1)).to
         .be.true;
 
-      console.log('C');
       expect(
         within(
           totalSharesMintedAfterFirstWithdraw.sub(user1SharesBalBefore),
@@ -429,7 +425,6 @@ describe('CurveYieldStrategy', () => {
 
       expect(user1SharesBalAfterSecondWithdraw).to.be.eq(user1SharesBalAfterFirstWithdraw);
 
-      console.log('D');
       expect(
         within(
           user2SharesBalAfterSecondWithdraw,
@@ -442,7 +437,6 @@ describe('CurveYieldStrategy', () => {
         totalAssetvalueAfterFirstWithdraw.sub(user2LpBalAfterSecondWithdraw),
       );
 
-      console.log('E');
       expect(
         within(
           totalSharesMintedAfterSecondWithdraw,

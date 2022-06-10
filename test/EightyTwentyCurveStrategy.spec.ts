@@ -1,7 +1,7 @@
 // Integration Testing New
 import { parseTokenAmount, priceToPriceX128 } from '@ragetrade/sdk';
 import { expect } from 'chai';
-import { BigNumber } from 'ethers';
+import { BigNumber, providers } from 'ethers';
 import hre, { ethers } from 'hardhat';
 
 import { eightyTwentyCurveStrategyFixture } from './fixtures/eighty-twenty-curve-strategy';
@@ -325,9 +325,12 @@ describe('EightyTwentyCurveStrategy', () => {
       // await curveYieldStrategy.setYieldTokenPriceX128(priceX128);
 
       // Initial Deposit - user2
+      // console.log('BLOCK before increase', (await hre.ethers.provider.getBlockNumber()))
       await increaseBlockTimestamp(10000);
+      // console.log('BLOCK after increase', (await hre.ethers.provider.getBlockNumber()))
       // await checkAccountNetProfit(clearingHouse, vaultAccountNo, -30124931n);
       await curveYieldStrategy.connect(user2).deposit(parseTokenAmount(10n, 18), user2.address);
+      // console.log('BLOCK after deposit', (await hre.ethers.provider.getBlockNumber()))
       // await logVaultParams('Initial Deposit - user2', curveYieldStrategy);
       // await logRageParams('Initial Deposit - user2', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
@@ -375,8 +378,8 @@ describe('EightyTwentyCurveStrategy', () => {
       // await logVaultParams('Partial Deposit - user1', curveYieldStrategy);
       // await logRageParams('Partial Deposit - user1', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
 
-      await checkTotalAssetsApproximate(curveYieldStrategy, 29922966458878300000n);
-      await checkTotalSupplyApproximate(curveYieldStrategy, 30064215114411800000n);
+      await checkTotalAssetsApproximate(curveYieldStrategy, 29915383101766919557n);
+      await checkTotalSupplyApproximate(curveYieldStrategy, 30068004388932400000n);
       await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
       await checkLiquidityPositionApproximate(
         clearingHouseLens,
@@ -385,9 +388,9 @@ describe('EightyTwentyCurveStrategy', () => {
         0,
         -197850,
         -188910,
-        395156226923712n,
+        395206032162820n,
       );
-      await checkVaultRangeParamsApproximate(curveYieldStrategy, -197850, -188910, 395156226923712n);
+      await checkVaultRangeParamsApproximate(curveYieldStrategy, -197850, -188910, 395206032162820n);
       await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -319573983064666000n);
 
       await increaseBlockTimestamp(10000);
@@ -427,12 +430,12 @@ describe('EightyTwentyCurveStrategy', () => {
         0,
         -194670,
         -185730,
-        395156226923712n,
+        395206032162820n,
       );
-      await checkVaultRangeParamsApproximate(curveYieldStrategy, -194670, -185730, 395156226923712n);
+      await checkVaultRangeParamsApproximate(curveYieldStrategy, -194670, -185730, 395206032162820n);
       await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -579364592632167000n);
-      await checkTotalAssetsApproximate(curveYieldStrategy, 29800825979922700000n);
-      await checkTotalSupplyApproximate(curveYieldStrategy, 30064215114411800000n);
+      await checkTotalAssetsApproximate(curveYieldStrategy, 29772973774275100000n);
+      await checkTotalSupplyApproximate(curveYieldStrategy, 30068004388932400000n);
 
       await increaseBlockTimestamp(10000);
       //Set real price to end price so that funding payment is 0
@@ -471,11 +474,11 @@ describe('EightyTwentyCurveStrategy', () => {
         0,
         -194670,
         -185730,
-        329118900714233n,
+        329197171926419n,
       );
-      await checkVaultRangeParamsApproximate(curveYieldStrategy, -194670, -185730, 329118900714233n);
-      await checkTotalAssetsApproximate(curveYieldStrategy, 24919157059011200000n);
-      await checkTotalSupplyApproximate(curveYieldStrategy, 25039973446253400000n);
+      await checkVaultRangeParamsApproximate(curveYieldStrategy, -194670, -185730, 329197171926419n);
+      await checkTotalAssetsApproximate(curveYieldStrategy, 24935832155520300000n);
+      await checkTotalSupplyApproximate(curveYieldStrategy, 25045928464547600000n);
 
       await increaseBlockTimestamp(10000);
       //Set real price to end price so that funding payment is 0
@@ -517,11 +520,11 @@ describe('EightyTwentyCurveStrategy', () => {
         0,
         -194670,
         -185730,
-        263081272024017n,
+        263203417213376n,
       );
-      await checkVaultRangeParamsApproximate(curveYieldStrategy, -194670, -185730, 263081272024017n);
-      await checkTotalAssetsApproximate(curveYieldStrategy, 19918971646489091783n);
-      await checkTotalSupplyApproximate(curveYieldStrategy, 20015708764802261312n);
+      await checkVaultRangeParamsApproximate(curveYieldStrategy, -194670, -185730, 263203417213376n);
+      await checkTotalAssetsApproximate(curveYieldStrategy, 19941605019687500000n);
+      await checkTotalSupplyApproximate(curveYieldStrategy, 20025014925748100000n);
 
       await increaseBlockTimestamp(10000);
       //Set real price to end price so that funding payment is 0
@@ -610,7 +613,7 @@ describe('EightyTwentyCurveStrategy', () => {
       await checkVaultRangeParams(curveYieldStrategy, -193470, -184530, 131437400051827n);
       await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -408732660730720003n);
       await checkTotalSupply(curveYieldStrategy, parseTokenAmount(10n, 18));
-      await checkTotalAssetsApproximate(curveYieldStrategy, 9706025197734140000n);
+      await checkTotalAssetsApproximate(curveYieldStrategy, 9705559012921618351n);
 
       //Swap2 - trader0
       await increaseBlockTimestamp(10000);
@@ -637,7 +640,7 @@ describe('EightyTwentyCurveStrategy', () => {
 
       //Reset
       await increaseBlockTimestamp(10000);
-      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -1635440375n);
+      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -1827617093n);
       await curveYieldStrategy.rebalance();
       // await logVaultParams('Reset', curveYieldStrategy);
       // await logRageParams('Reset', clearingHouse, ethPool.vPool, vaultAccountNo, 0, 0);
@@ -650,12 +653,12 @@ describe('EightyTwentyCurveStrategy', () => {
         0,
         -189500,
         -180560,
-        75299034736216n,
+        74299620029031n,
       );
-      await checkVaultRangeParamsApproximate(curveYieldStrategy, -189500, -180560, 75299034736216n);
+      await checkVaultRangeParamsApproximate(curveYieldStrategy, -189500, -180560, 74299622540873n);
       await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -709303296928167000n);
       await checkTotalSupply(curveYieldStrategy, parseTokenAmount(10n, 18));
-      await checkTotalAssetsApproximate(curveYieldStrategy, 8721599133147580000n);
+      await checkTotalAssetsApproximate(curveYieldStrategy, 8604947648817179279n);
 
       //Arb1 - trader0
       //Set real price to end price so that funding payment is 0
