@@ -71,10 +71,10 @@ export async function getLiquidityPositionNum(
   accountNo: BigNumber,
   poolId: BigNumberish,
 ): Promise<number> {
-  console.log('POOL ID :', poolId);
-  console.log(await clearingHouseLens.getAccountPositionInfo(accountNo, poolId));
+  // console.log('POOL ID :', poolId);
+  // console.log(await clearingHouseLens.getAccountPositionInfo(accountNo, poolId));
   const accountInfo = await clearingHouseLens.getAccountLiquidityPositionList(accountNo, poolId);
-  console.log('accountInfo', accountInfo);
+  // console.log('accountInfo', accountInfo);
   if (typeof accountInfo === 'undefined') return 0;
   return accountInfo.length;
 }
