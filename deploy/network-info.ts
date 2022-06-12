@@ -74,7 +74,7 @@ export const arbitrumTestnetInfo: NetworkInfo = {
   RAGE_CLEARING_HOUSE_LENS_ADDRESS: require('@ragetrade/core/deployments/arbtest/ClearingHouseLens.json').address,
   RAGE_SETTLEMENT_TOKEN_ADDRESS: require('@ragetrade/core/deployments/arbtest/SettlementToken.json').address,
   RAGE_ETH_VTOKEN_ADDRESS: require('@ragetrade/core/deployments/arbtest/ETH-vToken.json').address,
-  RAGE_SWAP_SIMULATOR: truncate(require('@ragetrade/core/deployments/arbtest/SwapSimulator.json').address),
+  RAGE_SWAP_SIMULATOR: require('@ragetrade/core/deployments/arbtest/SwapSimulator.json').address,
 
   ETH_USD_ORACLE: '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8',
   BTC_USD_ORACLE: '0x0c9973e7a27d00e656B9f153348dA46CaD70d03d',

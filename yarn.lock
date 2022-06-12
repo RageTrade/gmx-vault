@@ -723,9 +723,9 @@
     fs-extra "^9.0.1"
     js-yaml "^3.14.0"
 
-"@ragetrade/core@https://github.com/RageTrade/core.git#cfe8baa1011a860f462d8dc8ba7349f6ed474e52":
+"@ragetrade/core@https://github.com/RageTrade/core.git#e11611e2987c732adaf365295228e528fbdf1e93":
   version "1.0.1"
-  resolved "https://github.com/RageTrade/core.git#cfe8baa1011a860f462d8dc8ba7349f6ed474e52"
+  resolved "https://github.com/RageTrade/core.git#e11611e2987c732adaf365295228e528fbdf1e93"
   dependencies:
     "@chainlink/contracts" "^0.4.0"
     "@openzeppelin/contracts" "^4.5.0"

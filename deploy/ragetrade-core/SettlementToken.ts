@@ -30,7 +30,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
 export default func;
 
-// Only will be deployed on hardhat network
-func.skip = async hre => hre.network.config.chainId !== 31337;
-
 func.tags = ['SettlementToken'];
