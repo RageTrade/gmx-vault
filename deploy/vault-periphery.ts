@@ -36,13 +36,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   if (logicDeployment.newlyDeployed) {
     await execute('VaultPeriphery', { from: deployer }, 'initialize', ...initializeArgs);
   }
-
-  if (logicDeployment.newlyDeployed && hre.network.config.chainId !== 31337) {
-    await hre.tenderly.push({
-      name: 'VaultPeriphery',
-      address: logicDeployment.address,
-    });
-  }
 };
 
 export default func;

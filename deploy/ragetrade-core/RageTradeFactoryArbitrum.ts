@@ -26,7 +26,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const insuranceFundLogic = await get('InsuranceFundLogic');
   const settlementTokenOracle = await get('SettlementTokenOracle');
 
-  const deployment = await deploy('RageTradeFactoryArbitrum', {
+  await deploy('RageTradeFactoryArbitrum', {
     contract: 'RageTradeFactory',
     from: deployer,
     log: true,
@@ -35,42 +35,23 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       vPoolWrapperLogic.address,
       insuranceFundLogic.address,
       addresses.USDC,
-      settlementTokenOracle.address
+      settlementTokenOracle.address,
     ],
   });
-
-  if (deployment.newlyDeployed && hre.network.config.chainId !== 31337) {
-    await hre.tenderly.push({
-      name: 'RageTradeFactory',
-      address: deployment.address,
-    });
-  }
 
   const vQuoteAddress = await read('RageTradeFactoryArbitrum', 'vQuote');
   await save('VQuoteArbitrum', { abi: VQuote__factory.abi, address: vQuoteAddress });
   console.log('saved "VQuoteArbitrum":', vQuoteAddress);
-  if (hre.network.config.chainId !== 31337) {
-    await hre.tenderly.push({
-      name: 'VQuote',
-      address: vQuoteAddress,
-    });
-  }
 
   const clearingHouseAddress = await read('RageTradeFactoryArbitrum', 'clearingHouse');
   await save('ClearingHouseArbitrum', { abi: ClearingHouse__factory.abi, address: clearingHouseAddress });
   console.log('saved "ClearingHouseArbitrum":', clearingHouseAddress);
-  if (hre.network.config.chainId !== 31337) {
-    await hre.tenderly.push({
-      name: 'TransparentUpgradeableProxy',
-      address: clearingHouseAddress,
-    }); 
-  }
 
   await deploy('ClearingHouseLensArbitrum', {
     contract: 'ClearingHouseLens',
     from: deployer,
     log: true,
-    args: [clearingHouseAddress]
+    args: [clearingHouseAddress],
   });
 
   await execute(
@@ -95,38 +76,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const proxyAdminAddress = await read('RageTradeFactoryArbitrum', 'proxyAdmin');
   await save('ProxyAdminArbitrum', { abi: ProxyAdmin__factory.abi, address: proxyAdminAddress });
   console.log('saved "ProxyAdminArbitrum":', proxyAdminAddress);
-  if (hre.network.config.chainId !== 31337) {
-    await hre.tenderly.push({
-      name: 'ProxyAdmin',
-      address: proxyAdminAddress,
-    });
-  }
 
   const insuranceFundAddress = await read('ClearingHouseArbitrum', 'insuranceFund');
   await save('InsuranceFundArbitrum', { abi: InsuranceFund__factory.abi, address: insuranceFundAddress });
   console.log('saved "InsuranceFundArbitrum":', insuranceFundAddress);
-  if (hre.network.config.chainId !== 31337) {
-    await hre.tenderly.push({
-      name: 'TransparentUpgradeableProxy',
-      address: insuranceFundAddress,
-    });
-  }
-  const collateralInfo = await read(
-    'ClearingHouseLensArbitrum',
-    'getCollateralInfo',
-    truncate(addresses.USDC),
-  );
 
-  console.log('collateralInfo', collateralInfo);
+  const collateralInfo = await read('ClearingHouseLensArbitrum', 'getCollateralInfo', truncate(addresses.USDC));
 
   await save('SettlementTokenOracleArbitrum', { abi: IOracle__factory.abi, address: collateralInfo.settings.oracle });
   console.log('saved "SettlementTokenOracleArbitrum":', collateralInfo.settings.oracle);
-  if (hre.network.config.chainId !== 31337) {
-    await hre.tenderly.push({
-      name: 'SettlementTokenOracle',
-      address: collateralInfo.settings.oracle,
-    });
-  }
 };
 
 export default func;
@@ -141,5 +99,5 @@ func.dependencies = [
   'InsuranceFundLogic',
   'SettlementToken',
   'RageTradeFactory',
-  'SettlementTokenOracle'
+  'SettlementTokenOracle',
 ];

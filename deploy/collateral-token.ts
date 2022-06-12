@@ -21,30 +21,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const clearingHouseLens = ClearingHouseLens__factory.connect(
     (await get('ClearingHouseLens')).address,
-    await hre.ethers.getSigner(deployer)
-  )
+    await hre.ethers.getSigner(deployer),
+  );
 
-  const { RAGE_CLEARING_HOUSE_ADDRESS, RAGE_SETTLEMENT_TOKEN_ADDRESS } = getNetworkInfo(hre.network.config.chainId);
-  if (CollateralTokenDeployment.newlyDeployed && RAGE_CLEARING_HOUSE_ADDRESS) {
+  if (CollateralTokenDeployment.newlyDeployed) {
     const clearingHouse = ClearingHouse__factory.connect(
-      RAGE_CLEARING_HOUSE_ADDRESS ?? (await get('ClearingHouse')).address,
+      (await get('ClearingHouse')).address,
       await hre.ethers.getSigner(deployer),
     );
     await clearingHouse.updateCollateralSettings(CollateralTokenDeployment.address, {
-      oracle: (
-        await clearingHouseLens.getCollateralInfo(
-          truncate(RAGE_SETTLEMENT_TOKEN_ADDRESS ?? (await get('SettlementToken')).address),
-        )
-      )[1].oracle,
+      oracle: (await clearingHouseLens.getCollateralInfo(truncate((await get('SettlementToken')).address)))[1].oracle,
       twapDuration: 0,
       isAllowedForDeposit: true,
-    });
-  }
-
-  if (CollateralTokenDeployment.newlyDeployed && hre.network.config.chainId !== 31337) {
-    await hre.tenderly.push({
-      name: 'ERC20PresetMinterPauser',
-      address: CollateralTokenDeployment.address,
     });
   }
 };
@@ -52,3 +40,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 export default func;
 
 func.tags = ['CollateralToken'];
+func.dependencies = ['ClearingHouseLens', 'ClearingHouse', 'SettlementToken'];

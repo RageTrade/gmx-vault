@@ -9,18 +9,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const { deployer } = await getNamedAccounts();
 
-  const logicDeployment = await deploy('SwapManagerLibrary', {
+  await deploy('SwapManagerLibrary', {
     contract: 'SwapManager',
     from: deployer,
     log: true,
   });
-
-  if (logicDeployment.newlyDeployed && hre.network.config.chainId !== 31337) {
-    await hre.tenderly.push({
-      name: 'SwapManager',
-      address: logicDeployment.address,
-    });
-  }
 };
 
 export default func;

@@ -18,17 +18,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const networkInfo = getNetworkInfo(hre.network.config.chainId ?? 31337);
 
-  const clearingHouseAddress: string = networkInfo.RAGE_CLEARING_HOUSE_ADDRESS ?? (await get('ClearingHouse')).address;
-  const settlementTokenAddress: string =
-    networkInfo.RAGE_SETTLEMENT_TOKEN_ADDRESS ?? (await get('SettlementToken')).address;
-  const ethPoolId: string = networkInfo.RAGE_ETH_POOL_ID ?? truncate((await get('ETH-vToken')).address);
+  const clearingHouseAddress: string = (await get('ClearingHouse')).address;
+  const settlementTokenAddress: string = (await get('SettlementToken')).address;
+  const ethPoolId: string = truncate((await get('ETH-vToken')).address);
 
   const collateralTokenDeployment = await get('CollateralToken');
 
   const clearingHouseLens = ClearingHouseLens__factory.connect(
     (await get('ClearingHouseLens')).address,
-    await hre.ethers.getSigner(deployer)
-  )
+    await hre.ethers.getSigner(deployer),
+  );
 
   const initializeArg: CurveYieldStrategy.CurveYieldStrategyInitParamsStruct = {
     eightyTwentyRangeStrategyVaultInitParams: {
@@ -39,7 +38,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           symbol: 'TCS',
         },
         ethPoolId,
-        swapSimulator: await (await get('SwapSimulator')).address,
+        swapSimulator: (await get('SwapSimulator')).address,
         clearingHouseLens: clearingHouseLens.address,
         rageClearingHouse: clearingHouseAddress,
         rageCollateralToken: collateralTokenDeployment.address,
@@ -72,23 +71,29 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   });
   await save('CurveYieldStrategy', { ...ProxyDeployment, abi: curveYieldStrategyLogicDeployment.abi });
 
-  const currentKeeperAddress = await read('CurveYieldStrategy', 'keeper');
-  if (currentKeeperAddress.toLowerCase() !== networkInfo.KEEPER_ADDRESS.toLowerCase()) {
-    await execute(
-      'CurveYieldStrategy',
-      { from: deployer, gasLimit: 20_000_000 },
-      'setKeeper',
-      networkInfo.KEEPER_ADDRESS,
-    );
-  }
-
   if (ProxyDeployment.newlyDeployed) {
     await execute('CurveYieldStrategy', { from: deployer, gasLimit: 20_000_000 }, 'grantAllowances');
+
     await execute(
       'CurveYieldStrategy',
       { from: deployer, gasLimit: 20_000_000 },
-      'updateDepositCap',
+      'updateBaseParams',
       parseUnits(networkInfo.DEPOSIT_CAP_C3CLT.toString(), 18),
+      networkInfo.KEEPER_ADDRESS,
+      86400, // rebalanceTimeThreshold
+      500, // rebalancePriceThresholdBps
+    );
+
+    const crvOracleAddress = (await get('CurveOracle')).address;
+    await execute(
+      'CurveYieldStrategy',
+      { from: deployer, gasLimit: 20_000_000 },
+      'updateCurveParams',
+      1000, // feeBps
+      100, // stablecoinSlippage
+      parseUnits('2', 18), // crvHarvestThreshold
+      500, // crvSlippageTolerance
+      crvOracleAddress,
     );
 
     const MINTER_ROLE = await read('CollateralToken', 'MINTER_ROLE');
@@ -99,16 +104,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       MINTER_ROLE,
       ProxyDeployment.address,
     );
-
-    if (hre.network.config.chainId !== 31337) {
-      try {
-        // TODO this errors with "Cannot set property 'networks' of undefined"
-        await hre.tenderly.push({
-          name: 'TransparentUpgradeableProxy',
-          address: ProxyDeployment.address,
-        });
-      } catch {}
-    }
   }
 };
 
@@ -116,6 +111,7 @@ export default func;
 
 func.tags = ['CurveYieldStrategy'];
 func.dependencies = [
+  'CurveOracle',
   'CurveQuoter',
   'CurveYieldStrategyLogic',
   'CollateralToken',
@@ -126,4 +122,5 @@ func.dependencies = [
   'CurveGauge',
   'CurveTriCryptoLpToken',
   'CurveTriCryptoPool',
+  'SwapSimulator',
 ];

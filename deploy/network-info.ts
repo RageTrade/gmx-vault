@@ -12,8 +12,10 @@ export interface NetworkInfo {
   UNISWAP_V3_ROUTER_ADDRESS: string;
 
   RAGE_CLEARING_HOUSE_ADDRESS?: string;
+  RAGE_CLEARING_HOUSE_LENS_ADDRESS?: string;
   RAGE_SETTLEMENT_TOKEN_ADDRESS?: string;
-  RAGE_ETH_POOL_ID?: string;
+  RAGE_ETH_VTOKEN_ADDRESS?: string;
+  RAGE_SWAP_SIMULATOR?: string;
 
   CURVE_QUOTER?: string;
   CURVE_TOKEN_ADDRESS?: string;
@@ -21,6 +23,7 @@ export interface NetworkInfo {
   CURVE_TRICRYPTO_POOL?: string;
   CURVE_TRICRYPTO_LP_TOKEN?: string;
 
+  CURVE_USD_ORACLE?: string;
   ETH_USD_ORACLE: string;
   BTC_USD_ORACLE: string;
   USDT_USD_ORACLE: string;
@@ -49,6 +52,7 @@ export const arbitrumInfo: NetworkInfo = {
   // CURVE_TRICRYPTO_POOL: '0x960ea3e3C7FB317332d990873d354E18d7645590',
   // CURVE_TRICRYPTO_LP_TOKEN: '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
 
+  CURVE_USD_ORACLE: '0xaebDA2c976cfd1eE1977Eac079B4382acb849325',
   ETH_USD_ORACLE: '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612',
   BTC_USD_ORACLE: '0x6ce185860a4963106506C203335A2910413708e9',
   USDT_USD_ORACLE: '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
@@ -67,8 +71,10 @@ export const arbitrumTestnetInfo: NetworkInfo = {
   UNISWAP_V3_ROUTER_ADDRESS: '0xE592427A0AEce92De3Edee1F18E0157C05861564',
 
   RAGE_CLEARING_HOUSE_ADDRESS: require('@ragetrade/core/deployments/arbtest/ClearingHouse.json').address,
+  RAGE_CLEARING_HOUSE_LENS_ADDRESS: require('@ragetrade/core/deployments/arbtest/ClearingHouseLens.json').address,
   RAGE_SETTLEMENT_TOKEN_ADDRESS: require('@ragetrade/core/deployments/arbtest/SettlementToken.json').address,
-  RAGE_ETH_POOL_ID: truncate(require('@ragetrade/core/deployments/arbtest/ETH-vToken.json').address),
+  RAGE_ETH_VTOKEN_ADDRESS: require('@ragetrade/core/deployments/arbtest/ETH-vToken.json').address,
+  RAGE_SWAP_SIMULATOR: truncate(require('@ragetrade/core/deployments/arbtest/SwapSimulator.json').address),
 
   ETH_USD_ORACLE: '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8',
   BTC_USD_ORACLE: '0x0c9973e7a27d00e656B9f153348dA46CaD70d03d',
@@ -80,15 +86,17 @@ export const arbitrumTestnetInfo: NetworkInfo = {
 };
 
 // arbitrum mainnet fork
-export const defaultInfo: NetworkInfo = arbitrumInfo;
+export const hardhatNetworkInfo: NetworkInfo = arbitrumInfo;
 
 export function getNetworkInfo(chainId?: number): NetworkInfo {
   switch (chainId) {
-    // case 42161:
+    // case 42161: // TODO add core contract addresses above
     //   return arbitrumInfo;
     case 421611:
       return arbitrumTestnetInfo;
+    case 31337:
+      return hardhatNetworkInfo;
     default:
-      return defaultInfo;
+      throw new Error(`Chain ID ${chainId} is recognized, please add addresses to deploy/network-info.ts`);
   }
 }

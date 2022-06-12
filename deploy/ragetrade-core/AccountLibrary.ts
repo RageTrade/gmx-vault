@@ -1,7 +1,14 @@
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { getNetworkInfo } from '../network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+  const { RAGE_CLEARING_HOUSE_ADDRESS } = getNetworkInfo(hre.network.config.chainId);
+  if (RAGE_CLEARING_HOUSE_ADDRESS) {
+    console.log('Skipping AccountLibrary.ts, using ClearingHouse from @ragetrade/core');
+    return;
+  }
+
   const {
     deployments: { deploy },
     getNamedAccounts,
@@ -9,18 +16,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const { deployer } = await getNamedAccounts();
 
-  const deployment = await deploy('AccountLibrary', {
+  await deploy('AccountLibrary', {
     contract: 'Account',
     from: deployer,
     log: true,
   });
-
-  if (deployment.newlyDeployed && hre.network.config.chainId !== 31337) {
-    await hre.tenderly.push({
-      name: 'Account',
-      address: deployment.address,
-    });
-  }
 };
 
 export default func;
