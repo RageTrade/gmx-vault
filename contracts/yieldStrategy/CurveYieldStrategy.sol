@@ -196,7 +196,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
                 // uniswap router returns 'Too little received' in case of minOut is not matched
                 if (keccak256(abi.encodePacked(reason)) == keccak256('Too little received')) {
                     // account for pending CRV which were not swapped, to be used in next swap
-                    crvPendingToSwap += afterDeductions;
+                    crvPendingToSwap = claimable;
                     // emit event with current slippage value
                     emit Logic.CrvSwapFailedDueToSlippage(crvSwapSlippageTolerance);
                 }
