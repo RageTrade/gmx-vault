@@ -24,7 +24,7 @@ contract VaultPeriphery is OwnableUpgradeable {
     error ZeroValue();
     error OutOfBounds();
     error NegativePrice();
-    error SlippageToleranceBreached();
+    error SlippageToleranceBreached(uint256 crv3received, uint256 lpPrice, uint256 inputAmount);
 
     event DepositPeriphery(address indexed owner, address indexed token, uint256 amount, uint256 asset, uint256 shares);
 
@@ -116,7 +116,7 @@ contract VaultPeriphery is OwnableUpgradeable {
 
         /// @dev checks combined slippage of uni v3 swap and add liquidity
         if (balance.mulDiv(beforeSwapLpPrice, 10**18) < (amount * (MAX_BPS - MAX_TOLERANCE) * 10**12) / MAX_BPS) {
-            revert SlippageToleranceBreached();
+            revert SlippageToleranceBreached(balance, beforeSwapLpPrice, amount);
         }
 
         sharesMinted = vault.deposit(balance, msg.sender);
@@ -137,7 +137,7 @@ contract VaultPeriphery is OwnableUpgradeable {
             balance.mulDiv(beforeSwapLpPrice, 10**18) <
             _getEthPrice(ethOracle).mulDiv(amount * (MAX_BPS - MAX_TOLERANCE), 10**8 * MAX_BPS)
         ) {
-            revert SlippageToleranceBreached();
+            revert SlippageToleranceBreached(balance, beforeSwapLpPrice, amount);
         }
 
         sharesMinted = vault.deposit(lpToken.balanceOf(address(this)), msg.sender);
@@ -157,7 +157,7 @@ contract VaultPeriphery is OwnableUpgradeable {
             balance.mulDiv(beforeSwapLpPrice, 10**18) <
             _getEthPrice(ethOracle).mulDiv(msg.value * (MAX_BPS - MAX_TOLERANCE), 10**8 * MAX_BPS)
         ) {
-            revert SlippageToleranceBreached();
+            revert SlippageToleranceBreached(balance, beforeSwapLpPrice, msg.value);
         }
 
         sharesMinted = vault.deposit(lpToken.balanceOf(address(this)), msg.sender);
