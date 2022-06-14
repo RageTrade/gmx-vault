@@ -784,7 +784,21 @@ describe('CurveYieldStrategy', () => {
       // console.log('AFTER WITHDRAW : ', balAfterWithdraw_)
 
       expect(claimable_).to.be.eq(balBeforeWithdraw_);
-      expect(balAfterWithdraw_).to.be.eq(claimable_.mul(9).div(10));
+      expect(balAfterWithdraw_).to.be.eq(claimable_);
+
+      await curveYieldStrategy.connect(admin).updateCurveParams(1000, 4_000, 0, 3_000, addresses.CRV_ORACLE);
+
+      const tx2 = await (await curveYieldStrategy.harvestFees()).wait();
+
+      const between = await crv.balanceOf(curveYieldStrategy.address);
+
+      expect(between).to.be.eq(balAfterWithdraw_.div(10));
+      await curveYieldStrategy.withdrawFees();
+
+      expect(tx2.logs.find(item => item.topics[0] === reqTopic)).to.be.eq(undefined);
+
+      const after = await crv.balanceOf(curveYieldStrategy.address);
+      expect(after).to.be.eq(0);
     });
   });
 });
