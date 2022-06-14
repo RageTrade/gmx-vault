@@ -14,7 +14,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   let coreDeployment: ContractDeployment | undefined;
   try {
     const networkName = getNetworkNameFromChainId(hre.network.config.chainId ?? 31337);
-    coreDeployment = await getDeployment('vaults', networkName, 'ProxyAdmin');
+    coreDeployment = await getDeployment('core', networkName, 'ProxyAdmin');
   } catch {}
 
   if (coreDeployment) {
