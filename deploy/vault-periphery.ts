@@ -17,20 +17,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log: true,
   });
 
-  const { RAGE_SETTLEMENT_TOKEN_ADDRESS, UNISWAP_V3_ROUTER_ADDRESS, ETH_USD_ORACLE } = getNetworkInfo(
-    hre.network.config.chainId,
-  );
+  // const { RAGE_SETTLEMENT_TOKEN_ADDRESS, UNISWAP_V3_ROUTER_ADDRESS, ETH_USD_ORACLE }
+  const networkInfo = getNetworkInfo(hre.network.config.chainId);
 
   const initializeArgs: Parameters<VaultPeriphery['initialize']> = [
-    RAGE_SETTLEMENT_TOKEN_ADDRESS ?? (await get('SettlementToken')).address,
-    (await get('USDT')).address,
-    (await get('WETH')).address,
-    (await get('CurveTriCryptoLpToken')).address,
+    networkInfo.RAGE_SETTLEMENT_TOKEN_ADDRESS ?? (await get('SettlementToken')).address,
+    networkInfo.USDT_ADDRESS,
+    networkInfo.WETH_ADDRESS,
+    networkInfo.CURVE_TRICRYPTO_LP_TOKEN,
     (await get('CurveYieldStrategy')).address,
-    UNISWAP_V3_ROUTER_ADDRESS,
-    (await get('CurveQuoter')).address,
-    (await get('CurveTriCryptoPool')).address,
-    ETH_USD_ORACLE,
+    networkInfo.UNISWAP_V3_ROUTER_ADDRESS,
+    networkInfo.CURVE_QUOTER,
+    networkInfo.CURVE_TRICRYPTO_POOL,
+    networkInfo.ETH_USD_ORACLE,
   ];
 
   if (logicDeployment.newlyDeployed) {

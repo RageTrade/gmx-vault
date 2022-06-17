@@ -33,7 +33,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     eightyTwentyRangeStrategyVaultInitParams: {
       baseVaultInitParams: {
         rageErc4626InitParams: {
-          asset: (await get('CurveTriCryptoLpToken')).address,
+          asset: networkInfo.CURVE_TRICRYPTO_LP_TOKEN,
           name: '80-20 TriCrypto Strategy',
           symbol: 'TCS',
         },
@@ -49,13 +49,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       minNotionalPositionToCloseThreshold: 100e6,
     },
     usdc: settlementTokenAddress,
-    usdt: (await get('USDT')).address,
-    weth: (await get('WETH')).address,
-    crvToken: (await get('CurveToken')).address,
-    gauge: (await get('CurveGauge')).address,
+    usdt: networkInfo.USDT_ADDRESS,
+    weth: networkInfo.WETH_ADDRESS,
+    crvToken: networkInfo.CURVE_TOKEN_ADDRESS,
+    gauge: networkInfo.CURVE_GAUGE_ADDRESS,
     uniV3Router: networkInfo.UNISWAP_V3_ROUTER_ADDRESS,
-    lpPriceHolder: (await get('CurveQuoter')).address,
-    tricryptoPool: (await get('CurveTriCryptoPool')).address,
+    lpPriceHolder: networkInfo.CURVE_QUOTER,
+    tricryptoPool: networkInfo.CURVE_TRICRYPTO_POOL,
   };
 
   const ProxyDeployment = await deploy('CurveYieldStrategy', {
@@ -84,7 +84,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       500, // rebalancePriceThresholdBps
     );
 
-    const crvOracleAddress = (await get('CurveOracle')).address;
     await execute(
       'CurveYieldStrategy',
       { from: deployer, gasLimit: 20_000_000 },
@@ -93,7 +92,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       100, // stablecoinSlippage
       parseUnits('2', 18), // crvHarvestThreshold
       500, // crvSlippageTolerance
-      crvOracleAddress,
+      networkInfo.CURVE_USD_ORACLE,
     );
 
     const MINTER_ROLE = await read('CollateralToken', 'MINTER_ROLE');
@@ -110,17 +109,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 export default func;
 
 func.tags = ['CurveYieldStrategy'];
-func.dependencies = [
-  'CurveOracle',
-  'CurveQuoter',
-  'CurveYieldStrategyLogic',
-  'CollateralToken',
-  'ProxyAdmin',
-  'vETH',
-  'WETH',
-  'USDT',
-  'CurveGauge',
-  'CurveTriCryptoLpToken',
-  'CurveTriCryptoPool',
-  'SwapSimulator',
-];
+func.dependencies = ['CurveYieldStrategyLogic', 'CollateralToken', 'ProxyAdmin', 'vETH', 'SwapSimulator'];
