@@ -15,8 +15,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   try {
     const networkName = getNetworkNameFromChainId(hre.network.config.chainId ?? 31337);
     // this throws if core deployment does not contain a proxy admin
-    const coreDeployment = await getDeployment('core', networkName, 'ProxyAdmin');
-    await save('ProxyAdmin', { abi: ProxyAdmin__factory.abi, address: coreDeployment.address });
+    const coreDeploymentProxyAdminAddress =
+      require(`@ragetrade/core/deployments/${networkName}/ProxyAdmin.json`).address;
+    await save('ProxyAdmin', { abi: ProxyAdmin__factory.abi, address: coreDeploymentProxyAdminAddress });
   } catch {
     // if doesn't contain a proxy admin then deploy a new one
     console.log('No core deployment found');
