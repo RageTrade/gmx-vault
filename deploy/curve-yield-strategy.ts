@@ -3,7 +3,7 @@ import { parseUnits } from 'ethers/lib/utils';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { CurveYieldStrategy, CurveYieldStrategy__factory, ClearingHouseLens__factory } from '../typechain-types';
-import { getNetworkInfo } from './network-info';
+import { getNetworkInfo, waitConfirmations } from './network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
@@ -67,16 +67,21 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       proxyAdminDeployment.address,
       CurveYieldStrategy__factory.createInterface().encodeFunctionData('initialize', [initializeArg]),
     ],
-    gasLimit: 20_000_000,
+    estimateGasExtra: 1_000_000,
+    waitConfirmations,
   });
   await save('CurveYieldStrategy', { ...ProxyDeployment, abi: curveYieldStrategyLogicDeployment.abi });
 
   if (ProxyDeployment.newlyDeployed) {
-    await execute('CurveYieldStrategy', { from: deployer, gasLimit: 20_000_000 }, 'grantAllowances');
+    await execute(
+      'CurveYieldStrategy',
+      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
+      'grantAllowances',
+    );
 
     await execute(
       'CurveYieldStrategy',
-      { from: deployer, gasLimit: 20_000_000 },
+      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
       'updateBaseParams',
       parseUnits(networkInfo.DEPOSIT_CAP_C3CLT.toString(), 18),
       networkInfo.KEEPER_ADDRESS,
@@ -86,7 +91,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     await execute(
       'CurveYieldStrategy',
-      { from: deployer, gasLimit: 20_000_000 },
+      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
       'updateCurveParams',
       1000, // feeBps
       100, // stablecoinSlippage
@@ -98,7 +103,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const MINTER_ROLE = await read('CollateralToken', 'MINTER_ROLE');
     await execute(
       'CollateralToken',
-      { from: deployer, gasLimit: 20_000_000 },
+      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
       'grantRole',
       MINTER_ROLE,
       ProxyDeployment.address,

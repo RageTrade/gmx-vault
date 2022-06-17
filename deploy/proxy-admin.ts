@@ -2,6 +2,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { getNetworkNameFromChainId, getDeployment, ContractDeployment } from '@ragetrade/sdk';
 import { ProxyAdmin__factory } from '../typechain-types';
+import { waitConfirmations } from './network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
@@ -23,6 +24,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       contract: 'ProxyAdmin',
       from: deployer,
       log: true,
+      waitConfirmations,
     });
   }
 };

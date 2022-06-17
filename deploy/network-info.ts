@@ -1,4 +1,4 @@
-import { truncate } from '@ragetrade/sdk';
+import hre from 'hardhat';
 
 export const skip = () => true;
 
@@ -144,3 +144,5 @@ export function getNetworkInfo(chainId?: number): NetworkInfo {
       throw new Error(`Chain ID ${chainId} is recognized, please add addresses to deploy/network-info.ts`);
   }
 }
+
+export const waitConfirmations = hre.network.config.chainId !== 31337 ? 2 : 0;

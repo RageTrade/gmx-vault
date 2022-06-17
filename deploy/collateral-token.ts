@@ -2,7 +2,7 @@ import { truncate } from '@ragetrade/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { ClearingHouseLens__factory, ClearingHouse__factory } from '../typechain-types';
-import { getNetworkInfo } from './network-info';
+import { waitConfirmations } from './network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
@@ -17,6 +17,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     from: deployer,
     log: true,
     args: ['RageTradeVaultsCollateralToken', 'RTVC'],
+    waitConfirmations,
   });
 
   const clearingHouseLens = ClearingHouseLens__factory.connect(

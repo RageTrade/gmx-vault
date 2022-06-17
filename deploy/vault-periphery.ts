@@ -1,7 +1,7 @@
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { VaultPeriphery } from '../typechain-types';
-import { getNetworkInfo } from './network-info';
+import { getNetworkInfo, waitConfirmations } from './network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
@@ -33,7 +33,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   ];
 
   if (logicDeployment.newlyDeployed) {
-    await execute('VaultPeriphery', { from: deployer }, 'initialize', ...initializeArgs);
+    await execute('VaultPeriphery', { from: deployer, waitConfirmations }, 'initialize', ...initializeArgs);
   }
 };
 
