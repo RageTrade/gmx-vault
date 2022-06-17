@@ -18,7 +18,7 @@ import { task } from 'hardhat/config';
 import nodePath from 'path';
 
 config();
-const { ALCHEMY_KEY } = process.env;
+const { ALCHEMY_KEY, LEDGER_ADDRESS } = process.env;
 
 // this compile task override is needed to copy missing abi fragments to respective artifacts (note its not aval to typechain)
 task(TASK_COMPILE, 'Compiles the entire project, building all artifacts').setAction(async (taskArgs, _, runSuper) => {
@@ -53,7 +53,7 @@ task(TASK_COMPILE, 'Compiles the entire project, building all artifacts').setAct
   }
 
   return compileSolOutput;
-} );
+});
 
 if (!process.env.ALCHEMY_KEY) {
   console.warn('PLEASE NOTE: The env var ALCHEMY_KEY is not set');
@@ -104,7 +104,7 @@ export default {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 340
+            runs: 340,
           },
           metadata: {
             // do not include the metadata hash, since this is machine dependent
@@ -167,9 +167,11 @@ export default {
     strict: true,
   },
   namedAccounts: {
-    deployer: {
-      default: 0,
-    },
+    deployer: LEDGER_ADDRESS
+      ? `ledger://${LEDGER_ADDRESS}`
+      : {
+          default: 0,
+        },
   },
   tenderly: {
     project: process.env.TENDERLY_PROJECT,
