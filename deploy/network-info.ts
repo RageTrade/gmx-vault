@@ -46,19 +46,26 @@ export const arbitrumInfo: NetworkInfo = {
   UNISWAP_V3_DEFAULT_FEE_TIER,
   UNISWAP_V3_ROUTER_ADDRESS,
 
+  RAGE_CLEARING_HOUSE_ADDRESS: require('@ragetrade/core/deployments/arbmain/ClearingHouse.json').address,
+  RAGE_CLEARING_HOUSE_LENS_ADDRESS: require('@ragetrade/core/deployments/arbmain/ClearingHouseLens.json').address,
+  RAGE_SETTLEMENT_TOKEN_ADDRESS: require('@ragetrade/core/deployments/arbmain/SettlementToken.json').address,
+  RAGE_ETH_VTOKEN_ADDRESS: require('@ragetrade/core/deployments/arbmain/ETH-vToken.json').address,
+  RAGE_SWAP_SIMULATOR: require('@ragetrade/core/deployments/arbmain/SwapSimulator.json').address,
+
   CURVE_QUOTER: '0x2C2FC48c3404a70F2d33290d5820Edf49CBf74a5',
-  // CURVE_TOKEN_ADDRESS: '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978',
-  // CURVE_GAUGE_ADDRESS: '0x97E2768e8E73511cA874545DC5Ff8067eB19B787',
-  // CURVE_TRICRYPTO_POOL: '0x960ea3e3C7FB317332d990873d354E18d7645590',
-  // CURVE_TRICRYPTO_LP_TOKEN: '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+  CURVE_TOKEN_ADDRESS: '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978',
+  CURVE_GAUGE_ADDRESS: '0x97E2768e8E73511cA874545DC5Ff8067eB19B787',
+  CURVE_TRICRYPTO_POOL: '0x960ea3e3C7FB317332d990873d354E18d7645590',
+  CURVE_TRICRYPTO_LP_TOKEN: '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
 
   CURVE_USD_ORACLE: '0xaebDA2c976cfd1eE1977Eac079B4382acb849325',
   ETH_USD_ORACLE: '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612',
   BTC_USD_ORACLE: '0x6ce185860a4963106506C203335A2910413708e9',
   USDT_USD_ORACLE: '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
 
-  // WETH_ADDRESS: '0x82af49447d8a07e3bd95bd0d56f35241523fbab1',
-  // USDT_ADDRESS: '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9',
+  WETH_ADDRESS: '0x82af49447d8a07e3bd95bd0d56f35241523fbab1',
+  WBTC_ADDRESS: '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f',
+  USDT_ADDRESS: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
 };
 
 export const arbitrumTestnetInfo: NetworkInfo = {
@@ -68,7 +75,7 @@ export const arbitrumTestnetInfo: NetworkInfo = {
 
   UNISWAP_V3_FACTORY_ADDRESS,
   UNISWAP_V3_DEFAULT_FEE_TIER,
-  UNISWAP_V3_ROUTER_ADDRESS: '0xE592427A0AEce92De3Edee1F18E0157C05861564',
+  UNISWAP_V3_ROUTER_ADDRESS,
 
   RAGE_CLEARING_HOUSE_ADDRESS: require('@ragetrade/core/deployments/arbtest/ClearingHouse.json').address,
   RAGE_CLEARING_HOUSE_LENS_ADDRESS: require('@ragetrade/core/deployments/arbtest/ClearingHouseLens.json').address,
