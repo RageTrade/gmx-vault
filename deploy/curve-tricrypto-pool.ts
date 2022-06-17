@@ -90,4 +90,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 export default func;
 
 func.tags = ['CurveTriCryptoPool'];
-func.dependencies = ['SettlementToken', 'CurveToken', 'CurveTriCryptoLpToken', 'WETH', 'WBTC', 'USDT'];
+func.dependencies = ['SettlementToken', 'CurveTriCryptoLpToken', 'WETH', 'WBTC', 'USDT'];
