@@ -51,7 +51,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     usdc: settlementTokenAddress,
     usdt: (await get('USDT')).address,
     weth: (await get('WETH')).address,
-    crvToken: (await get('USDT')).address,
+    crvToken: (await get('CurveToken')).address,
     gauge: (await get('CurveGauge')).address,
     uniV3Router: networkInfo.UNISWAP_V3_ROUTER_ADDRESS,
     lpPriceHolder: (await get('CurveQuoter')).address,
