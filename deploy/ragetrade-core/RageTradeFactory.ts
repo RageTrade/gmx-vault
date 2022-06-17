@@ -33,7 +33,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         address: RAGE_CLEARING_HOUSE_LENS_ADDRESS,
       });
     }
-    console.log('Skipping RageTradeFactory.ts, using ClearingHouse from @ragetrade/core');
+    console.log(
+      'Skipping RageTradeFactory.ts, using ClearingHouse from @ragetrade/core CH Address:',
+      RAGE_CLEARING_HOUSE_ADDRESS,
+    );
     return;
   }
 
