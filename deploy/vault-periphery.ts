@@ -40,4 +40,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 export default func;
 
 func.tags = ['VaultPeriphery'];
-func.dependencies = ['vETH', 'USDT', 'WETH', 'CurveTriCryptoLpToken', 'CurveYieldStrategy', 'CurveTriCryptoPool'];
+func.dependencies = ['vETH', 'CurveYieldStrategy'];
