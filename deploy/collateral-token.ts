@@ -6,7 +6,7 @@ import { waitConfirmations } from './network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
-    deployments: { deploy, get },
+    deployments: { deploy, get, execute },
     getNamedAccounts,
   } = hre;
 
@@ -26,15 +26,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   );
 
   if (CollateralTokenDeployment.newlyDeployed) {
-    const clearingHouse = ClearingHouse__factory.connect(
-      (await get('ClearingHouse')).address,
-      await hre.ethers.getSigner(deployer),
+    await execute(
+      'ClearingHouse',
+      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
+      'updateCollateralSettings',
+      CollateralTokenDeployment.address,
+      {
+        oracle: (
+          await clearingHouseLens.getCollateralInfo(truncate((await get('SettlementToken')).address))
+        ).settings.oracle,
+        twapDuration: 0,
+        isAllowedForDeposit: true,
+      },
     );
-    await clearingHouse.updateCollateralSettings(CollateralTokenDeployment.address, {
-      oracle: (await clearingHouseLens.getCollateralInfo(truncate((await get('SettlementToken')).address)))[1].oracle,
-      twapDuration: 0,
-      isAllowedForDeposit: true,
-    });
   }
 };
 
