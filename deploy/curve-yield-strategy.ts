@@ -108,6 +108,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       MINTER_ROLE,
       ProxyDeployment.address,
     );
+
+    // transfer ownership to team multisig
+    await execute(
+      'CurveYieldStrategy',
+      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
+      'transferOwnership',
+      networkInfo.MULTISIG,
+    );
   }
 };
 

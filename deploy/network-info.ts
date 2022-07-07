@@ -3,6 +3,8 @@ import hre from 'hardhat';
 export const skip = () => true;
 
 export interface NetworkInfo {
+  MULTISIG: string;
+
   KEEPER_ADDRESS: string;
 
   DEPOSIT_CAP_C3CLT: number;
@@ -38,6 +40,8 @@ export const UNISWAP_V3_DEFAULT_FEE_TIER = 500;
 export const UNISWAP_V3_ROUTER_ADDRESS = '0xE592427A0AEce92De3Edee1F18E0157C05861564';
 
 export const arbitrumInfo: () => NetworkInfo = () => ({
+  MULTISIG: '0xee2A909e3382cdF45a0d391202Aff3fb11956Ad1', // teamMultisig address
+
   KEEPER_ADDRESS: '0x0C0e6d63A7933e1C2dE16E1d5E61dB1cA802BF51',
 
   DEPOSIT_CAP_C3CLT: 250_000 / 800, // CURVE_TRICRYPTO_LP_TOKEN
@@ -69,6 +73,8 @@ export const arbitrumInfo: () => NetworkInfo = () => ({
 });
 
 export const arbitrumTestnetInfo: () => NetworkInfo = () => ({
+  MULTISIG: '0x4ec0dda0430A54b4796109913545F715B2d89F34',
+
   KEEPER_ADDRESS: '0xe1829BaD81E9146E18f28E28691D930c052483bA',
 
   DEPOSIT_CAP_C3CLT: 1_000_000_000,
@@ -101,6 +107,8 @@ export const arbitrumTestnetInfo: () => NetworkInfo = () => ({
 
 // arbitrum mainnet fork
 export const hardhatNetworkInfo: () => NetworkInfo = () => ({
+  MULTISIG: '0x4ec0dda0430A54b4796109913545F715B2d89F34',
+
   KEEPER_ADDRESS: '0xe1829BaD81E9146E18f28E28691D930c052483bA',
 
   DEPOSIT_CAP_C3CLT: 1_000_000, // CURVE_TRICRYPTO_LP_TOKEN
