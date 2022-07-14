@@ -9,7 +9,7 @@ This repository contains the 80-20 Curve TriCrypto Vault smart contracts for the
 
 ## Bug Bounty
 
-> Coming soon
+This repository is subject to the Rage Trade Bug Bounty program, per the terms defined [here](./BUG_BOUNTY.md).
 
 ## Scripts:
 
@@ -22,4 +22,4 @@ This repository contains the 80-20 Curve TriCrypto Vault smart contracts for the
 
 ## Licensing
 
-This project is licensed under [GNU GENERAL PUBLIC LICENSE](./LICENSE).
+The license for respective source files are mentioned as SPDX License Identifiers.
