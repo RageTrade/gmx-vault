@@ -2,16 +2,13 @@
 
 pragma solidity ^0.8.9;
 
-import { IVToken } from '@ragetrade/core/contracts/interfaces/IVToken.sol';
 import { IClearingHouse } from '@ragetrade/core/contracts/interfaces/IClearingHouse.sol';
 import { IClearingHouseStructures } from '@ragetrade/core/contracts/interfaces/clearinghouse/IClearingHouseStructures.sol';
 import { IClearingHouseEnums } from '@ragetrade/core/contracts/interfaces/clearinghouse/IClearingHouseEnums.sol';
 import { SignedMath } from '@ragetrade/core/contracts/libraries/SignedMath.sol';
 import { SignedFullMath } from '@ragetrade/core/contracts/libraries/SignedFullMath.sol';
-import { UniswapV3PoolHelper, IUniswapV3Pool } from '@ragetrade/core/contracts/libraries/UniswapV3PoolHelper.sol';
 
 import { ClearingHouseExtsload } from '@ragetrade/core/contracts/extsloads/ClearingHouseExtsload.sol';
-import { FixedPoint96 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint96.sol';
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 
 import { BaseVault } from '../base/BaseVault.sol';
@@ -25,7 +22,6 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     using SignedMath for int256;
     using SignedFullMath for int256;
     using FullMath for uint256;
-    using UniswapV3PoolHelper for IUniswapV3Pool;
     using ClearingHouseExtsload for IClearingHouse;
 
     error ETRS_INVALID_CLOSE();
@@ -34,9 +30,9 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     int24 public baseTickUpper;
     uint128 public baseLiquidity;
     bool public isReset;
-    uint16 private closePositionSlippageSqrtToleranceBps;
+    uint16 public closePositionSlippageSqrtToleranceBps;
     uint16 private resetPositionThresholdBps;
-    uint64 private minNotionalPositionToCloseThreshold;
+    uint64 public minNotionalPositionToCloseThreshold;
     uint64 private constant SQRT_PRICE_FACTOR_PIPS = 800000; // scaled by 1e6
 
     struct EightyTwentyRangeStrategyVaultInitParams {
@@ -159,42 +155,14 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
     }
 
     /// @inheritdoc BaseVault
-    function _beforeWithdrawClosePositionRanges(uint256 amountBeforeWithdraw, uint256 amountWithdrawn)
-        internal
-        override
-        returns (uint256 updatedAmountWithdrawn)
-    {
-        uint160 sqrtPriceX96 = _getTwapSqrtPriceX96();
-        int256 netPosition = rageClearingHouse.getAccountNetTokenPosition(rageAccountNo, ethPoolId);
-        int256 tokensToTrade = -netPosition.mulDiv(amountWithdrawn, amountBeforeWithdraw);
-        uint256 tokensToTradeNotionalAbs = _getTokenNotionalAbs(netPosition, sqrtPriceX96);
-
-        if (tokensToTradeNotionalAbs > minNotionalPositionToCloseThreshold) {
-            (int256 vTokenAmountOut, ) = _closeTokenPosition(
-                tokensToTrade,
-                sqrtPriceX96,
-                closePositionSlippageSqrtToleranceBps
-            );
-
-            if (vTokenAmountOut == tokensToTrade) updatedAmountWithdrawn = amountWithdrawn;
-            else {
-                int256 updatedAmountWithdrawnInt = -vTokenAmountOut.mulDiv(
-                    amountBeforeWithdraw.toInt256(),
-                    netPosition
-                );
-                // assert(updatedAmountWithdrawnInt > 0);
-                updatedAmountWithdrawn = uint256(updatedAmountWithdrawnInt);
-            }
-        } else {
-            updatedAmountWithdrawn = amountWithdrawn;
+    function _beforeWithdrawClosePositionRanges(int256 tokensToTrade) internal override {
+        if (tokensToTrade != 0) {
+            _swapToken(tokensToTrade, 0);
         }
     }
 
     /// @inheritdoc BaseVault
-    function _rebalanceRanges(IClearingHouse.VTokenPositionView memory vTokenPosition, int256 vaultMarketValue)
-        internal
-        override
-    {
+    function _rebalanceRanges(int256 netTraderPosition, int256 vaultMarketValue) internal override {
         isReset = checkIsReset(vaultMarketValue);
         IClearingHouseStructures.LiquidityChangeParams[2]
             memory liquidityChangeParamList = _getLiquidityChangeParamsOnRebalance(vaultMarketValue);
@@ -204,13 +172,13 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
             rageClearingHouse.updateRangeOrder(rageAccountNo, ethPoolId, liquidityChangeParamList[i]);
         }
 
-        if (isReset) _closeTokenPositionOnReset(vTokenPosition);
+        if (isReset) _closeTokenPositionOnReset(netTraderPosition);
     }
 
     /// @inheritdoc BaseVault
-    function _closeTokenPositionOnReset(IClearingHouse.VTokenPositionView memory vTokenPosition) internal override {
+    function _closeTokenPositionOnReset(int256 netTraderPosition) internal override {
         if (!isReset) revert ETRS_INVALID_CLOSE();
-        int256 tokensToTrade = -vTokenPosition.netTraderPosition;
+        int256 tokensToTrade = -netTraderPosition;
         uint160 sqrtTwapPriceX96 = _getTwapSqrtPriceX96();
         uint256 tokensToTradeNotionalAbs = _getTokenNotionalAbs(tokensToTrade, sqrtTwapPriceX96);
 
@@ -248,6 +216,13 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         } else {
             sqrtPriceLimitX96 = uint256(sqrtPriceX96).mulDiv(1e4 - slippageSqrtToleranceBps, 1e4).toUint160();
         }
+        (vTokenAmountOut, vQuoteAmountOut) = _swapToken(tokensToTrade, sqrtPriceLimitX96);
+    }
+
+    function _swapToken(int256 tokensToTrade, uint160 sqrtPriceLimitX96)
+        internal
+        returns (int256 vTokenAmountOut, int256 vQuoteAmountOut)
+    {
         IClearingHouseStructures.SwapParams memory swapParams = IClearingHouseStructures.SwapParams({
             amount: tokensToTrade,
             sqrtPriceLimit: sqrtPriceLimitX96,

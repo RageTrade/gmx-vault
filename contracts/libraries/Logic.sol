@@ -7,35 +7,59 @@ import { AggregatorV3Interface } from '@chainlink/contracts/src/v0.8/interfaces/
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import { UniswapV3PoolHelper } from '@ragetrade/core/contracts/libraries/UniswapV3PoolHelper.sol';
+import { IUniswapV3Pool } from '@uniswap/v3-core-0.8-support/contracts/interfaces/IUniswapV3Pool.sol';
 
 import { FixedPoint96 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint96.sol';
 import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
+import { SignedMath } from '@ragetrade/core/contracts/libraries/SignedMath.sol';
+import { SignedFullMath } from '@ragetrade/core/contracts/libraries/SignedFullMath.sol';
 import { ISwapRouter } from '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
 import { TickMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/TickMath.sol';
-import { IUniswapV3Pool } from '@uniswap/v3-core-0.8-support/contracts/interfaces/IUniswapV3Pool.sol';
 
+import { IVPoolWrapper } from '@ragetrade/core/contracts/interfaces/IVPoolWrapper.sol';
+import { IClearingHouse } from '@ragetrade/core/contracts/interfaces/IClearingHouse.sol';
+import { ClearingHouseExtsload } from '@ragetrade/core/contracts/extsloads/ClearingHouseExtsload.sol';
+import { IClearingHouseStructures } from '@ragetrade/core/contracts/interfaces/clearinghouse/IClearingHouseStructures.sol';
+
+import { IBaseVault } from '../interfaces/IBaseVault.sol';
+import { ISwapSimulator } from '../interfaces/ISwapSimulator.sol';
 import { ICurveGauge } from '../interfaces/curve/ICurveGauge.sol';
 import { ILPPriceGetter } from '../interfaces/curve/ILPPriceGetter.sol';
 import { ICurveStableSwap } from '../interfaces/curve/ICurveStableSwap.sol';
 
-import { SwapManager } from '../libraries/SwapManager.sol';
 import { SafeCast } from '../libraries/SafeCast.sol';
+import { SwapManager } from '../libraries/SwapManager.sol';
+
+interface IBaseVaultGetters {
+    function minNotionalPositionToCloseThreshold() external view returns (uint64);
+
+    function closePositionSlippageSqrtToleranceBps() external view returns (uint16);
+}
 
 library Logic {
     using SafeCast for uint256;
     using FullMath for uint256;
+    using SignedMath for int256;
+    using SignedFullMath for int256;
+
     using UniswapV3PoolHelper for IUniswapV3Pool;
+    using ClearingHouseExtsload for IClearingHouse;
 
     event Harvested(uint256 crvAmount);
     event Staked(uint256 amount, address indexed depositor);
 
-    event FeesWithdrawn(uint256 total);
     event FeesUpdated(uint256 fee);
+    event FeesWithdrawn(uint256 total);
 
-    event CrvOracleUpdated(address indexed oracle);
-    event CrvHarvestThresholdUpdated(uint256 threshold);
-    event CrvSwapSlippageToleranceUpdated(uint256 tolerance);
+    event CurveParamsUpdated(
+        uint256 feeBps,
+        uint256 stablecoinSlippage,
+        uint256 crvHarvestThreshold,
+        uint256 crvSlippageTolerance,
+        address indexed crvOracle
+    );
+
     event CrvSwapFailedDueToSlippage(uint256 crvSlippageTolerance);
 
     event EightyTwentyParamsUpdated(
@@ -43,9 +67,14 @@ library Logic {
         uint16 resetPositionThresholdBps,
         uint64 minNotionalPositionToCloseThreshold
     );
-    event KeeperUpdated(address keeper);
-    event DepositCapUpdated(uint256 depositCap);
-    event RebalanceThresholdUpdated(uint32 rebalanceTimeThreshold, uint16 rebalancePriceThresholdBps);
+
+    event BaseParamsUpdated(
+        uint256 newDepositCap,
+        address newKeeperAddress,
+        uint32 rebalanceTimeThreshold,
+        uint16 rebalancePriceThresholdBps
+    );
+
     event Rebalance();
     event TokenPositionClosed();
 
@@ -70,6 +99,96 @@ library Logic {
     }
 
     // 80 20
+
+    function _simulateClose(
+        uint32 ethPoolId,
+        int256 tokensToTrade,
+        uint160 sqrtPriceX96,
+        IClearingHouse clearingHouse,
+        ISwapSimulator swapSimulator,
+        uint16 slippageSqrtToleranceBps
+    ) internal view returns (int256 vTokenAmountOut, int256 vQuoteAmountOut) {
+        uint160 sqrtPriceLimitX96;
+
+        if (tokensToTrade > 0) {
+            sqrtPriceLimitX96 = uint256(sqrtPriceX96).mulDiv(1e4 + slippageSqrtToleranceBps, 1e4).toUint160();
+        } else {
+            sqrtPriceLimitX96 = uint256(sqrtPriceX96).mulDiv(1e4 - slippageSqrtToleranceBps, 1e4).toUint160();
+        }
+
+        IVPoolWrapper.SwapResult memory swapResult = swapSimulator.simulateSwapView(
+            clearingHouse,
+            ethPoolId,
+            tokensToTrade,
+            sqrtPriceLimitX96,
+            false
+        );
+
+        return (-swapResult.vTokenIn, -swapResult.vQuoteIn);
+    }
+
+    function simulateBeforeWithdraw(
+        address vault,
+        uint256 amountBeforeWithdraw,
+        uint256 amountWithdrawn
+    ) external view returns (uint256 updatedAmountWithdrawn, int256 tokensToTrade) {
+        uint32 ethPoolId = IBaseVault(vault).ethPoolId();
+        IClearingHouse clearingHouse = IClearingHouse(IBaseVault(vault).rageClearingHouse());
+
+        uint160 sqrtPriceX96 = _getTwapSqrtPriceX96(
+            IBaseVault(vault).rageVPool(),
+            clearingHouse.getTwapDuration(ethPoolId)
+        );
+
+        int256 netPosition = clearingHouse.getAccountNetTokenPosition(IBaseVault(vault).rageAccountNo(), ethPoolId);
+
+        tokensToTrade = -netPosition.mulDiv(amountWithdrawn, amountBeforeWithdraw);
+
+        uint256 tokensToTradeNotionalAbs = _getTokenNotionalAbs(netPosition, sqrtPriceX96);
+
+        uint64 minNotionalPositionToCloseThreshold = IBaseVaultGetters(vault).minNotionalPositionToCloseThreshold();
+        uint16 closePositionSlippageSqrtToleranceBps = IBaseVaultGetters(vault).closePositionSlippageSqrtToleranceBps();
+
+        ISwapSimulator swapSimulatorCopied = IBaseVault(vault).swapSimulator();
+
+        if (tokensToTradeNotionalAbs > minNotionalPositionToCloseThreshold) {
+            (int256 vTokenAmountOut, ) = _simulateClose(
+                ethPoolId,
+                tokensToTrade,
+                sqrtPriceX96,
+                clearingHouse,
+                swapSimulatorCopied,
+                closePositionSlippageSqrtToleranceBps
+            );
+
+            if (vTokenAmountOut == tokensToTrade) updatedAmountWithdrawn = amountWithdrawn;
+            else {
+                int256 updatedAmountWithdrawnInt = -vTokenAmountOut.mulDiv(
+                    amountBeforeWithdraw.toInt256(),
+                    netPosition
+                );
+                updatedAmountWithdrawn = uint256(updatedAmountWithdrawnInt);
+                tokensToTrade = vTokenAmountOut;
+            }
+        } else {
+            updatedAmountWithdrawn = amountWithdrawn;
+            tokensToTrade = 0;
+        }
+    }
+
+    /// @notice Get token notional absolute
+    /// @param tokenAmount Token amount
+    /// @param sqrtPriceX96 Sqrt of price in X96
+    function _getTokenNotionalAbs(int256 tokenAmount, uint160 sqrtPriceX96)
+        internal
+        pure
+        returns (uint256 tokenNotionalAbs)
+    {
+        tokenNotionalAbs = tokenAmount
+            .mulDiv(sqrtPriceX96, FixedPoint96.Q96)
+            .mulDiv(sqrtPriceX96, FixedPoint96.Q96)
+            .absUint();
+    }
 
     /// @notice checks if upper and lower ticks are valid for rebalacing between current twap price and rebalance threshold
     function isValidRebalanceRangeWithoutCheckReset(
@@ -153,6 +272,7 @@ library Logic {
     // curve yield strategy
     function convertAssetToSettlementToken(
         uint256 amount,
+        uint256 slippage,
         ILPPriceGetter lpPriceHolder,
         ICurveGauge gauge,
         ICurveStableSwap triCryptoPool,
@@ -170,7 +290,7 @@ library Logic {
 
         bytes memory path = abi.encodePacked(usdt, uint24(500), usdc);
 
-        usdcAmount = SwapManager.swapUsdtToUsdc(balance, path, uniV3Router);
+        usdcAmount = SwapManager.swapUsdtToUsdc(balance, slippage, path, uniV3Router);
     }
 
     function getMarketValue(uint256 amount, ILPPriceGetter lpPriceHolder) external view returns (uint256 marketValue) {

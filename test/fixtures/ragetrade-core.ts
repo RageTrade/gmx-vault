@@ -8,9 +8,14 @@ import {
 } from '../../typechain-types/artifacts/@ragetrade/core/contracts/protocol/RageTradeFactory';
 import { priceToPriceX128 } from '@ragetrade/sdk';
 import { ClearingHouse } from '@ragetrade/sdk/dist/typechain/core';
+import { ClearingHouseLens__factory } from '../../typechain-types';
+
+const { get } = deployments;
 
 export const rageTradeFixture = deployments.createFixture(async hre => {
   const rageTradeDeployments = await deployments.fixture('RageTradeFactory');
+
+  const [admin] = await hre.ethers.getSigners();
 
   const rageTradeFactory = await hre.ethers.getContractAt(
     'RageTradeFactory',
@@ -19,7 +24,7 @@ export const rageTradeFixture = deployments.createFixture(async hre => {
   const clearingHouse = (await hre.ethers.getContractAt(
     '@ragetrade/core/contracts/protocol/clearinghouse/ClearingHouse.sol:ClearingHouse',
     rageTradeDeployments.ClearingHouse.address,
-  )) as ClearingHouse;
+  )) as unknown as ClearingHouse;
   const settlementToken = await hre.ethers.getContractAt(
     'SettlementTokenMock',
     rageTradeDeployments.SettlementToken.address,
@@ -73,6 +78,10 @@ export const rageTradeFixture = deployments.createFixture(async hre => {
     const vPool = await hre.ethers.getContractAt('IUniswapV3Pool', event.args.vPool);
     const vPoolWrapper = await hre.ethers.getContractAt('VPoolWrapper', event.args.vPoolWrapper);
 
-    return { vToken, vPool, vPoolWrapper, oracle };
+    const clearingHouseLens = ClearingHouseLens__factory.connect((await get('ClearingHouseLens')).address, admin);
+
+    const SwapSimulator = await (await hre.ethers.getContractFactory('SwapSimulator')).deploy();
+
+    return { vToken, vPool, vPoolWrapper, oracle, SwapSimulator, clearingHouseLens };
   }
 });

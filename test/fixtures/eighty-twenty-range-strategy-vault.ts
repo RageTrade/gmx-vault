@@ -20,7 +20,6 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
   const [admin, user0, user1, trader0, settlementTokenTreasury] = await hre.ethers.getSigners();
 
   const ethPoolId = truncate(pool0.vToken.address);
-  const pool = await clearingHouse.getPoolInfo(truncate(pool0.vToken.address));
 
   const closePositionSlippageSqrtToleranceBps = 500; //5%
   const resetPositionThresholdBps = 2000; //20%
@@ -64,8 +63,10 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
         ethPoolId,
         // owner: admin.address,
         rageClearingHouse: clearingHouse.address,
+        swapSimulator: pool0.SwapSimulator.address,
         rageCollateralToken: collateralToken.address,
         rageSettlementToken: settlementToken.address,
+        clearingHouseLens: pool0.clearingHouseLens.address,
       },
       closePositionSlippageSqrtToleranceBps,
       resetPositionThresholdBps,
@@ -75,7 +76,7 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
     settlementTokenTreasury.address,
   );
 
-  eightyTwentyRangeStrategyVaultTest.setKeeper(admin.address);
+  eightyTwentyRangeStrategyVaultTest.updateBaseParams(ethers.constants.MaxUint256, admin.address, 0, 0);
   await eightyTwentyRangeStrategyVaultTest.grantAllowances();
   collateralToken.grantRole(await collateralToken.MINTER_ROLE(), eightyTwentyRangeStrategyVaultTest.address);
   const collateralTokenOracle = await (await hre.ethers.getContractFactory('OracleMock')).deploy();
@@ -123,8 +124,6 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
   await settlementToken.approve(clearingHouse.address, parseTokenAmount(10n ** 5n, 6));
   await clearingHouse.updateMargin(adminAccountNo, truncate(settlementToken.address), parseTokenAmount(10n ** 5n, 6));
 
-  await eightyTwentyRangeStrategyVaultTest.updateDepositCap(parseTokenAmount(10n ** 10n, 18));
-
   return {
     eightyTwentyRangeStrategyVaultTest,
     clearingHouse,
@@ -136,6 +135,8 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
     settlementTokenTreasury,
     ethPoolId,
     ethPool: pool0,
+    swapSimulator: pool0.SwapSimulator,
+    clearingHouseLens: pool0.clearingHouseLens,
     user0,
     user1,
     trader0,

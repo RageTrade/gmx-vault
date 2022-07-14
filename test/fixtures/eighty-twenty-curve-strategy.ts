@@ -28,7 +28,6 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
   const collateralToken = await tokenFactory.deploy('Collateral Token', 'CT');
 
   const ethPoolId = truncate(pool0.vToken.address);
-  const pool = await clearingHouse.getPoolInfo(truncate(pool0.vToken.address));
 
   const [admin, user1, user2, trader0] = await hre.ethers.getSigners();
 
@@ -116,7 +115,7 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
   const crvOracle = (await hre.ethers.getContractAt(
     '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface',
     addresses.CRV_ORACLE,
-  )) as AggregatorV3Interface;
+  )) as unknown as AggregatorV3Interface;
 
   const lpOracle = (await hre.ethers.getContractAt(
     'contracts/interfaces/curve/ILPPriceGetter.sol:ILPPriceGetter',
@@ -164,8 +163,10 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
         },
         ethPoolId,
         rageClearingHouse: clearingHouse.address,
+        swapSimulator: pool0.SwapSimulator.address,
         rageCollateralToken: collateralToken.address,
         rageSettlementToken: settlementToken.address,
+        clearingHouseLens: pool0.clearingHouseLens.address,
       },
       closePositionSlippageSqrtToleranceBps: closePositionSlippageSqrtToleranceBps,
       resetPositionThresholdBps: resetPositionThresholdBps,
@@ -181,10 +182,7 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
     tricryptoPool: addresses.TRICRYPTO_POOL,
   });
 
-  await curveYieldStrategyTest.grantAllowances();
-  await curveYieldStrategyTest.setCrvOracle(addresses.CRV_ORACLE);
-
-  await curveYieldStrategyTest.setKeeper(admin.address);
+  await curveYieldStrategyTest.updateBaseParams(ethers.constants.MaxUint256, admin.address, 0, 0);
   await collateralToken.grantRole(await collateralToken.MINTER_ROLE(), curveYieldStrategyTest.address);
   const vaultAccountNo = await curveYieldStrategyTest.rageAccountNo();
 
@@ -195,9 +193,9 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
   await lpToken.connect(whale).transfer(user2.address, parseTokenAmount(25n, 18));
   await lpToken.connect(user2).approve(curveYieldStrategyTest.address, parseTokenAmount(50n, 18));
 
-  await curveYieldStrategyTest.updateDepositCap(parseTokenAmount(10n ** 10n, 18));
+  await curveYieldStrategyTest.updateCurveParams(1_000, 1_000, 0, 3_000, addresses.CRV_ORACLE);
 
-  await curveYieldStrategyTest.setCrvSwapSlippageTolerance(3_000);
+  await curveYieldStrategyTest.grantAllowances();
 
   return {
     crv,
@@ -209,7 +207,6 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
     lpOracle,
     triCrypto,
     crvOracle,
-    // crvWethPool,
     uniswapQuoter,
     curveYieldStrategyTest,
     clearingHouse,
@@ -219,6 +216,8 @@ export const eightyTwentyCurveStrategyFixture = deployments.createFixture(async 
     vaultAccountNo,
     ethPoolId,
     ethPool: pool0,
+    clearingHouseLens: pool0.clearingHouseLens,
+    swapSimulator: pool0.SwapSimulator,
     user1,
     user2,
     trader0,

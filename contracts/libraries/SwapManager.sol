@@ -22,13 +22,12 @@ library SwapManager {
 
     function swapUsdcToUsdtAndAddLiquidity(
         uint256 amount,
+        uint256 slippage,
         bytes memory path,
         ISwapRouter uniV3Router,
         ICurveStableSwap triCrypto
     ) external {
-        /// @dev max 1% sliipage + fees when swapping usdc to usdt
-        /// @notice 9_000 is used for test cases, will be changed to 9900
-        uint256 minOut = (amount * 9_000) / MAX_BPS;
+        uint256 minOut = (amount * (MAX_BPS - slippage)) / MAX_BPS;
 
         ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
             path: path,
@@ -47,12 +46,11 @@ library SwapManager {
 
     function swapUsdtToUsdc(
         uint256 amount,
+        uint256 slippage,
         bytes memory path,
         ISwapRouter uniV3Router
     ) external returns (uint256 usdcOut) {
-        /// @dev max 1% sliipage + fees when swapping usdt to usdc
-        /// @notice 9_000 is used for test cases, will be changed to 9900
-        uint256 minOut = (amount * 9_000) / MAX_BPS;
+        uint256 minOut = (amount * (MAX_BPS - slippage)) / MAX_BPS;
 
         ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
             path: path,

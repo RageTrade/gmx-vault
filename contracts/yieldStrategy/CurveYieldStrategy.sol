@@ -25,7 +25,7 @@ import { Logic } from '../libraries/Logic.sol';
 contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     using FullMath for uint256;
 
-    error CYS_INVALID_FEES();
+    error CYS_INVALID_SETTER_VALUE();
     error CYS_EXTERAL_CALL_FAILED(string reason);
 
     IERC20 private usdt; // 6 decimals
@@ -43,6 +43,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     uint256 private crvPendingToSwap; // in CRV (10**18)
     uint256 private crvHarvestThreshold; // in CRV (10**18)
     uint256 private crvSwapSlippageTolerance; // in bps, max 10**4
+    uint256 private stablecoinSlippageTolerance; // in bps, max 10**4
 
     /* solhint-disable var-name-mixedcase */
     uint256 public constant MAX_BPS = 10_000;
@@ -79,25 +80,28 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         lpPriceHolder = params.lpPriceHolder;
     }
 
-    /// @notice Sets the CRV to USD oracle address
-    /// @param _crvOracle address of oracle
-    function setCrvOracle(AggregatorV3Interface _crvOracle) external onlyOwner {
-        crvOracle = _crvOracle;
-        emit Logic.CrvOracleUpdated(address(_crvOracle));
-    }
+    function updateCurveParams(
+        uint256 _feeBps,
+        uint256 _stablecoinSlippage,
+        uint256 _crvHarvestThreshold,
+        uint256 _crvSlippageTolerance,
+        AggregatorV3Interface _crvOracle
+    ) external onlyOwner {
+        if (_feeBps < MAX_BPS && _stablecoinSlippage < MAX_BPS && _crvSlippageTolerance < MAX_BPS) {
+            FEE = _feeBps;
+            crvOracle = _crvOracle;
+            crvHarvestThreshold = _crvHarvestThreshold;
+            crvSwapSlippageTolerance = _crvSlippageTolerance;
+            stablecoinSlippageTolerance = _stablecoinSlippage;
+        } else revert CYS_INVALID_SETTER_VALUE();
 
-    /// @notice Sets the max allowed slippage tolerance for CRV->WETH->USDT swap
-    /// @param _slippageTolerance value in bps unit for slippage tolerance
-    function setCrvSwapSlippageTolerance(uint256 _slippageTolerance) external onlyOwner {
-        crvSwapSlippageTolerance = _slippageTolerance;
-        emit Logic.CrvSwapSlippageToleranceUpdated(_slippageTolerance);
-    }
-
-    /// @notice Sets the minimum threshold to harvest CRV rewards
-    /// @param _crvHarvestThreshold minimum threshold value (in CRV)
-    function setcrvHarvestThreshold(uint256 _crvHarvestThreshold) external onlyOwner {
-        crvHarvestThreshold = _crvHarvestThreshold;
-        emit Logic.CrvHarvestThresholdUpdated(_crvHarvestThreshold);
+        emit Logic.CurveParamsUpdated(
+            _feeBps,
+            _stablecoinSlippage,
+            _crvHarvestThreshold,
+            _crvSlippageTolerance,
+            address(_crvOracle)
+        );
     }
 
     /// @notice grants one time max allowance to various third parties
@@ -119,17 +123,9 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         crvToken.approve(address(uniV3Router), type(uint256).max);
     }
 
-    /// @notice changes the fee value for CRV yield generated
-    /// @param bps new fee value (less than MAX_BPS)
-    function changeFee(uint256 bps) external onlyOwner {
-        if (bps > MAX_BPS) revert CYS_INVALID_FEES();
-        FEE = bps;
-        emit Logic.FeesUpdated(bps);
-    }
-
     /// @notice withdraw accumulated CRV fees
     function withdrawFees() external onlyOwner {
-        uint256 bal = crvToken.balanceOf(address(this));
+        uint256 bal = crvToken.balanceOf(address(this)) - crvPendingToSwap;
         crvToken.transfer(msg.sender, bal);
         emit Logic.FeesWithdrawn(bal);
     }
@@ -153,7 +149,13 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     /// @param amount amount of settlementToken
     function _convertSettlementTokenToAsset(uint256 amount) internal override {
         bytes memory path = abi.encodePacked(usdc, uint24(500), usdt);
-        SwapManager.swapUsdcToUsdtAndAddLiquidity(amount, path, uniV3Router, triCryptoPool);
+        SwapManager.swapUsdcToUsdtAndAddLiquidity(
+            amount,
+            stablecoinSlippageTolerance,
+            path,
+            uniV3Router,
+            triCryptoPool
+        );
         _stake(asset.balanceOf(address(this)));
     }
 
@@ -194,7 +196,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
                 // uniswap router returns 'Too little received' in case of minOut is not matched
                 if (keccak256(abi.encodePacked(reason)) == keccak256('Too little received')) {
                     // account for pending CRV which were not swapped, to be used in next swap
-                    crvPendingToSwap += claimable;
+                    crvPendingToSwap = claimable;
                     // emit event with current slippage value
                     emit Logic.CrvSwapFailedDueToSlippage(crvSwapSlippageTolerance);
                 }
@@ -220,7 +222,16 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     /// @param amount amount of LP tokens
     function _convertAssetToSettlementToken(uint256 amount) internal override returns (uint256 usdcAmount) {
         return
-            Logic.convertAssetToSettlementToken(amount, lpPriceHolder, gauge, triCryptoPool, usdt, uniV3Router, usdc);
+            Logic.convertAssetToSettlementToken(
+                amount,
+                stablecoinSlippageTolerance,
+                lpPriceHolder,
+                gauge,
+                triCryptoPool,
+                usdt,
+                uniV3Router,
+                usdc
+            );
     }
 
     /// @notice compute notional value for given amount of LP tokens
