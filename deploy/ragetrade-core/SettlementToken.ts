@@ -10,33 +10,24 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     getNamedAccounts,
   } = hre;
 
+  const { RAGE_SETTLEMENT_TOKEN_ADDRESS } = getNetworkInfo(hre.network.config.chainId);
+  if (RAGE_SETTLEMENT_TOKEN_ADDRESS) {
+    await save('SettlementToken', { abi: IERC20Metadata__factory.abi, address: RAGE_SETTLEMENT_TOKEN_ADDRESS });
+    console.log('Skipping SettlementToken.ts deployment, using SettlementToken from @ragetrade/core');
+    return;
+  }
+
   const { deployer } = await getNamedAccounts();
 
-  const { RAGE_SETTLEMENT_TOKEN_ADDRESS } = getNetworkInfo(hre.network.config.chainId);
+  await deploy('SettlementToken', {
+    contract: 'SettlementTokenMock',
+    from: deployer,
+    log: true,
+  });
 
-  if (RAGE_SETTLEMENT_TOKEN_ADDRESS === undefined) {
-    const deployment = await deploy('SettlementToken', {
-      contract: 'SettlementTokenMock',
-      from: deployer,
-      log: true,
-    });
-
-    await execute('SettlementToken', { from: deployer }, 'mint', deployer, hre.ethers.BigNumber.from(10).pow(8));
-
-    if (deployment.newlyDeployed && hre.network.config.chainId !== 31337) {
-      await hre.tenderly.push({
-        name: 'SettlementTokenMock',
-        address: deployment.address,
-      });
-    }
-  } else {
-    await save('SettlementToken', { abi: IERC20Metadata__factory.abi, address: RAGE_SETTLEMENT_TOKEN_ADDRESS });
-  }
+  await execute('SettlementToken', { from: deployer }, 'mint', deployer, hre.ethers.BigNumber.from(10).pow(8));
 };
 
 export default func;
-
-// Only will be deployed on hardhat network
-func.skip = async hre => hre.network.config.chainId !== 31337;
 
 func.tags = ['SettlementToken'];

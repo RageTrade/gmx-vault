@@ -1,7 +1,14 @@
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { getNetworkInfo } from '../network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+  const { RAGE_CLEARING_HOUSE_ADDRESS } = getNetworkInfo(hre.network.config.chainId);
+  if (RAGE_CLEARING_HOUSE_ADDRESS) {
+    console.log('Skipping InsuranceFundLogic.ts, using ClearingHouse from @ragetrade/core');
+    return;
+  }
+
   const {
     deployments: { deploy },
     getNamedAccounts,
@@ -9,23 +16,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const { deployer } = await getNamedAccounts();
 
-  const deployment = await deploy('VPoolWrapperLogic', {
+  await deploy('VPoolWrapperLogic', {
     contract: 'VPoolWrapper',
     from: deployer,
     log: true,
   });
-
-  if (deployment.newlyDeployed && hre.network.config.chainId !== 31337) {
-    await hre.tenderly.push({
-      name: 'VPoolWrapper',
-      address: deployment.address,
-    });
-  }
 };
 
 export default func;
-
-// Only will be deployed on hardhat network
-func.skip = async hre => hre.network.config.chainId !== 31337;
 
 func.tags = ['VPoolWrapperLogic'];

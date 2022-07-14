@@ -2,6 +2,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { getNetworkNameFromChainId, getDeployment, ContractDeployment } from '@ragetrade/sdk';
 import { ProxyAdmin__factory } from '../typechain-types';
+import { waitConfirmations } from './network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
@@ -11,29 +12,21 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const { deployer } = await getNamedAccounts();
 
-  let coreDeployment: ContractDeployment | undefined;
   try {
     const networkName = getNetworkNameFromChainId(hre.network.config.chainId ?? 31337);
-    coreDeployment = await getDeployment('vaults', networkName, 'ProxyAdmin');
-  } catch {}
-
-  if (coreDeployment) {
-    // if core deployment contains a proxy admin, use it
-    await save('ProxyAdmin', { abi: ProxyAdmin__factory.abi, address: coreDeployment.address });
-  } else {
+    // this throws if core deployment does not contain a proxy admin
+    const coreDeploymentProxyAdminAddress =
+      require(`@ragetrade/core/deployments/${networkName}/ProxyAdmin.json`).address;
+    await save('ProxyAdmin', { abi: ProxyAdmin__factory.abi, address: coreDeploymentProxyAdminAddress });
+  } catch {
     // if doesn't contain a proxy admin then deploy a new one
-    const deployment = await deploy('ProxyAdmin', {
+    console.log('No core deployment found');
+    await deploy('ProxyAdmin', {
       contract: 'ProxyAdmin',
       from: deployer,
       log: true,
+      waitConfirmations,
     });
-
-    if (deployment.newlyDeployed && hre.network.config.chainId !== 31337) {
-      await hre.tenderly.push({
-        name: 'ProxyAdmin',
-        address: deployment.address,
-      });
-    }
   }
 };
 

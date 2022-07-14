@@ -11,14 +11,34 @@ import {
   ProxyAdmin__factory,
   VQuote__factory,
   ClearingHouseLens__factory,
-  RageTradeFactory
+  RageTradeFactory,
+  ERC20__factory,
 } from '../../typechain-types';
+import { getNetworkInfo } from '../network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
     deployments: { deploy, get, read, save, execute },
     getNamedAccounts,
   } = hre;
+
+  const { RAGE_CLEARING_HOUSE_ADDRESS, RAGE_CLEARING_HOUSE_LENS_ADDRESS } = getNetworkInfo(hre.network.config.chainId);
+  if (RAGE_CLEARING_HOUSE_ADDRESS || RAGE_CLEARING_HOUSE_LENS_ADDRESS) {
+    if (RAGE_CLEARING_HOUSE_ADDRESS) {
+      await save('ClearingHouse', { abi: ClearingHouse__factory.abi, address: RAGE_CLEARING_HOUSE_ADDRESS });
+    }
+    if (RAGE_CLEARING_HOUSE_LENS_ADDRESS) {
+      await save('ClearingHouseLens', {
+        abi: ClearingHouseLens__factory.abi,
+        address: RAGE_CLEARING_HOUSE_LENS_ADDRESS,
+      });
+    }
+    console.log(
+      'Skipping RageTradeFactory.ts, using ClearingHouse from @ragetrade/core CH Address:',
+      RAGE_CLEARING_HOUSE_ADDRESS,
+    );
+    return;
+  }
 
   const { deployer } = await getNamedAccounts();
   const clearingHouseLogic = await get('ClearingHouseLogic');
@@ -27,7 +47,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const settlementTokenOracle = await get('SettlementTokenOracle');
   const settlementToken = await get('SettlementToken');
 
-  const deployment = await deploy('RageTradeFactory', {
+  await deploy('RageTradeFactory', {
     from: deployer,
     log: true,
     args: [
@@ -36,40 +56,21 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       insuranceFundLogic.address,
       settlementToken.address,
       settlementTokenOracle.address,
-    ]
+    ],
   });
-
-  if (deployment.newlyDeployed && hre.network.config.chainId !== 31337) {
-    await hre.tenderly.push({
-      name: 'RageTradeFactory',
-      address: deployment.address,
-    });
-  }
 
   const vQuoteAddress = await read('RageTradeFactory', 'vQuote');
   await save('VQuote', { abi: VQuote__factory.abi, address: vQuoteAddress });
   console.log('saved "VQuote":', vQuoteAddress);
-  if (hre.network.config.chainId !== 31337) {
-    await hre.tenderly.push({
-      name: 'VQuote',
-      address: vQuoteAddress,
-    });
-  }
 
   const clearingHouseAddress = await read('RageTradeFactory', 'clearingHouse');
   await save('ClearingHouse', { abi: ClearingHouse__factory.abi, address: clearingHouseAddress });
   console.log('saved "ClearingHouse":', clearingHouseAddress);
-  if (hre.network.config.chainId !== 31337) {
-    await hre.tenderly.push({
-      name: 'TransparentUpgradeableProxy',
-      address: clearingHouseAddress,
-    });
-  }
 
   await deploy('ClearingHouseLens', {
     from: deployer,
     log: true,
-    args: [clearingHouseAddress]
+    args: [clearingHouseAddress],
   });
 
   await execute(
@@ -94,43 +95,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const proxyAdminAddress = await read('RageTradeFactory', 'proxyAdmin');
   await save('ProxyAdmin', { abi: ProxyAdmin__factory.abi, address: proxyAdminAddress });
   console.log('saved "ProxyAdmin":', proxyAdminAddress);
-  if (hre.network.config.chainId !== 31337) {
-    await hre.tenderly.push({
-      name: 'ProxyAdmin',
-      address: proxyAdminAddress,
-    });
-  }
 
   const insuranceFundAddress = await read('ClearingHouse', 'insuranceFund');
   await save('InsuranceFund', { abi: InsuranceFund__factory.abi, address: insuranceFundAddress });
   console.log('saved "InsuranceFund":', insuranceFundAddress);
-  if (hre.network.config.chainId !== 31337) {
-    await hre.tenderly.push({
-      name: 'TransparentUpgradeableProxy',
-      address: insuranceFundAddress,
-    });
-  }
-  const collateralInfo = await read(
-    'ClearingHouseLens',
-    'getCollateralInfo',
-    truncate(settlementToken.address),
-  );
+
+  const collateralInfo = await read('ClearingHouseLens', 'getCollateralInfo', truncate(settlementToken.address));
   await save('SettlementTokenOracle', { abi: IOracle__factory.abi, address: collateralInfo.settings.oracle });
   console.log('saved "SettlementTokenOracle":', collateralInfo.settings.oracle);
-  if (hre.network.config.chainId !== 31337) {
-    await hre.tenderly.push({
-      name: 'SettlementTokenOracle',
-      address: collateralInfo.settings.oracle,
-    });
-  }
 };
 
 export default func;
 
-// Only will be deployed on hardhat network
-func.skip = async hre => hre.network.config.chainId !== 31337;
-
-func.tags = ['RageTradeFactory'];
+func.tags = ['RageTradeFactory', 'VQuote', 'ClearingHouse', 'ClearingHouseLens', 'ProxyAdmin', 'InsuranceFund'];
 func.dependencies = [
   'ClearingHouseLogic',
   'VPoolWrapperLogic',

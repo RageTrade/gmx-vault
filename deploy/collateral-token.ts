@@ -2,11 +2,11 @@ import { truncate } from '@ragetrade/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { ClearingHouseLens__factory, ClearingHouse__factory } from '../typechain-types';
-import { getNetworkInfo } from './network-info';
+import { waitConfirmations } from './network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
-    deployments: { deploy, get },
+    deployments: { deploy, get, execute },
     getNamedAccounts,
   } = hre;
 
@@ -17,38 +17,32 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     from: deployer,
     log: true,
     args: ['RageTradeVaultsCollateralToken', 'RTVC'],
+    waitConfirmations,
   });
 
   const clearingHouseLens = ClearingHouseLens__factory.connect(
     (await get('ClearingHouseLens')).address,
-    await hre.ethers.getSigner(deployer)
-  )
+    await hre.ethers.getSigner(deployer),
+  );
 
-  const { RAGE_CLEARING_HOUSE_ADDRESS, RAGE_SETTLEMENT_TOKEN_ADDRESS } = getNetworkInfo(hre.network.config.chainId);
-  if (CollateralTokenDeployment.newlyDeployed && RAGE_CLEARING_HOUSE_ADDRESS) {
-    const clearingHouse = ClearingHouse__factory.connect(
-      RAGE_CLEARING_HOUSE_ADDRESS ?? (await get('ClearingHouse')).address,
-      await hre.ethers.getSigner(deployer),
+  if (CollateralTokenDeployment.newlyDeployed) {
+    await execute(
+      'ClearingHouse',
+      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
+      'updateCollateralSettings',
+      CollateralTokenDeployment.address,
+      {
+        oracle: (
+          await clearingHouseLens.getCollateralInfo(truncate((await get('SettlementToken')).address))
+        ).settings.oracle,
+        twapDuration: 0,
+        isAllowedForDeposit: true,
+      },
     );
-    await clearingHouse.updateCollateralSettings(CollateralTokenDeployment.address, {
-      oracle: (
-        await clearingHouseLens.getCollateralInfo(
-          truncate(RAGE_SETTLEMENT_TOKEN_ADDRESS ?? (await get('SettlementToken')).address),
-        )
-      )[1].oracle,
-      twapDuration: 0,
-      isAllowedForDeposit: true,
-    });
-  }
-
-  if (CollateralTokenDeployment.newlyDeployed && hre.network.config.chainId !== 31337) {
-    await hre.tenderly.push({
-      name: 'ERC20PresetMinterPauser',
-      address: CollateralTokenDeployment.address,
-    });
   }
 };
 
 export default func;
 
 func.tags = ['CollateralToken'];
+func.dependencies = ['ClearingHouseLens', 'ClearingHouse', 'SettlementToken'];

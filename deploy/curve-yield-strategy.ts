@@ -3,7 +3,7 @@ import { parseUnits } from 'ethers/lib/utils';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { CurveYieldStrategy, CurveYieldStrategy__factory, ClearingHouseLens__factory } from '../typechain-types';
-import { getNetworkInfo } from './network-info';
+import { getNetworkInfo, waitConfirmations } from './network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
@@ -18,28 +18,27 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const networkInfo = getNetworkInfo(hre.network.config.chainId ?? 31337);
 
-  const clearingHouseAddress: string = networkInfo.RAGE_CLEARING_HOUSE_ADDRESS ?? (await get('ClearingHouse')).address;
-  const settlementTokenAddress: string =
-    networkInfo.RAGE_SETTLEMENT_TOKEN_ADDRESS ?? (await get('SettlementToken')).address;
-  const ethPoolId: string = networkInfo.RAGE_ETH_POOL_ID ?? truncate((await get('ETH-vToken')).address);
+  const clearingHouseAddress: string = (await get('ClearingHouse')).address;
+  const settlementTokenAddress: string = (await get('SettlementToken')).address;
+  const ethPoolId: string = truncate((await get('ETH-vToken')).address);
 
   const collateralTokenDeployment = await get('CollateralToken');
 
   const clearingHouseLens = ClearingHouseLens__factory.connect(
     (await get('ClearingHouseLens')).address,
-    await hre.ethers.getSigner(deployer)
-  )
+    await hre.ethers.getSigner(deployer),
+  );
 
   const initializeArg: CurveYieldStrategy.CurveYieldStrategyInitParamsStruct = {
     eightyTwentyRangeStrategyVaultInitParams: {
       baseVaultInitParams: {
         rageErc4626InitParams: {
-          asset: (await get('CurveTriCryptoLpToken')).address,
+          asset: networkInfo.CURVE_TRICRYPTO_LP_TOKEN,
           name: '80-20 TriCrypto Strategy',
           symbol: 'TCS',
         },
         ethPoolId,
-        swapSimulator: await (await get('SwapSimulator')).address,
+        swapSimulator: (await get('SwapSimulator')).address,
         clearingHouseLens: clearingHouseLens.address,
         rageClearingHouse: clearingHouseAddress,
         rageCollateralToken: collateralTokenDeployment.address,
@@ -50,13 +49,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       minNotionalPositionToCloseThreshold: 100e6,
     },
     usdc: settlementTokenAddress,
-    usdt: (await get('USDT')).address,
-    weth: (await get('WETH')).address,
-    crvToken: (await get('USDT')).address,
-    gauge: (await get('CurveGauge')).address,
+    usdt: networkInfo.USDT_ADDRESS,
+    weth: networkInfo.WETH_ADDRESS,
+    crvToken: networkInfo.CURVE_TOKEN_ADDRESS,
+    gauge: networkInfo.CURVE_GAUGE_ADDRESS,
     uniV3Router: networkInfo.UNISWAP_V3_ROUTER_ADDRESS,
-    lpPriceHolder: (await get('CurveQuoter')).address,
-    tricryptoPool: (await get('CurveTriCryptoPool')).address,
+    lpPriceHolder: networkInfo.CURVE_QUOTER,
+    tricryptoPool: networkInfo.CURVE_TRICRYPTO_POOL,
   };
 
   const ProxyDeployment = await deploy('CurveYieldStrategy', {
@@ -68,62 +67,59 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       proxyAdminDeployment.address,
       CurveYieldStrategy__factory.createInterface().encodeFunctionData('initialize', [initializeArg]),
     ],
-    gasLimit: 20_000_000,
+    estimateGasExtra: 1_000_000,
+    waitConfirmations,
   });
   await save('CurveYieldStrategy', { ...ProxyDeployment, abi: curveYieldStrategyLogicDeployment.abi });
 
-  const currentKeeperAddress = await read('CurveYieldStrategy', 'keeper');
-  if (currentKeeperAddress.toLowerCase() !== networkInfo.KEEPER_ADDRESS.toLowerCase()) {
-    await execute(
-      'CurveYieldStrategy',
-      { from: deployer, gasLimit: 20_000_000 },
-      'setKeeper',
-      networkInfo.KEEPER_ADDRESS,
-    );
-  }
-
   if (ProxyDeployment.newlyDeployed) {
-    await execute('CurveYieldStrategy', { from: deployer, gasLimit: 20_000_000 }, 'grantAllowances');
     await execute(
       'CurveYieldStrategy',
-      { from: deployer, gasLimit: 20_000_000 },
-      'updateDepositCap',
+      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
+      'grantAllowances',
+    );
+
+    await execute(
+      'CurveYieldStrategy',
+      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
+      'updateBaseParams',
       parseUnits(networkInfo.DEPOSIT_CAP_C3CLT.toString(), 18),
+      networkInfo.KEEPER_ADDRESS,
+      86400, // rebalanceTimeThreshold
+      500, // rebalancePriceThresholdBps
+    );
+
+    await execute(
+      'CurveYieldStrategy',
+      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
+      'updateCurveParams',
+      1000, // feeBps
+      100, // stablecoinSlippage
+      parseUnits('2', 18), // crvHarvestThreshold
+      500, // crvSlippageTolerance
+      networkInfo.CURVE_USD_ORACLE,
     );
 
     const MINTER_ROLE = await read('CollateralToken', 'MINTER_ROLE');
     await execute(
       'CollateralToken',
-      { from: deployer, gasLimit: 20_000_000 },
+      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
       'grantRole',
       MINTER_ROLE,
       ProxyDeployment.address,
     );
 
-    if (hre.network.config.chainId !== 31337) {
-      try {
-        // TODO this errors with "Cannot set property 'networks' of undefined"
-        await hre.tenderly.push({
-          name: 'TransparentUpgradeableProxy',
-          address: ProxyDeployment.address,
-        });
-      } catch {}
-    }
+    // transfer ownership to team multisig
+    await execute(
+      'CurveYieldStrategy',
+      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
+      'transferOwnership',
+      networkInfo.MULTISIG,
+    );
   }
 };
 
 export default func;
 
 func.tags = ['CurveYieldStrategy'];
-func.dependencies = [
-  'CurveQuoter',
-  'CurveYieldStrategyLogic',
-  'CollateralToken',
-  'ProxyAdmin',
-  'vETH',
-  'WETH',
-  'USDT',
-  'CurveGauge',
-  'CurveTriCryptoLpToken',
-  'CurveTriCryptoPool',
-];
+func.dependencies = ['CurveYieldStrategyLogic', 'CollateralToken', 'ProxyAdmin', 'vETH', 'SwapSimulator'];

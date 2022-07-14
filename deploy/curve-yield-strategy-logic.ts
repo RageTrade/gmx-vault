@@ -1,5 +1,6 @@
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { waitConfirmations } from './network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
@@ -12,7 +13,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const logicLib = await get('LogicLibrary');
   const swapManagerLib = await get('SwapManagerLibrary');
 
-  const logicDeployment = await deploy('CurveYieldStrategyLogic', {
+  await deploy('CurveYieldStrategyLogic', {
     contract: 'CurveYieldStrategy',
     libraries: {
       SwapManager: swapManagerLib.address,
@@ -20,18 +21,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     },
     from: deployer,
     log: true,
+    waitConfirmations,
   });
-
-  if (logicDeployment.newlyDeployed && hre.network.config.chainId !== 31337) {
-    await hre.tenderly.push({
-      name: 'CurveYieldStrategy',
-      address: logicDeployment.address,
-      libraries: {
-        SwapManager: swapManagerLib.address,
-        Logic: logicLib.address,
-      },
-    });
-  }
 };
 
 export default func;
