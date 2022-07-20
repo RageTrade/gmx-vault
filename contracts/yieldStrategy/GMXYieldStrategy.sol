@@ -23,6 +23,9 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     /* solhint-disable var-name-mixedcase */
     uint256 public FEE = 1000;
 
+    uint256 public protocolFee;
+    uint256 public wethThreshold;
+
     IERC20 private gmx;
     IERC20 private glp;
     IERC20 private sGlp;
@@ -30,7 +33,7 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     IERC20 private esGMX;
 
     IGlpManager private glpManager;
-    IRewardRouterV2 private router;
+    IRewardRouterV2 private rewardRouter;
 
     struct GMXYieldStrategyInitParams {
         EightyTwentyRangeStrategyVaultInitParams eightyTwentyRangeStrategyVaultInitParams;
@@ -40,7 +43,7 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         IERC20 weth;
         IERC20 esGMX;
         IGlpManager glpManager;
-        IRewardRouterV2 router;
+        IRewardRouterV2 rewardRouter;
     }
 
     function initialize(GMXYieldStrategyInitParams memory gmxYieldStrategyInitParams) external initializer {
@@ -55,7 +58,7 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         sGlp = params.sGlp;
         weth = params.weth;
         esGMX = params.esGMX;
-        router = params.router;
+        rewardRouter = params.rewardRouter;
         glpManager = params.glpManager;
     }
 
@@ -115,41 +118,49 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     /// @notice triggered from the afterDeposit hook, stakes the deposited tricrypto LP tokens
     /// @param amount amount of LP tokens
     function _afterDepositYield(uint256 amount) internal override {
-        router.compound();
-        _stake(amount);
+        //NO OP
     }
 
     /// @notice triggered from beforeWithdraw hook
     /// @param amount amount of LP tokens
     function _beforeWithdrawYield(uint256 amount) internal override {}
 
-    /// @notice sells settlementToken for LP tokens and then stakes LP tokens
-    /// @param amount amount of settlementToken
-    function _convertSettlementTokenToAsset(uint256 amount) internal override {}
+    /// @notice sells rageSettlementToken for LP tokens and then stakes LP tokens
+    /// @param amount amount of rageSettlementToken
+    function _convertSettlementTokenToAsset(uint256 amount) internal override {
+        //USDG has 18 decimals and usdc has 6 decimals => 18-6 = 12
+        rewardRouter.mintAndStakeGlp(address(rageSettlementToken), amount, amount.mulDiv(95 * 10**12,100), 0);
+    }
 
     /// @notice claims the accumulated CRV rewards from the gauge, sells CRV rewards for LP tokens and stakes LP tokens
-    function _harvestFees() internal override {}
+    function _harvestFees() internal override {
+        rewardRouter.handleRewards(false, false, true, true, true, true, false);
+        uint256 wethHarvested = weth.balanceOf(address(this))-protocolFee;
+        if(wethHarvested > wethThreshold) {
+            uint256 protocolFeeHarvested = (wethHarvested*FEE)/MAX_BPS;
+            uint256 wethToCompound = wethHarvested - protocolFeeHarvested;
+            //TODO: use vaultBatchManager to deposit eth
+            // uint256 wethToCompoundMinUsdg = (wethToCompound*getWethPrice())*.95;
+            // rewardRouter.mintAndStakeGlp(weth, wethToCompound, wethToCompoundMinUsdg, 0);
+            protocolFee+=protocolFeeHarvested;
+        }
+    }
 
     /// @notice stakes LP tokens (i.e deposits into reward gauge)
     /// @param amount amount of LP tokens
     function _stake(uint256 amount) internal override {
-        router.handleRewards(
-            false, // _shouldClaimGmx
-            true, // _shouldStakeGmx
-            false, // _shouldClaimEsGmx
-            true, // _shouldStakeEsGmx
-            true, // _shouldStakeMultiplierPoints
-            false, // _shouldClaimWeth
-            false // _shouldConvertWethToEth
-        );
+        //NO OP
     }
 
     /// @notice total LP tokens staked in the curve rewards gauge
     function _stakedAssetBalance() internal view override returns (uint256) {}
 
-    /// @notice withdraws LP tokens from gauge, sells LP token for settlementToken
+    /// @notice withdraws LP tokens from gauge, sells LP token for rageSettlementToken
     /// @param amount amount of LP tokens
-    function _convertAssetToSettlementToken(uint256 amount) internal override returns (uint256 usdcAmount) {}
+    function _convertAssetToSettlementToken(uint256 amount) internal override returns (uint256 usdcAmount) {
+        //USDG has 18 decimals and usdc has 6 decimals => 18-6 = 12
+        rewardRouter.unstakeAndRedeemGlp(address(rageSettlementToken), amount, amount.mulDiv(95 * 10**12 ,100), address(this));
+    }
 
     /// @notice compute notional value for given amount of LP tokens
     /// @param amount amount of LP tokens
