@@ -7,30 +7,57 @@ import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadat
 
 import { EightyTwentyRangeStrategyVault } from '../rangeStrategy/EightyTwentyRangeStrategyVault.sol';
 
+import { IGlpManager } from 'contracts/interfaces/glp/IGlpManager.sol';
+import { IRewardTracker } from 'contracts/interfaces/glp/IRewardTracker.sol';
+import { IRewardRouterV2 } from 'contracts/interfaces/glp/IRewardRouterV2.sol';
+
+import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
+import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
+
 contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
+    using FullMath for uint256;
+
     /* solhint-disable var-name-mixedcase */
     uint256 public constant MAX_BPS = 10_000;
 
     /* solhint-disable var-name-mixedcase */
     uint256 public FEE = 1000;
 
-    // TODO: update initialize
-    // function initialize(CurveYieldStrategyInitParams memory curveYieldStrategyInitParams) external initializer {
-    //     __CurveYieldStrategy_init(curveYieldStrategyInitParams);
-    // }
+    IERC20 private gmx;
+    IERC20 private glp;
+    IERC20 private sGlp;
+    IERC20 private weth;
+    IERC20 private esGMX;
+
+    IGlpManager private glpManager;
+    IRewardRouterV2 private router;
+
+    struct GMXYieldStrategyInitParams {
+        EightyTwentyRangeStrategyVaultInitParams eightyTwentyRangeStrategyVaultInitParams;
+        IERC20 gmx;
+        IERC20 glp;
+        IERC20 sGlp;
+        IERC20 weth;
+        IERC20 esGMX;
+        IGlpManager glpManager;
+        IRewardRouterV2 router;
+    }
+
+    function initialize(GMXYieldStrategyInitParams memory gmxYieldStrategyInitParams) external initializer {
+        __GMXYieldStrategy_init(gmxYieldStrategyInitParams);
+    }
 
     /* solhint-disable-next-line func-name-mixedcase */
-    // function __CurveYieldStrategy_init(CurveYieldStrategyInitParams memory params) internal onlyInitializing {
-    //     __EightyTwentyRangeStrategyVault_init(params.eightyTwentyRangeStrategyVaultInitParams);
-    //     usdt = params.usdt;
-    //     usdc = params.usdc;
-    //     weth = params.weth;
-    //     gauge = params.gauge;
-    //     crvToken = params.crvToken;
-    //     uniV3Router = params.uniV3Router;
-    //     triCryptoPool = params.tricryptoPool;
-    //     lpPriceHolder = params.lpPriceHolder;
-    // }
+    function __GMXYieldStrategy_init(GMXYieldStrategyInitParams memory params) internal onlyInitializing {
+        __EightyTwentyRangeStrategyVault_init(params.eightyTwentyRangeStrategyVaultInitParams);
+        weth = params.weth;
+        glp = params.glp;
+        sGlp = params.sGlp;
+        weth = params.weth;
+        esGMX = params.esGMX;
+        router = params.router;
+        glpManager = params.glpManager;
+    }
 
     // TODO: add function for updating params
     // function updateCurveParams(
@@ -87,7 +114,10 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
     /// @notice triggered from the afterDeposit hook, stakes the deposited tricrypto LP tokens
     /// @param amount amount of LP tokens
-    function _afterDepositYield(uint256 amount) internal override {}
+    function _afterDepositYield(uint256 amount) internal override {
+        router.compound();
+        _stake(amount);
+    }
 
     /// @notice triggered from beforeWithdraw hook
     /// @param amount amount of LP tokens
@@ -102,7 +132,17 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
     /// @notice stakes LP tokens (i.e deposits into reward gauge)
     /// @param amount amount of LP tokens
-    function _stake(uint256 amount) internal override {}
+    function _stake(uint256 amount) internal override {
+        router.handleRewards(
+            false, // _shouldClaimGmx
+            true, // _shouldStakeGmx
+            false, // _shouldClaimEsGmx
+            true, // _shouldStakeEsGmx
+            true, // _shouldStakeMultiplierPoints
+            false, // _shouldClaimWeth
+            false // _shouldConvertWethToEth
+        );
+    }
 
     /// @notice total LP tokens staked in the curve rewards gauge
     function _stakedAssetBalance() internal view override returns (uint256) {}
@@ -113,8 +153,17 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
     /// @notice compute notional value for given amount of LP tokens
     /// @param amount amount of LP tokens
-    function getMarketValue(uint256 amount) public view override returns (uint256 marketValue) {}
+    function getMarketValue(uint256 amount) public view override returns (uint256 marketValue) {
+        marketValue = amount.mulDiv(getPriceX128(), FixedPoint128.Q128);
+    }
 
-    /// @notice gives x128 price of 1 tricrypto LP token
-    function getPriceX128() public view override returns (uint256 priceX128) {}
+    /// @notice gives x128 price of 1 tricrypto LP token in USDC unit (10**6)
+    function getPriceX128() public view override returns (uint256 priceX128) {
+        uint256 aum = glpManager.getAum(false);
+        uint256 totalSupply = glp.totalSupply();
+
+        uint256 price = aum / totalSupply;
+
+        return price.mulDiv(FixedPoint128.Q128, 10**6);
+    }
 }
