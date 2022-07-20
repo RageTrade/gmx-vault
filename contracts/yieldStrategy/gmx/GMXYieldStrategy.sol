@@ -5,11 +5,11 @@ pragma solidity ^0.8.9;
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadata.sol';
 
-import { EightyTwentyRangeStrategyVault } from '../rangeStrategy/EightyTwentyRangeStrategyVault.sol';
+import { EightyTwentyRangeStrategyVault } from '../../rangeStrategy/EightyTwentyRangeStrategyVault.sol';
 
-import { IGlpManager } from 'contracts/interfaces/glp/IGlpManager.sol';
-import { IRewardTracker } from 'contracts/interfaces/glp/IRewardTracker.sol';
-import { IRewardRouterV2 } from 'contracts/interfaces/glp/IRewardRouterV2.sol';
+import { IGlpManager } from 'contracts/interfaces/gmx/IGlpManager.sol';
+import { IRewardTracker } from 'contracts/interfaces/gmx/IRewardTracker.sol';
+import { IRewardRouterV2 } from 'contracts/interfaces/gmx/IRewardRouterV2.sol';
 
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
@@ -129,20 +129,20 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     /// @param amount amount of rageSettlementToken
     function _convertSettlementTokenToAsset(uint256 amount) internal override {
         //USDG has 18 decimals and usdc has 6 decimals => 18-6 = 12
-        rewardRouter.mintAndStakeGlp(address(rageSettlementToken), amount, amount.mulDiv(95 * 10**12,100), 0);
+        rewardRouter.mintAndStakeGlp(address(rageSettlementToken), amount, amount.mulDiv(95 * 10**12, 100), 0);
     }
 
     /// @notice claims the accumulated CRV rewards from the gauge, sells CRV rewards for LP tokens and stakes LP tokens
     function _harvestFees() internal override {
         rewardRouter.handleRewards(false, false, true, true, true, true, false);
-        uint256 wethHarvested = weth.balanceOf(address(this))-protocolFee;
-        if(wethHarvested > wethThreshold) {
-            uint256 protocolFeeHarvested = (wethHarvested*FEE)/MAX_BPS;
+        uint256 wethHarvested = weth.balanceOf(address(this)) - protocolFee;
+        if (wethHarvested > wethThreshold) {
+            uint256 protocolFeeHarvested = (wethHarvested * FEE) / MAX_BPS;
             uint256 wethToCompound = wethHarvested - protocolFeeHarvested;
             //TODO: use vaultBatchManager to deposit eth
             // uint256 wethToCompoundMinUsdg = (wethToCompound*getWethPrice())*.95;
             // rewardRouter.mintAndStakeGlp(weth, wethToCompound, wethToCompoundMinUsdg, 0);
-            protocolFee+=protocolFeeHarvested;
+            protocolFee += protocolFeeHarvested;
         }
     }
 
@@ -159,7 +159,12 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     /// @param amount amount of LP tokens
     function _convertAssetToSettlementToken(uint256 amount) internal override returns (uint256 usdcAmount) {
         //USDG has 18 decimals and usdc has 6 decimals => 18-6 = 12
-        rewardRouter.unstakeAndRedeemGlp(address(rageSettlementToken), amount, amount.mulDiv(95 * 10**12 ,100), address(this));
+        rewardRouter.unstakeAndRedeemGlp(
+            address(rageSettlementToken),
+            amount,
+            amount.mulDiv(95 * 10**12, 100),
+            address(this)
+        );
     }
 
     /// @notice compute notional value for given amount of LP tokens
