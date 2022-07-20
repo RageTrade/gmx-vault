@@ -118,7 +118,7 @@ abstract contract RageERC4626GMX is ERC4626Upgradeable {
 
         emit Withdraw(msg.sender, to, from, amount, adjustedShares);
 
-        withdrawTokens(to,amount);
+        withdrawTokens(to, amount);
     }
 
     function maxDeposit(address) public view virtual override returns (uint256) {
