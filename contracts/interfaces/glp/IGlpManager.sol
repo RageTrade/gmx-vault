@@ -37,4 +37,10 @@ interface IGlpManager {
         uint256 _minOut,
         address _receiver
     ) external returns (uint256);
+
+    function getAums() external view returns (uint256[] memory);
+
+    function getAumInUsdg(bool maximise) external view returns (uint256);
+
+    function getAum(bool maximise) external view returns (uint256);
 }
