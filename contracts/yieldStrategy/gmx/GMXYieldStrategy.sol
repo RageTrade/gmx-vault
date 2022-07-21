@@ -5,17 +5,23 @@ pragma solidity ^0.8.9;
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadata.sol';
 
-import { EightyTwentyRangeStrategyVault } from '../../rangeStrategy/EightyTwentyRangeStrategyVault.sol';
-
 import { IGlpManager } from 'contracts/interfaces/gmx/IGlpManager.sol';
 import { IRewardTracker } from 'contracts/interfaces/gmx/IRewardTracker.sol';
 import { IRewardRouterV2 } from 'contracts/interfaces/gmx/IRewardRouterV2.sol';
+import { IGMXBatchingManager } from 'contracts/interfaces/gmx/IGMXBatchingManager.sol';
 
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
 
+import { EightyTwentyRangeStrategyVault } from '../../rangeStrategy/EightyTwentyRangeStrategyVault.sol';
+
 contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     using FullMath for uint256;
+
+    error GYS_INVALID_SETTER_VALUES();
+
+    event FeesWithdrawn(uint256 vaule);
+    event GmxParamsUpdated(uint256 newFee, address batchingManager);
 
     /* solhint-disable var-name-mixedcase */
     uint256 public constant MAX_BPS = 10_000;
@@ -28,18 +34,17 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
     IERC20 private gmx;
     IERC20 private glp;
-    IERC20 private sGlp;
     IERC20 private weth;
     IERC20 private esGMX;
 
     IGlpManager private glpManager;
     IRewardRouterV2 private rewardRouter;
+    IGMXBatchingManager private batchingManager;
 
     struct GMXYieldStrategyInitParams {
         EightyTwentyRangeStrategyVaultInitParams eightyTwentyRangeStrategyVaultInitParams;
         IERC20 gmx;
         IERC20 glp;
-        IERC20 sGlp;
         IERC20 weth;
         IERC20 esGMX;
         IGlpManager glpManager;
@@ -53,67 +58,43 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     /* solhint-disable-next-line func-name-mixedcase */
     function __GMXYieldStrategy_init(GMXYieldStrategyInitParams memory params) internal onlyInitializing {
         __EightyTwentyRangeStrategyVault_init(params.eightyTwentyRangeStrategyVaultInitParams);
-        weth = params.weth;
         glp = params.glp;
-        sGlp = params.sGlp;
         weth = params.weth;
         esGMX = params.esGMX;
-        rewardRouter = params.rewardRouter;
         glpManager = params.glpManager;
+        rewardRouter = params.rewardRouter;
     }
 
-    // TODO: add function for updating params
-    // function updateCurveParams(
-    //     uint256 _feeBps,
-    //     uint256 _stablecoinSlippage,
-    //     uint256 _crvHarvestThreshold,
-    //     uint256 _crvSlippageTolerance,
-    //     AggregatorV3Interface _crvOracle
-    // ) external onlyOwner {
-    //     if (_feeBps < MAX_BPS && _stablecoinSlippage < MAX_BPS && _crvSlippageTolerance < MAX_BPS) {
-    //         FEE = _feeBps;
-    //         crvOracle = _crvOracle;
-    //         crvHarvestThreshold = _crvHarvestThreshold;
-    //         crvSwapSlippageTolerance = _crvSlippageTolerance;
-    //         stablecoinSlippageTolerance = _stablecoinSlippage;
-    //     } else revert CYS_INVALID_SETTER_VALUE();
+    function updateGMXParams(uint256 _feeBps, address _batchingManager) external onlyOwner {
+        if (_feeBps < MAX_BPS && _batchingManager != address(0)) {
+            FEE = _feeBps;
+            batchingManager = IGMXBatchingManager(_batchingManager);
+        } else revert GYS_INVALID_SETTER_VALUES();
 
-    //     emit Logic.CurveParamsUpdated(
-    //         _feeBps,
-    //         _stablecoinSlippage,
-    //         _crvHarvestThreshold,
-    //         _crvSlippageTolerance,
-    //         address(_crvOracle)
-    //     );
-    // }
+        emit GmxParamsUpdated(_feeBps, _batchingManager);
+    }
 
-    // TODO: add function for granting allowance
     /// @notice grants one time max allowance to various third parties
-    // function grantAllowances() public override onlyOwner {
-    //     _grantBaseAllowances();
+    function grantAllowances() public override onlyOwner {
+        _grantBaseAllowances();
 
-    //     asset.approve(address(gauge), type(uint256).max);
-    //     asset.approve(address(triCryptoPool), type(uint256).max);
+        asset.approve(address(glpManager), type(uint256).max);
+        asset.approve(address(rewardRouter), type(uint256).max);
 
-    //     /// @dev USDT requires allowance set to 0 before re-approving
-    //     usdc.approve(address(uniV3Router), 0);
-    //     usdt.approve(address(uniV3Router), 0);
-    //     usdt.approve(address(triCryptoPool), 0);
+        weth.approve(address(glpManager), type(uint256).max);
+        weth.approve(address(rewardRouter), type(uint256).max);
 
-    //     usdc.approve(address(uniV3Router), type(uint256).max);
-    //     usdt.approve(address(uniV3Router), type(uint256).max);
-    //     usdt.approve(address(triCryptoPool), type(uint256).max);
+        rageSettlementToken.approve(address(glpManager), type(uint256).max);
+        rageSettlementToken.approve(address(rewardRouter), type(uint256).max);
+    }
 
-    //     crvToken.approve(address(uniV3Router), type(uint256).max);
-    // }
-
-    // TODO: add function for withdrawing fees
     /// @notice withdraw accumulated CRV fees
-    // function withdrawFees() external onlyOwner {
-    //     uint256 bal = crvToken.balanceOf(address(this)) - crvPendingToSwap;
-    //     crvToken.transfer(msg.sender, bal);
-    //     emit Logic.FeesWithdrawn(bal);
-    // }
+    function withdrawFees() external onlyOwner {
+        uint256 amount = protocolFee;
+        protocolFee = 0;
+        weth.transfer(msg.sender, amount);
+        emit FeesWithdrawn(amount);
+    }
 
     /// @notice triggered from the afterDeposit hook, stakes the deposited tricrypto LP tokens
     /// @param amount amount of LP tokens
@@ -123,7 +104,9 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
     /// @notice triggered from beforeWithdraw hook
     /// @param amount amount of LP tokens
-    function _beforeWithdrawYield(uint256 amount) internal override {}
+    function _beforeWithdrawYield(uint256 amount) internal override {
+        //NO OP
+    }
 
     /// @notice sells rageSettlementToken for LP tokens and then stakes LP tokens
     /// @param amount amount of rageSettlementToken
@@ -138,11 +121,10 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         uint256 wethHarvested = weth.balanceOf(address(this)) - protocolFee;
         if (wethHarvested > wethThreshold) {
             uint256 protocolFeeHarvested = (wethHarvested * FEE) / MAX_BPS;
-            uint256 wethToCompound = wethHarvested - protocolFeeHarvested;
-            //TODO: use vaultBatchManager to deposit eth
-            // uint256 wethToCompoundMinUsdg = (wethToCompound*getWethPrice())*.95;
-            // rewardRouter.mintAndStakeGlp(weth, wethToCompound, wethToCompoundMinUsdg, 0);
             protocolFee += protocolFeeHarvested;
+
+            uint256 wethToCompound = wethHarvested - protocolFeeHarvested;
+            batchingManager.depositToken(address(weth), wethToCompound, address(this));
         }
     }
 
@@ -153,7 +135,9 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     /// @notice total LP tokens staked in the curve rewards gauge
-    function _stakedAssetBalance() internal view override returns (uint256) {}
+    function _stakedAssetBalance() internal pure override returns (uint256) {
+        return 0;
+    }
 
     /// @notice withdraws LP tokens from gauge, sells LP token for rageSettlementToken
     /// @param amount amount of LP tokens
@@ -165,6 +149,8 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
             amount.mulDiv(95 * 10**12, 100),
             address(this)
         );
+
+        usdcAmount = rageSettlementToken.balanceOf(address(this));
     }
 
     /// @notice compute notional value for given amount of LP tokens
