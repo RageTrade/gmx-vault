@@ -7,13 +7,13 @@ interface IGMXBatchingManager {
         address token,
         uint256 amount,
         address receiver
-    ) external returns (uint256 glpReceived);
+    ) external returns (uint256 glpStaked);
 
     function executeBatchDeposit() external;
 
     function glpBalance(address account) external returns (uint256 balance);
 
-    function claimableShares(address account) external returns (uint256 shares);
+    function unclaimedShares(address account) external returns (uint256 shares);
 
     function claim(address receiver, uint256 amount) external;
 }
