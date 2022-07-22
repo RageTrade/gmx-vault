@@ -21,8 +21,6 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
     using FullMath for uint128;
     using SafeCast for uint256;
 
-    error InvalidSetDepositPaused(bool currentValue);
-
     struct UserDeposit {
         uint256 round;
         uint128 glpBalance;
@@ -76,6 +74,13 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         uint256 amount,
         address receiver
     ) external whenNotPaused returns (uint256 glpStaked) {
+        if (token == address(0)) revert InvalidInput(0x20);
+        if (amount == 0) revert InvalidInput(0x21);
+        if (receiver == address(0)) revert InvalidInput(0x22);
+
+        // Transfer Tokens To Manager
+        IERC20(token).transferFrom(_msgSender(), address(this), amount);
+
         UserDeposit storage userDeposit = userDeposits[receiver];
         uint128 userGlpBalance = userDeposit.glpBalance;
         if (receiver == address(gmxVault)) {
@@ -102,6 +107,7 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
             userDeposit.glpBalance = userGlpBalance + glpStaked.toUint128();
             roundGlpBalance += glpStaked.toUint128();
         }
+        emit DepositToken(token, receiver, amount, glpStaked);
     }
 
     function _stakeGlp(address token, uint256 amount) internal returns (uint256 glpStaked) {
@@ -114,14 +120,20 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
     function executeBatchDeposit() external {
         // Transfer vault glp directly
         UserDeposit storage vaultDeposit = userDeposits[address(gmxVault)];
+
+        uint256 vaultGlpBalance = vaultDeposit.glpBalance;
+
         vaultDeposit.glpBalance = 0;
-        sGlp.transfer(address(gmxVault), vaultDeposit.glpBalance);
+
+        sGlp.transfer(address(gmxVault), vaultGlpBalance);
 
         // Transfer user glp through deposit
         uint256 totalShares = gmxVault.deposit(roundGlpBalance, address(this));
 
         // Update round data
         roundDeposits[currentRound] = RoundDeposit(roundGlpBalance.toUint128(), totalShares.toUint128());
+
+        emit BatchDeposit(roundGlpBalance, totalShares, vaultGlpBalance);
 
         roundGlpBalance = 0;
         ++currentRound;
@@ -136,6 +148,9 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
     }
 
     function claim(address receiver, uint256 amount) external {
+        if (receiver == address(0)) revert InvalidInput(0x10);
+        if (amount == 0) revert InvalidInput(0x11);
+
         UserDeposit storage userDeposit = userDeposits[_msgSender()];
         uint128 userUnclaimedShares = userDeposit.unclaimedShares;
         {
@@ -150,7 +165,10 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
                 userDeposit.glpBalance = 0;
             }
         }
+        if (userUnclaimedShares < amount.toUint128()) revert InsufficientShares(userUnclaimedShares);
         userDeposit.unclaimedShares = userUnclaimedShares - amount.toUint128();
         IERC20(gmxVault).transfer(receiver, amount);
+
+        emit SharesClaimed(_msgSender(), receiver, amount);
     }
 }
