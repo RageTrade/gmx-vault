@@ -186,7 +186,7 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
         rewardRouter.unstakeAndRedeemGlp(address(token), sGLPReceived, minTokenOut, receiver);
 
-        emit TokenWithdrawn(token, shares, receiver);
+        emit TokenWithdrawn(address(token), shares, receiver);
     }
 
     function redeemToken(
@@ -204,6 +204,6 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
         rewardRouter.unstakeAndRedeemGlp(address(token), _sGLP, minTokenOut, receiver);
 
-        emit TokenRedeemded(token, _sGLP, receiver);
+        emit TokenRedeemded(address(token), _sGLP, receiver);
     }
 }
