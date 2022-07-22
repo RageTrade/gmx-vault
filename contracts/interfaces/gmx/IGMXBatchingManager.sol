@@ -3,6 +3,14 @@
 pragma solidity ^0.8.0;
 
 interface IGMXBatchingManager {
+    error InvalidSetDepositPaused(bool currentValue);
+    error InsufficientShares(uint256 balance);
+    error InvalidInput(uint256 errorCode);
+
+    event DepositToken(address token, address receiver, uint256 amount, uint256 glpStaked);
+    event BatchDeposit(uint256 userGlpAmount, uint256 userShareAmount, uint256 vaultGlpAmount);
+    event SharesClaimed(address from, address receiver, uint256 claimAmount);
+
     function depositToken(
         address token,
         uint256 amount,
