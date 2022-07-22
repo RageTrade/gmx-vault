@@ -113,7 +113,9 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
 
     function executeBatchDeposit() external {
         // Transfer vault glp directly
-        sGlp.transfer(address(gmxVault), userDeposits[address(gmxVault)].glpBalance);
+        UserDeposit storage vaultDeposit = userDeposits[address(gmxVault)];
+        vaultDeposit.glpBalance = 0;
+        sGlp.transfer(address(gmxVault), vaultDeposit.glpBalance);
 
         // Transfer user glp through deposit
         uint256 totalShares = gmxVault.deposit(roundGlpBalance, address(this));
