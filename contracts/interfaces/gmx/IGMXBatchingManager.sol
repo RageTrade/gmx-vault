@@ -11,6 +11,7 @@ interface IGMXBatchingManager {
     event DepositToken(address token, address receiver, uint256 amount, uint256 glpStaked);
     event BatchDeposit(uint256 userGlpAmount, uint256 userShareAmount, uint256 vaultGlpAmount);
     event SharesClaimed(address from, address receiver, uint256 claimAmount);
+    event KeeperUpdated(address newKeeper);
 
     struct UserDeposit {
         uint256 round;
