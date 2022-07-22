@@ -58,6 +58,13 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         gmxVault = _gmxVault;
         keeper = _keeper;
         currentRound = 1;
+
+        emit KeeperUpdated(_keeper);
+    }
+
+    function setKeeper(address _keeper) external onlyOwner {
+        keeper = _keeper;
+        emit KeeperUpdated(_keeper);
     }
 
     function pauseDeposit() external onlyKeeper {
