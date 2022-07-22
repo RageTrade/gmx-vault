@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.9;
 
+import { IERC4626 } from 'contracts/interfaces/IERC4626.sol';
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadata.sol';
 
@@ -22,6 +23,9 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
     event FeesWithdrawn(uint256 vaule);
     event GmxParamsUpdated(uint256 newFee, address batchingManager);
+
+    event TokenWithdrawn(address token, uint256 shares, address receiver);
+    event TokenRedeemded(address token, uint256 _sGLPQuantity, address receiver);
 
     /* solhint-disable var-name-mixedcase */
     uint256 public constant MAX_BPS = 10_000;
@@ -167,5 +171,39 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         uint256 price = aum / totalSupply;
 
         return price.mulDiv(FixedPoint128.Q128, 10**6);
+    }
+
+    function withdrawToken(
+        IERC20 token,
+        uint256 shares,
+        uint256 minTokenOut,
+        address receiver
+    ) external {
+        transferFrom(msg.sender, address(this), shares);
+        uint256 sGLPReceived = redeem(shares, address(this), msg.sender);
+
+        asset.approve(address(glpManager), sGLPReceived);
+
+        rewardRouter.unstakeAndRedeemGlp(address(token), sGLPReceived, minTokenOut, receiver);
+
+        emit TokenWithdrawn(token, shares, receiver);
+    }
+
+    function redeemToken(
+        IERC20 token,
+        uint256 _sGLP,
+        uint256 minTokenOut,
+        address receiver
+    ) external {
+        uint256 shares = previewWithdraw(_sGLP);
+
+        transferFrom(msg.sender, address(this), shares);
+        withdraw(_sGLP, address(this), msg.sender);
+
+        asset.approve(address(glpManager), _sGLP);
+
+        rewardRouter.unstakeAndRedeemGlp(address(token), _sGLP, minTokenOut, receiver);
+
+        emit TokenRedeemded(token, _sGLP, receiver);
     }
 }
