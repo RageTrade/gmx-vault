@@ -21,51 +21,50 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
     using FullMath for uint128;
     using SafeCast for uint256;
 
-    struct UserDeposit {
-        uint256 round;
-        uint128 glpBalance;
-        uint128 unclaimedShares;
-    }
-    struct RoundDeposit {
-        uint128 totalGlp;
-        uint128 totalShares;
-    }
     mapping(address => UserDeposit) private userDeposits;
     mapping(uint256 => RoundDeposit) public roundDeposits;
 
+    modifier onlyKeeper() {
+        if (_msgSender() != keeper) revert CallerNotKeeper();
+        _;
+    }
     uint256 public currentRound;
     uint256 public roundGlpBalance;
 
     IRewardRouterV2 public rewardRouter;
     IERC4626 public gmxVault;
     IERC20 public sGlp;
+    address public keeper;
 
     function initialize(
         IERC20 _sGlp,
         IRewardRouterV2 _rewardRouter,
-        IERC4626 _gmxVault
+        IERC4626 _gmxVault,
+        address _keeper
     ) external initializer {
         __Ownable_init();
         __Pausable_init();
-        __GMXBatchingManager_init(_sGlp, _rewardRouter, _gmxVault);
+        __GMXBatchingManager_init(_sGlp, _rewardRouter, _gmxVault, _keeper);
     }
 
     function __GMXBatchingManager_init(
         IERC20 _sGlp,
         IRewardRouterV2 _rewardRouter,
-        IERC4626 _gmxVault
+        IERC4626 _gmxVault,
+        address _keeper
     ) internal onlyInitializing {
         sGlp = _sGlp;
         rewardRouter = _rewardRouter;
         gmxVault = _gmxVault;
+        keeper = _keeper;
         currentRound = 1;
     }
 
-    function pauseDeposit() external onlyOwner {
+    function pauseDeposit() external onlyKeeper {
         _pause();
     }
 
-    function unpauseDeposit() external onlyOwner {
+    function unpauseDeposit() external onlyKeeper {
         _unpause();
     }
 
@@ -110,14 +109,7 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         emit DepositToken(token, receiver, amount, glpStaked);
     }
 
-    function _stakeGlp(address token, uint256 amount) internal returns (uint256 glpStaked) {
-        // Convert tokens to glp
-        //USDG has 18 decimals and usdc has 6 decimals => 18-6 = 12
-        IERC20(token).transferFrom(_msgSender(), address(this), amount);
-        glpStaked = rewardRouter.mintAndStakeGlp(token, amount, amount.mulDiv(95 * 10**12, 100), 0);
-    }
-
-    function executeBatchDeposit() external {
+    function executeBatchDeposit() external onlyKeeper {
         // Transfer vault glp directly
         UserDeposit storage vaultDeposit = userDeposits[address(gmxVault)];
 
@@ -170,5 +162,12 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         IERC20(gmxVault).transfer(receiver, amount);
 
         emit SharesClaimed(_msgSender(), receiver, amount);
+    }
+
+    function _stakeGlp(address token, uint256 amount) internal returns (uint256 glpStaked) {
+        // Convert tokens to glp
+        //USDG has 18 decimals and usdc has 6 decimals => 18-6 = 12
+        IERC20(token).transferFrom(_msgSender(), address(this), amount);
+        glpStaked = rewardRouter.mintAndStakeGlp(token, amount, amount.mulDiv(95 * 10**12, 100), 0);
     }
 }
