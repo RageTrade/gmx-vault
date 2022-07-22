@@ -7,6 +7,7 @@ import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadata.sol';
 
 import { IGlpManager } from 'contracts/interfaces/gmx/IGlpManager.sol';
+import { ISGLPExtended } from 'contracts/interfaces/gmx/ISGLPExtended.sol';
 import { IRewardTracker } from 'contracts/interfaces/gmx/IRewardTracker.sol';
 import { IRewardRouterV2 } from 'contracts/interfaces/gmx/IRewardRouterV2.sol';
 import { IGMXBatchingManager } from 'contracts/interfaces/gmx/IGMXBatchingManager.sol';
@@ -40,6 +41,7 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     IERC20 private glp;
     IERC20 private weth;
     IERC20 private esGMX;
+    IERC20 private fsGlp;
 
     IGlpManager private glpManager;
     IRewardRouterV2 private rewardRouter;
@@ -67,6 +69,8 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         esGMX = params.esGMX;
         glpManager = params.glpManager;
         rewardRouter = params.rewardRouter;
+
+        fsGlp = IERC20(ISGLPExtended(address(asset)).stakedGlpTracker());
     }
 
     function updateGMXParams(uint256 _feeBps, address _batchingManager) external onlyOwner {
@@ -139,8 +143,8 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     /// @notice total LP tokens staked in the curve rewards gauge
-    function _stakedAssetBalance() internal pure override returns (uint256) {
-        return 0;
+    function _stakedAssetBalance() internal view override returns (uint256) {
+        return fsGlp.balanceOf(address(this));
     }
 
     /// @notice withdraws LP tokens from gauge, sells LP token for rageSettlementToken
