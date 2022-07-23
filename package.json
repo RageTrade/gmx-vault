@@ -39,6 +39,7 @@
     "@anders-t/ethers-ledger": "^1.0.4",
     "@defi-wonderland/smock": "^2.0.7",
     "@ethersproject/experimental": "^5.4.0",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.3",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "^3.0.3",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
