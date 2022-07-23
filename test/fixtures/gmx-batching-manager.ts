@@ -11,7 +11,7 @@ import { parseTokenAmount } from '@ragetrade/sdk';
 
 export const gmxBatchingManagerFixture = deployments.createFixture(async hre => {
   const [admin, keeper, user1, user2] = await hre.ethers.getSigners();
-  
+
   await hre.network.provider.request({
     method: 'hardhat_impersonateAccount',
     params: [gmxAddresses.USDC_WHALE],
@@ -25,7 +25,13 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
 
   const gmxBatchingManager = await gmxBatchingManagerFactory.deploy();
 
-  await gmxBatchingManager.initialize(gmxAddresses.StakedGlp, gmxAddresses.RewardRouter, gmxAddresses.GlpManager, vault.address, keeper.address);
+  await gmxBatchingManager.initialize(
+    gmxAddresses.StakedGlp,
+    gmxAddresses.RewardRouter,
+    gmxAddresses.GlpManager,
+    vault.address,
+    keeper.address,
+  );
   await gmxBatchingManager.grantAllowances();
 
   const usdc = (await hre.ethers.getContractAt(
@@ -43,13 +49,11 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
     gmxAddresses.StakedGlp,
   )) as ERC20;
 
+  await usdc.connect(usdcWhale).transfer(user1.address, parseTokenAmount(1000, 6));
+  await usdc.connect(usdcWhale).transfer(user2.address, parseTokenAmount(1000, 6));
 
-  await usdc.connect(usdcWhale).transfer(user1.address,parseTokenAmount(1000,6))
-  await usdc.connect(usdcWhale).transfer(user2.address,parseTokenAmount(1000,6))
-
-  await usdc.connect(user1).approve(gmxBatchingManager.address,2n**255n)
-  await usdc.connect(user2).approve(gmxBatchingManager.address,2n**255n)
-
+  await usdc.connect(user1).approve(gmxBatchingManager.address, 2n ** 255n);
+  await usdc.connect(user2).approve(gmxBatchingManager.address, 2n ** 255n);
 
   return {
     admin,

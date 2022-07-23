@@ -47,7 +47,7 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
     ) external initializer {
         __Ownable_init();
         __Pausable_init();
-        __GMXBatchingManager_init(_sGlp, _rewardRouter,_glpManager, _gmxVault, _keeper);
+        __GMXBatchingManager_init(_sGlp, _rewardRouter, _glpManager, _gmxVault, _keeper);
     }
 
     function __GMXBatchingManager_init(
@@ -67,7 +67,7 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         emit KeeperUpdated(_keeper);
     }
 
-    function grantAllowances() external onlyOwner{
+    function grantAllowances() external onlyOwner {
         sGlp.approve(address(rewardRouter), type(uint256).max);
         sGlp.approve(address(gmxVault), type(uint256).max);
     }
@@ -106,7 +106,7 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         } else {
             //Convert previous round glp balance into unredeemed shares
             uint256 userDepositRound = userDeposit.round;
-            if (userDepositRound < currentRound && userGlpBalance>0) {
+            if (userDepositRound < currentRound && userGlpBalance > 0) {
                 RoundDeposit storage roundDeposit = roundDeposits[userDepositRound];
                 userDeposit.unclaimedShares += userDeposit
                     .glpBalance
@@ -131,16 +131,16 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         UserDeposit storage vaultDeposit = userDeposits[address(gmxVault)];
         uint256 vaultGlpBalance = vaultDeposit.glpBalance;
 
-        if(vaultGlpBalance==0 && roundGlpBalance ==0) revert ZeroBalance();
+        if (vaultGlpBalance == 0 && roundGlpBalance == 0) revert ZeroBalance();
 
-        if(vaultGlpBalance>0){
+        if (vaultGlpBalance > 0) {
             vaultDeposit.glpBalance = 0;
             sGlp.transfer(address(gmxVault), vaultGlpBalance);
             emit VaultDeposit(vaultGlpBalance);
         }
 
         // Transfer user glp through deposit
-        if(roundGlpBalance>0){
+        if (roundGlpBalance > 0) {
             uint256 totalShares = gmxVault.deposit(roundGlpBalance, address(this));
 
             // Update round data
@@ -171,7 +171,7 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         {
             //Convert previous round glp balance into unredeemed shares
             uint256 userDepositRound = userDeposit.round;
-            if (userDepositRound < currentRound && userGlpBalance>0) {
+            if (userDepositRound < currentRound && userGlpBalance > 0) {
                 RoundDeposit storage roundDeposit = roundDeposits[userDepositRound];
                 userUnclaimedShares += userGlpBalance
                     .mulDiv(roundDeposit.totalShares, roundDeposit.totalGlp)
