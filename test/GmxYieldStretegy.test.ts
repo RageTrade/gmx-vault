@@ -1,7 +1,8 @@
 import { impersonateAccount } from '@nomicfoundation/hardhat-network-helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { priceX128ToPrice } from '@ragetrade/sdk';
 import { expect } from 'chai';
-import { formatEther, parseEther } from 'ethers/lib/utils';
+import { formatEther, parseEther, parseUnits } from 'ethers/lib/utils';
 import hre from 'hardhat';
 import { ERC20, GMXYieldStrategy } from '../typechain-types';
 import { gmxYieldStrategyFixture } from './fixtures/gmx-yield-strategy';
@@ -59,6 +60,8 @@ describe('GmxYieldStrategy', () => {
 
   describe.only('#withdraw', () => {
     it('withdraws tokens that are deposits', async () => {
+      // console.log(await gmxYieldStra);
+
       await sGLP.connect(whale).approve(gmxYieldStrategy.address, parseEther('1'));
       await gmxYieldStrategy.connect(whale).deposit(parseEther('1'), whale.address);
 
@@ -66,7 +69,7 @@ describe('GmxYieldStrategy', () => {
       const userSharesBefore = await gmxYieldStrategy.balanceOf(whale.address);
       console.log(formatEther(userSharesBefore));
 
-      await gmxYieldStrategy.connect(whale).withdraw(parseEther('1'), whale.address, whale.address, {
+      await gmxYieldStrategy.connect(whale).withdraw(parseEther('0.1'), whale.address, whale.address, {
         gasLimit: 100000000000,
       });
     });
@@ -84,6 +87,14 @@ describe('GmxYieldStrategy', () => {
 
   describe('#getMarketValue', () => {
     it('works');
+  });
+
+  describe('#getPriceX128', () => {
+    it('gives value between 0.8 and 1.2', async () => {
+      const priceX128 = await gmxYieldStrategy.getPriceX128();
+      const number = await priceX128ToPrice(priceX128, 6, 18); // usdc, asset
+      expect(Math.abs(1 - number)).to.be.lessThan(0.2);
+    });
   });
 
   describe('#withdrawToken', () => {

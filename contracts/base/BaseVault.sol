@@ -27,6 +27,8 @@ import { RageERC4626 } from './RageERC4626.sol';
 import { SafeCast } from '../libraries/SafeCast.sol';
 import { Logic } from '../libraries/Logic.sol';
 
+import 'hardhat/console.sol';
+
 abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, OwnableUpgradeable, Extsload {
     using AddressHelper for address;
 
@@ -173,6 +175,8 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     function _settleProfitAndCollateral(uint256 collateralDeposited, int256 vaultMarketValue) internal {
         // Settle net profit made from ranges and deposit/withdraw profits in USDC
         int256 netProfit = rageClearingHouse.getAccountNetProfit(rageAccountNo);
+        console.log('netProfit');
+        console.logInt(netProfit);
         if (netProfit > 0) {
             // If net profit > 0 withdraw USDC and convert USDC into LP tokens
             rageClearingHouse.updateProfit(rageAccountNo, -1 * netProfit);

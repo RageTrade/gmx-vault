@@ -16,6 +16,7 @@ import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullM
 import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
 
 import { EightyTwentyRangeStrategyVault } from '../../rangeStrategy/EightyTwentyRangeStrategyVault.sol';
+import 'hardhat/console.sol';
 
 contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     using FullMath for uint256;
@@ -153,8 +154,8 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         // USDG has 18 decimals and usdc has 6 decimals => 18-6 = 12
         rewardRouter.unstakeAndRedeemGlp(
             address(rageSettlementToken),
-            usdcAmountDesired.mulDiv(1e12 << 128, getPriceX128()), // glp amount
-            usdcAmountDesired.mulDiv(80e12, 100), // usdg
+            usdcAmountDesired.mulDiv(1 << 128, getPriceX128()), // glp amount
+            usdcAmountDesired.mulDiv(95e12, 100), // usdg
             address(this)
         );
 
@@ -162,19 +163,17 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     /// @notice compute notional value for given amount of LP tokens
-    /// @param amount amount of LP tokens
-    function getMarketValue(uint256 amount) public view override returns (uint256 marketValue) {
-        marketValue = amount.mulDiv(getPriceX128(), FixedPoint128.Q128);
+    /// @param assetAmount amount of asset tokens
+    function getMarketValue(uint256 assetAmount) public view override returns (uint256 marketValue) {
+        marketValue = assetAmount.mulDiv(getPriceX128(), FixedPoint128.Q128);
     }
 
-    /// @notice gives x128 price of 1 tricrypto LP token in USDC unit (10**6)
+    /// @notice gives x128 price of 1 ASSET token in USDC unit (10**6)
     function getPriceX128() public view override returns (uint256 priceX128) {
         uint256 aum = glpManager.getAum(false);
         uint256 totalSupply = glp.totalSupply();
-
-        uint256 price = aum / totalSupply;
-
-        return price.mulDiv(FixedPoint128.Q128, 10**6);
+        // USDC 10**6 * TOTAL SUPPLY GLP 10**18 / (AUM 10**30 * ASSET SGLP 10**18)
+        return aum.mulDiv(FixedPoint128.Q128, totalSupply * 1e24);
     }
 
     function withdrawToken(
