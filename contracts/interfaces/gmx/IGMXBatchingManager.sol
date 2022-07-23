@@ -7,9 +7,11 @@ interface IGMXBatchingManager {
     error InsufficientShares(uint256 balance);
     error InvalidInput(uint256 errorCode);
     error CallerNotKeeper();
+    error ZeroBalance();
 
     event DepositToken(address token, address receiver, uint256 amount, uint256 glpStaked);
-    event BatchDeposit(uint256 userGlpAmount, uint256 userShareAmount, uint256 vaultGlpAmount);
+    event VaultDeposit(uint256 vaultGlpAmount);
+    event BatchDeposit(uint256 userGlpAmount, uint256 userShareAmount);
     event SharesClaimed(address from, address receiver, uint256 claimAmount);
     event KeeperUpdated(address newKeeper);
 
@@ -31,9 +33,9 @@ interface IGMXBatchingManager {
 
     function executeBatchDeposit() external;
 
-    function glpBalance(address account) external returns (uint256 balance);
+    function glpBalance(address account) external view returns (uint256 balance);
 
-    function unclaimedShares(address account) external returns (uint256 shares);
+    function unclaimedShares(address account) external view returns (uint256 shares);
 
     function claim(address receiver, uint256 amount) external;
 }
