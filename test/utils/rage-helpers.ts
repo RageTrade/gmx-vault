@@ -196,15 +196,25 @@ export async function checkRealTokenBalances(
 export async function logRageParams(
   title: string,
   clearingHouse: ClearingHouse,
+  clearingHouseLens: ClearingHouseLens,
   vPool: IUniswapV3Pool,
-  accountNo: BigNumber,
+  accountId: BigNumber,
   poolSerialNo: number,
   liquidityPositionSerialNo: number,
 ) {
   console.log('#######', title, '#######');
-  const accountInfo = await clearingHouse.getAccountInfo(accountNo);
-  const tokenPosition = accountInfo.tokenPositions[poolSerialNo];
-  const liquidityPosition = tokenPosition.liquidityPositions[liquidityPositionSerialNo];
+  const accountInfo = await clearingHouseLens.getAccountInfo(accountId);
+  const poolId = accountInfo.activePoolIds[poolSerialNo];
+  const tokenPosition = await clearingHouseLens.getAccountTokenPositionInfo(accountId, poolId);
+  const liquidityPositionList = await clearingHouseLens.getAccountLiquidityPositionList(accountId, poolId);
+  const { tickLower, tickUpper } = liquidityPositionList[liquidityPositionSerialNo];
+  const liquidityPosition = await clearingHouseLens.getAccountLiquidityPositionInfo(
+    accountId,
+    poolId,
+    tickLower,
+    tickUpper,
+  );
+
   console.log(
     'Trader States:',
     'vQuoteBalance',
@@ -215,16 +225,10 @@ export async function logRageParams(
     tokenPosition.netTraderPosition,
   );
 
-  console.log('Account Net Profit:', await clearingHouse.getAccountNetProfit(accountNo));
+  console.log('Account Net Profit:', await clearingHouse.getAccountNetProfit(accountId));
 
   const { sqrtPriceX96 } = await vPool.slot0();
-  const amounts = amountsForLiquidity(
-    liquidityPosition.tickLower,
-    sqrtPriceX96,
-    liquidityPosition.tickUpper,
-    liquidityPosition.liquidity,
-    false,
-  );
+  const amounts = amountsForLiquidity(tickLower, sqrtPriceX96, tickUpper, liquidityPosition.liquidity, false);
   console.log(
     'Inside Range:',
     'vQuoteBalance',
