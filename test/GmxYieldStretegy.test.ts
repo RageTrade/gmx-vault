@@ -1,7 +1,7 @@
 import { impersonateAccount } from '@nomicfoundation/hardhat-network-helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { parseEther } from 'ethers/lib/utils';
+import { formatEther, parseEther } from 'ethers/lib/utils';
 import hre from 'hardhat';
 import { ERC20, GMXYieldStrategy } from '../typechain-types';
 import { gmxYieldStrategyFixture } from './fixtures/gmx-yield-strategy';
@@ -27,8 +27,9 @@ describe('GmxYieldStrategy', () => {
   describe('#deposit', () => {
     it('deposits tokens', async () => {
       const userBalBefore = await fsGLP.balanceOf(whale.address);
-
       const vaultBalBefore = await fsGLP.balanceOf(gmxYieldStrategy.address);
+      const userSharesBefore = await gmxYieldStrategy.balanceOf(whale.address);
+      expect(userSharesBefore.toString()).to.eq('0');
 
       await sGLP.connect(whale).approve(gmxYieldStrategy.address, parseEther('1'));
       await gmxYieldStrategy.connect(whale).deposit(parseEther('1'), signers[0].address);
@@ -56,8 +57,19 @@ describe('GmxYieldStrategy', () => {
     });
   });
 
-  describe('#withdraw', () => {
-    it('withdraws tokens that are deposits', async () => {});
+  describe.only('#withdraw', () => {
+    it('withdraws tokens that are deposits', async () => {
+      await sGLP.connect(whale).approve(gmxYieldStrategy.address, parseEther('1'));
+      await gmxYieldStrategy.connect(whale).deposit(parseEther('1'), whale.address);
+
+      hre.tracer.enabled = true;
+      const userSharesBefore = await gmxYieldStrategy.balanceOf(whale.address);
+      console.log(formatEther(userSharesBefore));
+
+      await gmxYieldStrategy.connect(whale).withdraw(parseEther('1'), whale.address, whale.address, {
+        gasLimit: 100000000000,
+      });
+    });
     it('prevents withdraw if less balance');
   });
 
