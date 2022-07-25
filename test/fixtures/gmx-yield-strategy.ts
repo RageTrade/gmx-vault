@@ -71,24 +71,18 @@ export const gmxYieldStrategyFixture = deployments.createFixture(async hre => {
   });
 
   await gmxYieldStrategy.updateBaseParams(parseEther('100'), signer.address, 0, 0);
+  await gmxYieldStrategy.grantAllowances();
 
   await collateralToken.grantRole(await collateralToken.MINTER_ROLE(), gmxYieldStrategy.address);
-
-  // TODO are following needed ?
 
   await settlementToken
     .connect(settlementTokenTreasury)
     .approve(gmxYieldStrategy.address, parseTokenAmount(10n ** 10n, 18));
-
   await collateralToken
     .connect(settlementTokenTreasury)
     .approve(clearingHouse.address, parseTokenAmount(10n ** 10n, 18));
-
   await collateralToken.approve(clearingHouse.address, parseTokenAmount(10n ** 10n, 18));
-
   await settlementToken.approve(clearingHouse.address, parseTokenAmount(10n ** 5n, 6));
-
-  await gmxYieldStrategy.grantAllowances({ gasLimit: 1e8 });
 
   return {
     gmx,
