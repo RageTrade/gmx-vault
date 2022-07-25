@@ -33,8 +33,8 @@ describe('GMX Batching Manager', () => {
       expect(await gmxBatchingManager.gmxVault()).to.eq(vault.address);
     });
   });
-  describe('deposit', () => {
-    it('Single Deposit', async () => {
+  describe('Deposit', () => {
+    it('Single User Deposit', async () => {
       const depositAmount = parseTokenAmount(100n, 6);
 
       await expect(() =>
@@ -49,6 +49,24 @@ describe('GMX Batching Manager', () => {
 
       expect(await gmxBatchingManager.roundGlpBalance()).to.eq(user1Deposit.glpBalance);
       expect(await fsGlp.balanceOf(gmxBatchingManager.address)).to.eq(user1Deposit.glpBalance);
+    });
+    it('Single Vault Deposit', async () => {
+      const depositAmount = parseTokenAmount(100n, 6);
+
+      await expect(() => vault.depositToken(usdc.address, depositAmount)).to.changeTokenBalance(
+        usdc,
+        vault,
+        depositAmount.mul(-1n),
+      );
+
+      const vaultDeposit = await gmxBatchingManager.userDeposits(vault.address);
+      // console.log(vaultDeposit);
+      expect(vaultDeposit.round).to.eq(0);
+      expect(vaultDeposit.glpBalance).to.eq(await fsGlp.balanceOf(gmxBatchingManager.address));
+      expect(vaultDeposit.unclaimedShares).to.eq(0);
+
+      expect(await gmxBatchingManager.roundGlpBalance()).to.eq(0);
+      expect(await fsGlp.balanceOf(gmxBatchingManager.address)).to.eq(vaultDeposit.glpBalance);
     });
   });
 
@@ -80,6 +98,27 @@ describe('GMX Batching Manager', () => {
 
       expect(round1Deposit.totalGlp).to.eq(round1Deposit.totalGlp);
       expect(round1Deposit.totalShares).to.eq(round1Deposit.totalShares);
+    });
+
+    it('Vault User Batch Deposit', async () => {
+      const depositAmount = parseTokenAmount(100n, 6);
+
+      await vault.depositToken(usdc.address, depositAmount);
+
+      await increaseBlockTimestamp(15 * 60); //15 mins
+
+      const vaultBalance = await gmxBatchingManager.userDeposits(vault.address);
+      //Check sGlp transfer and vault share transfer
+      await expect(() => gmxBatchingManager.connect(keeper).executeBatchDeposit()).to.changeTokenBalances(
+        fsGlp,
+        [gmxBatchingManager, vault],
+        [vaultBalance.glpBalance.mul(-1), vaultBalance.glpBalance],
+      );
+
+      expect(await vault.balanceOf(gmxBatchingManager.address)).to.eq(0);
+
+      expect(await gmxBatchingManager.currentRound()).to.eq(1);
+      expect(await gmxBatchingManager.roundGlpBalance()).to.eq(0);
     });
   });
 
