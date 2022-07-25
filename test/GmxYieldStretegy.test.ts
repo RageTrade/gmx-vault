@@ -57,7 +57,7 @@ describe('GmxYieldStrategy', () => {
     });
   });
 
-  describe.only('#withdraw', () => {
+  describe('#withdraw', () => {
     it('withdraws tokens that are deposits', async () => {
       // console.log(await gmxYieldStra);
 

@@ -126,7 +126,7 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
     /// @notice claims the accumulated CRV rewards from the gauge, sells CRV rewards for LP tokens and stakes LP tokens
     function _harvestFees() internal override {
-        rewardRouter.handleRewards(false, false, true, false, true, true, false);
+        rewardRouter.handleRewards(false, false, true, true, true, true, false);
         uint256 wethHarvested = weth.balanceOf(address(this)) - protocolFee;
         if (wethHarvested > wethThreshold) {
             uint256 protocolFeeHarvested = (wethHarvested * FEE) / MAX_BPS;
