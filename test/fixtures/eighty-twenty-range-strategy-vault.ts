@@ -5,6 +5,7 @@ import { parseTokenAmount, priceToPriceX128, truncate } from '@ragetrade/sdk';
 import { updateSettlementTokenMargin } from '../utils/rage-helpers';
 import { rageTradeFixture } from './ragetrade-core';
 import { ethers } from 'ethers';
+import { generateErc20Balance } from '../utils/erc20';
 
 export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async hre => {
   const { clearingHouse, settlementToken, pool0 } = await rageTradeFixture();
@@ -94,10 +95,12 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
   await yieldToken.mint(user1.address, parseTokenAmount(10n ** 10n, 18));
   await yieldToken.connect(user1).approve(eightyTwentyRangeStrategyVaultTest.address, parseTokenAmount(10n ** 10n, 18));
 
-  await settlementToken.mint(settlementTokenTreasury.address, parseTokenAmount(10n ** 20n, 18));
+  await generateErc20Balance(settlementToken, parseTokenAmount(10n ** 20n, 18), settlementTokenTreasury.address);
+  // await settlementToken.mint(settlementTokenTreasury.address, parseTokenAmount(10n ** 20n, 18));
   await yieldToken.mint(settlementTokenTreasury.address, parseTokenAmount(10n ** 20n, 18));
 
-  await settlementToken.mint(admin.address, parseTokenAmount(10n ** 20n, 18));
+  await generateErc20Balance(settlementToken, parseTokenAmount(10n ** 20n, 18), admin.address);
+  // await settlementToken.mint(admin.address, parseTokenAmount(10n ** 20n, 18));
 
   await settlementToken
     .connect(settlementTokenTreasury)
@@ -112,7 +115,8 @@ export const eightyTwentyRangeStrategyFixture = deployments.createFixture(async 
 
   await clearingHouse.connect(trader0).createAccount();
   const trader0AccountNo = (await clearingHouse.numAccounts()).sub(1);
-  settlementToken.mint(trader0.address, parseTokenAmount(10n ** 7n, 6));
+  await generateErc20Balance(settlementToken, parseTokenAmount(10n ** 7n, 6), trader0.address);
+  // settlementToken.mint(trader0.address, parseTokenAmount(10n ** 7n, 6));
   await updateSettlementTokenMargin(
     clearingHouse,
     settlementToken,
