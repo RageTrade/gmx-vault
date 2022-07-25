@@ -12,7 +12,7 @@ interface MainnetForkOptions {
 export async function activateMainnetFork(options?: MainnetForkOptions) {
   if (!options) options = {};
 
-  if (options.network === undefined) options.network = 'mainnet';
+  if (options.network === undefined) options.network = 'arbitrum-mainnet';
 
   if (options.blockNumber === undefined) {
     switch (options.network) {
