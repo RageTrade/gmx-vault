@@ -4,10 +4,16 @@ import hre, { ethers } from 'hardhat';
 import addresses from './fixtures/addresses';
 import { unlockWhales } from './utils/curve-helper';
 import { vaultPeripheryFixture } from './fixtures/vault-periphery';
+import { activateMainnetFork, deactivateMainnetFork } from './utils/mainnet-fork';
 
 describe('Vault Periphery', () => {
   before(async () => {
+    await activateMainnetFork({ blockNumber: 9323800 });
     await vaultPeripheryFixture();
+  });
+
+  after(async () => {
+    await deactivateMainnetFork();
   });
 
   describe('deposit USDC', () => {

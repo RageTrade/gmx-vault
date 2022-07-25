@@ -6,6 +6,7 @@ import hre, { ethers } from 'hardhat';
 
 import addresses from './fixtures/addresses';
 import { curveYieldStrategyFixture } from './fixtures/curve-yield-strategy';
+import { activateMainnetFork, deactivateMainnetFork } from './utils/mainnet-fork';
 
 const within = (value: BigNumber, start: BigNumber, end: BigNumber): Boolean => {
   if (value.gte(start) && value.lte(end)) return true;
@@ -14,11 +15,13 @@ const within = (value: BigNumber, start: BigNumber, end: BigNumber): Boolean => 
 
 describe('CurveYieldStrategy', () => {
   before(async () => {
+    await activateMainnetFork({ blockNumber: 9323800 });
     await curveYieldStrategyFixture();
   });
 
   after(async () => {
     await curveYieldStrategyFixture();
+    await deactivateMainnetFork();
   });
 
   describe('#deposit', () => {
