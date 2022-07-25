@@ -126,7 +126,7 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         emit DepositToken(token, receiver, amount, glpStaked);
     }
 
-    function executeBatchDeposit() external onlyKeeper {
+    function executeBatchDeposit() external {
         // Transfer vault glp directly
         UserDeposit storage vaultDeposit = userDeposits[address(gmxVault)];
         uint256 vaultGlpBalance = vaultDeposit.glpBalance;
@@ -150,6 +150,10 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
 
             roundGlpBalance = 0;
             ++currentRound;
+        }
+        // If the deposit is paused then unpause on execute batch deposit
+        if (paused()) {
+            _unpause();
         }
     }
 
