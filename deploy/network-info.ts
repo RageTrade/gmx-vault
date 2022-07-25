@@ -120,7 +120,7 @@ export const hardhatNetworkInfo: () => NetworkInfo = () => ({
   // if addresses are undefined it deploys the contracts
   RAGE_CLEARING_HOUSE_ADDRESS: undefined,
   RAGE_CLEARING_HOUSE_LENS_ADDRESS: undefined,
-  RAGE_SETTLEMENT_TOKEN_ADDRESS: undefined,
+  RAGE_SETTLEMENT_TOKEN_ADDRESS: '0xff970a61a04b1ca14834a43f5de4533ebddb5cc8',
   RAGE_ETH_VTOKEN_ADDRESS: undefined,
   RAGE_SWAP_SIMULATOR: undefined,
 
