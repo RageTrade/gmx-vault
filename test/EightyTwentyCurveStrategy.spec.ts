@@ -27,6 +27,7 @@ import {
 } from './utils/vault-helpers';
 
 import { swapEth, swapUsdt, accrueFees } from './utils/curve-helper';
+import { activateMainnetFork, deactivateMainnetFork } from './utils/mainnet-fork';
 
 const within = (value: BigNumber, start: BigNumber, end: BigNumber): Boolean => {
   if (value.gte(start) && value.lte(end)) return true;
@@ -35,7 +36,12 @@ const within = (value: BigNumber, start: BigNumber, end: BigNumber): Boolean => 
 
 describe('EightyTwentyCurveStrategy', () => {
   before(async () => {
+    await activateMainnetFork({ blockNumber: 9323800 });
     await eightyTwentyCurveStrategyFixture();
+  });
+
+  after(async () => {
+    await deactivateMainnetFork();
   });
 
   describe('#Scenarios', () => {
