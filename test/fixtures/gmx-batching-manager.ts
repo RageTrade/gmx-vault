@@ -7,7 +7,7 @@ import { ethers } from 'ethers';
 import { unlockWhales } from '../utils/curve-helper';
 import { smock } from '@defi-wonderland/smock';
 import { parseUnits } from 'ethers/lib/utils';
-import { parseTokenAmount } from '@ragetrade/sdk';
+import { getCreateAddressFor, parseTokenAmount } from '@ragetrade/sdk';
 
 export const gmxBatchingManagerFixture = deployments.createFixture(async hre => {
   const [admin, keeper, user1, user2] = await hre.ethers.getSigners();
@@ -18,12 +18,15 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
   });
 
   const usdcWhale = await hre.ethers.getSigner(gmxAddresses.USDC_WHALE);
+  const gmxBatchingManagerAddress = await getCreateAddressFor(admin, 1);
 
-  const vault = await (await hre.ethers.getContractFactory('GmxVaultMock')).deploy();
-
+  const vault = await (
+    await hre.ethers.getContractFactory('GmxVaultMock')
+  ).deploy(gmxBatchingManagerAddress, gmxAddresses.StakedGlp);
   const gmxBatchingManagerFactory = await hre.ethers.getContractFactory('GMXBatchingManager');
 
   const gmxBatchingManager = await gmxBatchingManagerFactory.deploy();
+  // console.log({gmxBatchingManagerAddress,actualAddress:gmxBatchingManager.address});
 
   await gmxBatchingManager.initialize(
     gmxAddresses.StakedGlp,
@@ -32,6 +35,7 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
     vault.address,
     keeper.address,
   );
+  await vault.grantAllowances();
   await gmxBatchingManager.grantAllowances();
 
   const usdc = (await hre.ethers.getContractAt(
@@ -51,6 +55,7 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
 
   await usdc.connect(usdcWhale).transfer(user1.address, parseTokenAmount(1000, 6));
   await usdc.connect(usdcWhale).transfer(user2.address, parseTokenAmount(1000, 6));
+  await usdc.connect(usdcWhale).transfer(vault.address, parseTokenAmount(1000, 6));
 
   await usdc.connect(user1).approve(gmxBatchingManager.address, 2n ** 255n);
   await usdc.connect(user2).approve(gmxBatchingManager.address, 2n ** 255n);
