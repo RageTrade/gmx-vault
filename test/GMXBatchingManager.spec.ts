@@ -8,6 +8,7 @@ import { ERC20, GMXBatchingManager, GmxVaultMock, GMXYieldStrategy } from '../ty
 import addresses from './fixtures/addresses';
 import { gmxBatchingManagerFixture } from './fixtures/gmx-batching-manager';
 import { unlockWhales } from './utils/curve-helper';
+import { activateMainnetFork, deactivateMainnetFork } from './utils/mainnet-fork';
 import { increaseBlockTimestamp } from './utils/vault-helpers';
 
 describe('GMX Batching Manager', () => {
@@ -22,9 +23,14 @@ describe('GMX Batching Manager', () => {
   let gmxBatchingManager: GMXBatchingManager;
   before(async () => {
     await gmxBatchingManagerFixture();
+    await activateMainnetFork({ blockNumber: 18099162 });
   });
   beforeEach(async () => {
     ({ admin, vault, user1, user2, keeper, usdc, fsGlp, sGlp, gmxBatchingManager } = await gmxBatchingManagerFixture());
+  });
+  after(async () => {
+    // deploys contracts once
+    await deactivateMainnetFork();
   });
   describe('Start State', () => {
     it('initialized state', async () => {
