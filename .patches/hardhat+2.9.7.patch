@@ -1,17 +1,24 @@
-diff --git a/node_modules/hardhat/internal/hardhat-network/stack-traces/solidity-errors.js b/node_modules/hardhat/internal/hardhat-network/stack-traces/solidity-errors.js
-index 8424a59..ccf7a30 100644
---- a/node_modules/hardhat/internal/hardhat-network/stack-traces/solidity-errors.js
-+++ b/node_modules/hardhat/internal/hardhat-network/stack-traces/solidity-errors.js
-@@ -105,9 +105,9 @@ function encodeStackTraceEntry(stackTraceEntry) {
-     }
+diff --git a/node_modules/hardhat/internal/cli/cli.js b/node_modules/hardhat/internal/cli/cli.js
+index fea4f72..7c142a6 100755
+--- a/node_modules/hardhat/internal/cli/cli.js
++++ b/node_modules/hardhat/internal/cli/cli.js
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env node
++#!/usr/bin/env node --max-old-space-size=10192
+ "use strict";
+ var __importDefault = (this && this.__importDefault) || function (mod) {
+     return (mod && mod.__esModule) ? mod : { "default": mod };
+diff --git a/node_modules/hardhat/internal/hardhat-network/provider/utils/makeForkClient.js b/node_modules/hardhat/internal/hardhat-network/provider/utils/makeForkClient.js
+index 8e94b7c..b45e824 100644
+--- a/node_modules/hardhat/internal/hardhat-network/provider/utils/makeForkClient.js
++++ b/node_modules/hardhat/internal/hardhat-network/provider/utils/makeForkClient.js
+@@ -45,7 +45,8 @@ Please use block number ${lastSafeBlock} or wait for the block to get ${required
+     const forkBlockTimestamp = (0, base_types_1.rpcQuantityToNumber)(block.timestamp) * 1000;
+     const cacheToDiskEnabled = forkConfig.blockNumber !== undefined &&
+         forkCachePath !== undefined &&
+-        actualMaxReorg !== undefined;
++        //actualMaxReorg !== undefined;
++        forkConfig.blockNumber <= lastSafeBlock;
+     const forkClient = new client_1.JsonRpcClient(provider, networkId, latestBlock, maxReorg, cacheToDiskEnabled ? forkCachePath : undefined);
+     return { forkClient, forkBlockNumber, forkBlockTimestamp };
  }
- function sourceReferenceToSolidityCallsite(sourceReference) {
--    return new SolidityCallSite(sourceReference.sourceName, sourceReference.contract, sourceReference.function !== undefined
--        ? sourceReference.function
--        : solidity_stack_trace_1.UNKNOWN_FUNCTION_NAME, sourceReference.line);
-+    return new SolidityCallSite(sourceReference?.sourceName, sourceReference?.contract, sourceReference?.function !== undefined
-+        ? sourceReference?.function
-+        : solidity_stack_trace_1.UNKNOWN_FUNCTION_NAME, sourceReference?.line);
- }
- function getMessageFromLastStackTraceEntry(stackTraceEntry) {
-     switch (stackTraceEntry.type) {
