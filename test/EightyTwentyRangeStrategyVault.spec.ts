@@ -25,11 +25,18 @@ import {
   checkVaultRangeParamsApproximate,
   increaseBlockTimestamp,
 } from './utils/vault-helpers';
+import { activateMainnetFork, deactivateMainnetFork } from './utils/mainnet-fork';
 
 describe('EightyTwentyRangeStrategyVault', () => {
   before(async () => {
     // deploys contracts once
+    await activateMainnetFork({ blockNumber: 9323800 });
     await eightyTwentyRangeStrategyFixture();
+  });
+
+  after(async () => {
+    // deploys contracts once
+    await deactivateMainnetFork();
   });
 
   describe('#Deposit', () => {
