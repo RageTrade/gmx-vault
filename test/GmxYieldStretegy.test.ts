@@ -6,7 +6,6 @@ import { formatEther, parseEther, parseUnits } from 'ethers/lib/utils';
 import hre from 'hardhat';
 import { ERC20, GMXYieldStrategy } from '../typechain-types';
 import { gmxYieldStrategyFixture } from './fixtures/gmx-yield-strategy';
-
 describe('GmxYieldStrategy', () => {
   let gmxYieldStrategy: GMXYieldStrategy;
   let sGLP: ERC20;
@@ -65,13 +64,13 @@ describe('GmxYieldStrategy', () => {
       await sGLP.connect(whale).approve(gmxYieldStrategy.address, parseEther('1'));
       await gmxYieldStrategy.connect(whale).deposit(parseEther('1'), whale.address);
 
-      hre.tracer.enabled = true;
       const userSharesBefore = await gmxYieldStrategy.balanceOf(whale.address);
-      console.log(formatEther(userSharesBefore));
 
-      await gmxYieldStrategy.connect(whale).withdraw(parseEther('0.1'), whale.address, whale.address, {
-        gasLimit: 100000000000,
-      });
+      await gmxYieldStrategy.connect(whale).withdraw(parseEther('0.9'), whale.address, whale.address);
+
+      const userSharesAfter = await gmxYieldStrategy.balanceOf(whale.address);
+
+      expect(userSharesBefore.sub(userSharesAfter).toString()).to.eq(parseEther('0.9'));
     });
     it('prevents withdraw if less balance');
   });

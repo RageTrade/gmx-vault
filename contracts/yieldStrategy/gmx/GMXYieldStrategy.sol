@@ -151,11 +151,13 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     /// @notice withdraws LP tokens from gauge, sells LP token for rageSettlementToken
     /// @param usdcAmountDesired amount of USDC desired
     function _convertAssetToSettlementToken(uint256 usdcAmountDesired) internal override returns (uint256 usdcAmount) {
+        /// @dev if usdcAmountDesired < 10, then there is precision issue while redeeming for usdg
+        if (usdcAmountDesired < 10) return 0;
         // USDG has 18 decimals and usdc has 6 decimals => 18-6 = 12
         rewardRouter.unstakeAndRedeemGlp(
             address(rageSettlementToken),
             usdcAmountDesired.mulDiv(1 << 128, getPriceX128()), // glp amount
-            usdcAmountDesired.mulDiv(95e12, 100), // usdg
+            usdcAmountDesired.mulDiv(90, 100), // usdc
             address(this)
         );
 
