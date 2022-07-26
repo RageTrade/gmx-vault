@@ -68,7 +68,6 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
     }
 
     function grantAllowances() external onlyOwner {
-        sGlp.approve(address(rewardRouter), type(uint256).max);
         sGlp.approve(address(gmxVault), type(uint256).max);
     }
 
