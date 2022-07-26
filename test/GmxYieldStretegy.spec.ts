@@ -6,6 +6,7 @@ import { formatEther, parseEther } from 'ethers/lib/utils';
 import hre from 'hardhat';
 import { ERC20, GMXYieldStrategy } from '../typechain-types';
 import { gmxYieldStrategyFixture } from './fixtures/gmx-yield-strategy';
+import { activateMainnetFork } from './utils/mainnet-fork';
 describe('GmxYieldStrategy', () => {
   let gmxYieldStrategy: GMXYieldStrategy;
   let sGLP: ERC20;
@@ -14,6 +15,7 @@ describe('GmxYieldStrategy', () => {
   let whale: SignerWithAddress;
 
   before(async () => {
+    await activateMainnetFork({ blockNumber: 18099162 });
     signers = await hre.ethers.getSigners();
 
     await impersonateAccount('0x087e9c8ef2d97740340a471ff8bb49f5490f6cf6');
