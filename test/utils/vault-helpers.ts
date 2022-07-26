@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { BigNumber, BigNumberish } from 'ethers';
+import { BigNumber, BigNumberish, ethers } from 'ethers';
 import hre, { network } from 'hardhat';
 
 import { EightyTwentyRangeStrategyVaultTest } from '../../typechain-types';
@@ -27,6 +27,15 @@ export async function checkTotalAssets(
   expectedTotalAssets: BigNumberish,
 ) {
   expect(await vault.totalAssets()).to.eq(expectedTotalAssets);
+}
+
+export async function checkTotalGLPApproximate(
+  vault: { totalAssets: () => Promise<BigNumber> },
+  expectedTotalAssets: BigNumberish,
+) {
+  console.log('from excel', expectedTotalAssets);
+  console.log('from contract', await vault.totalAssets());
+  expect((await vault.totalAssets()).sub(expectedTotalAssets).abs()).to.lte(10n ** 18n);
 }
 
 export async function checkTotalAssetsApproximate(
@@ -94,3 +103,42 @@ export async function logVaultParams(
     await vault.baseLiquidity(),
   );
 }
+
+export const changeEthPriceInGLP = async (price: number) => {
+  // const signer = (await hre.ethers.getSigners())[0]
+
+  // const primaryFeed = IVaultPriceFeed__factory.connect('0xa18bb1003686d0854ef989bb936211c59eb6e363', signer)
+
+  // const secondaryFeed = ISecondaryPriceFeed__factory.connect('0x1a0ad27350cccd6f7f168e052100b4960efdb774', signer)
+
+  // const ethFeed = AggregatorV3Interface__factory.connect('0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612', signer)
+
+  // const populated = await ethFeed.populateTransaction.latestRoundData()
+  // const tx = await signer.sendTransaction(populated);
+
+  // const result = await hre.network.provider.send('debug_traceTransaction', [tx.hash]);
+
+  // const keys = (result.structLogs as any[])
+  //   .filter((s: { op: string }) => s.op == 'SLOAD')
+  //   .map((s: { stack: string[] }) => {
+  //     const slotKey = (s.stack as string[]).pop();
+  //     if (slotKey === undefined) {
+  //       throw new Error('bad SLOAD');
+  //     }
+  //     return slotKey;
+  //   });
+
+  // if (keys.length === 0) {
+  //   throw new Error('SLOAD not found');
+  // }
+
+  // console.log(keys);
+
+  await hre.network.provider.send('hardhat_setStorageAt', [
+    '0x3607e46698d218B3a5Cae44bF381475C0a5e2ca7', // address
+    '0x265b84761fa8813caeca7f721d05ef6bdf526034306315bc1279417cc7c803ba', // slot
+    ethers.utils.hexZeroPad(BigNumber.from(price * 10 ** 8).toHexString(), 32), // new value
+  ]);
+
+  await increaseBlockTimestamp(310);
+};
