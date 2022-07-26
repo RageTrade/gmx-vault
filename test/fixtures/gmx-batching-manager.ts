@@ -45,7 +45,7 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
 
   const fsGlp = (await hre.ethers.getContractAt(
     '@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20',
-    gmxAddresses.FeeStakedGlp,
+    gmxAddresses.fsGLP,
   )) as ERC20;
 
   const sGlp = (await hre.ethers.getContractAt(
