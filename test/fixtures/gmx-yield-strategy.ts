@@ -70,8 +70,23 @@ export const gmxYieldStrategyFixture = deployments.createFixture(async hre => {
     rewardRouter: GMX_ECOSYSTEM_ADDRESSES.RewardRouter,
   });
 
+  const gmxBatchingManagerFactory = await hre.ethers.getContractFactory('GMXBatchingManager');
+
+  const gmxBatchingManager = await gmxBatchingManagerFactory.deploy();
+  // console.log({gmxBatchingManagerAddress,actualAddress:gmxBatchingManager.address});
+
+  await gmxBatchingManager.initialize(
+    GMX_ECOSYSTEM_ADDRESSES.StakedGlp,
+    GMX_ECOSYSTEM_ADDRESSES.RewardRouter,
+    GMX_ECOSYSTEM_ADDRESSES.GlpManager,
+    gmxYieldStrategy.address,
+    signer.address,
+  );
+
   await gmxYieldStrategy.updateBaseParams(parseEther('100'), signer.address, 0, 0);
   await gmxYieldStrategy.grantAllowances();
+
+  await gmxYieldStrategy.updateGMXParams(100, gmxBatchingManager.address);
 
   await collateralToken.grantRole(await collateralToken.MINTER_ROLE(), gmxYieldStrategy.address);
 
