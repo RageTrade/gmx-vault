@@ -22,8 +22,8 @@ describe('GMX Batching Manager', () => {
   let sGlp: ERC20;
   let gmxBatchingManager: GMXBatchingManager;
   before(async () => {
-    await gmxBatchingManagerFixture();
     await activateMainnetFork({ blockNumber: 18099162 });
+    await gmxBatchingManagerFixture();
   });
   beforeEach(async () => {
     ({ admin, vault, user1, user2, keeper, usdc, fsGlp, sGlp, gmxBatchingManager } = await gmxBatchingManagerFixture());
