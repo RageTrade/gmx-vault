@@ -1109,7 +1109,7 @@ describe('EightyTwentyGMXeStrategy', () => {
       //   await logVaultParams('ClosePositon 19', gmxYieldStrategy);
       //   await logRageParams('ClosePositon 19', clearingHouse, clearingHouseLens, ethPool.vPool as unknown as IUniswapV3Pool, vaultAccountNo, 0, 0);
     });
-    it('Slippage Threshold - Partial Withdraw', async () => {
+    it.skip('Slippage Threshold - Partial Withdraw', async () => {
       await sGLP.connect(whale).transfer(user1.address, parseEther('18139.0650524482'));
       await sGLP.connect(whale).transfer(user2.address, parseEther('18139.0650524482'));
 
