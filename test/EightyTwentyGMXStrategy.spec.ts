@@ -40,8 +40,9 @@ import {
   SwapSimulator,
 } from '../typechain-types';
 import { gmxYieldStrategyFixture } from './fixtures/eighty-twenty-gmx-strategy';
+import { activateMainnetFork } from './utils/mainnet-fork';
 
-describe('EightyTwentyGMXeStrategy', () => {
+describe('EightyTwentyGMXStrategy', () => {
   let gmxYieldStrategy: GMXYieldStrategy;
   let sGLP: ERC20;
   let fsGLP: ERC20;
@@ -62,6 +63,11 @@ describe('EightyTwentyGMXeStrategy', () => {
   let vaultAccountNo: BigNumber;
   let ethPoolId: string;
   let trader0AccountNo: BigNumber;
+
+  before(async () => {
+    await activateMainnetFork({ blockNumber: 18099162 });
+    await gmxYieldStrategyFixture();
+  });
 
   beforeEach(async () => {
     ({
