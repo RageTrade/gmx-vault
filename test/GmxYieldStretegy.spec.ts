@@ -16,6 +16,7 @@ describe('GmxYieldStrategy', () => {
 
   before(async () => {
     await activateMainnetFork({ blockNumber: 18099162 });
+    await gmxYieldStrategyFixture();
     signers = await hre.ethers.getSigners();
 
     await impersonateAccount('0x087e9c8ef2d97740340a471ff8bb49f5490f6cf6');
