@@ -120,7 +120,7 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     /// @param amount amount of rageSettlementToken
     function _convertSettlementTokenToAsset(uint256 amount) internal override {
         //USDG has 18 decimals and usdc has 6 decimals => 18-6 = 12
-        rewardRouter.mintAndStakeGlp(address(rageSettlementToken), amount, amount.mulDiv(95 * 10**12, 100), 0);
+        batchingManager.depositToken(address(rageSettlementToken), amount, address(this));
     }
 
     /// @notice claims the accumulated CRV rewards from the gauge, sells CRV rewards for LP tokens and stakes LP tokens
@@ -132,7 +132,7 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
             protocolFee += protocolFeeHarvested;
 
             uint256 wethToCompound = wethHarvested - protocolFeeHarvested;
-            // batchingManager.depositToken(address(weth), wethToCompound, address(this));
+            batchingManager.depositToken(address(weth), wethToCompound, address(this));
         }
     }
 
