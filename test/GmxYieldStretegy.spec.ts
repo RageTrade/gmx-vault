@@ -5,8 +5,8 @@ import { expect } from 'chai';
 import { BigNumber } from 'ethers';
 import { formatEther, parseEther } from 'ethers/lib/utils';
 import hre from 'hardhat';
-import { ERC20, GMXYieldStrategy, IGlpManager__factory, IERC20__factory, IRewardTracker__factory } from '../typechain-types';
-import { GMX_ECOSYSTEM_ADDRESSES } from './fixtures/addresses';
+import { ERC20, GMXYieldStrategy, IGlpManager__factory, IERC20__factory, IRewardTracker__factory, GMXBatchingManager } from '../typechain-types';
+import addresses, { GMX_ECOSYSTEM_ADDRESSES } from './fixtures/addresses';
 import { gmxYieldStrategyFixture } from './fixtures/gmx-yield-strategy';
 import { activateMainnetFork } from './utils/mainnet-fork';
 
@@ -16,6 +16,7 @@ describe('GmxYieldStrategy', () => {
   let fsGLP: ERC20;
   let signers: SignerWithAddress[];
   let whale: SignerWithAddress;
+  let gmxBatchingManager: GMXBatchingManager;
 
   before(async () => {
     await activateMainnetFork({ blockNumber: 18099162 });
@@ -28,7 +29,7 @@ describe('GmxYieldStrategy', () => {
 
 
   beforeEach(async () => {
-    ({ gmxYieldStrategy, sGLP, fsGLP } = await gmxYieldStrategyFixture());
+    ({ gmxYieldStrategy, sGLP, fsGLP, gmxBatchingManager } = await gmxYieldStrategyFixture());
   });
 
   describe('#deposit', () => {
@@ -69,10 +70,38 @@ describe('GmxYieldStrategy', () => {
       await sGLP.connect(whale).approve(gmxYieldStrategy.address, parseEther('1'));
       await gmxYieldStrategy.connect(whale).deposit(parseEther('1'), whale.address);
 
+      const assetsBefore = await gmxYieldStrategy.convertToAssets(await gmxYieldStrategy.balanceOf(whale.address))
+      console.log('assetsBefore', assetsBefore)
+
+      const tx = await (await gmxYieldStrategy.connect(whale).withdraw(parseEther('0.9'), whale.address, whale.address)).wait()
+
+      const filter = gmxBatchingManager.filters.DepositToken()
+
+      const logs = await gmxBatchingManager.queryFilter(filter, tx.blockHash)
+
+      const additional = logs[0].args.glpStaked
+
+      const assetsAfter = await gmxYieldStrategy.convertToAssets(await gmxYieldStrategy.balanceOf(whale.address))
+
+      expect(assetsAfter).gt(assetsBefore.add(additional).div(10))
+    });
+    it('prevents withdraw if less balance', async () => {
+      await sGLP.connect(whale).approve(gmxYieldStrategy.address, parseEther('1'));
+      await gmxYieldStrategy.connect(whale).deposit(parseEther('1'), whale.address);
+      await expect(gmxYieldStrategy.connect(whale).withdraw(parseEther('1.1'), whale.address, whale.address)).to.be
+        .reverted;
+    });
+  });
+
+  describe('#redeem', () => {
+    it('withdraws tokens that are deposits', async () => {
+      await sGLP.connect(whale).approve(gmxYieldStrategy.address, parseEther('1'));
+      await gmxYieldStrategy.connect(whale).redeem(parseEther('1'), whale.address, whale.address);
+
       const userSharesBefore = await gmxYieldStrategy.balanceOf(whale.address);
       console.log('userSharesBefore', userSharesBefore)
 
-      await gmxYieldStrategy.connect(whale).withdraw(parseEther('0.9'), whale.address, whale.address);
+      await gmxYieldStrategy.connect(whale).redeem(parseEther('0.9'), whale.address, whale.address);
 
       const userSharesAfter = await gmxYieldStrategy.balanceOf(whale.address);
       console.log('userSharesAfter', userSharesAfter)

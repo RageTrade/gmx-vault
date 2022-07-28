@@ -43,7 +43,7 @@ export async function checkTotalGLPApproximate(
 ) {
   console.log('from excel', expectedTotalAssets);
   console.log('from contract', await vault.totalAssets());
-  expect((await vault.totalAssets()).sub(expectedTotalAssets).abs()).to.lte(10n ** 18n);
+  expect((await vault.totalAssets()).sub(expectedTotalAssets).abs()).to.lte(2n * (10n ** 18n));
 }
 
 export async function checkTotalAssetsApproximate(
