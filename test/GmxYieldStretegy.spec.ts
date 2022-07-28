@@ -5,7 +5,7 @@ import { expect } from 'chai';
 import { BigNumber } from 'ethers';
 import { formatEther, parseEther } from 'ethers/lib/utils';
 import hre from 'hardhat';
-import { ERC20, GMXYieldStrategy, IGlpManager__factory, IERC20__factory } from '../typechain-types';
+import { ERC20, GMXYieldStrategy, IGlpManager__factory, IERC20__factory, IRewardTracker__factory } from '../typechain-types';
 import { GMX_ECOSYSTEM_ADDRESSES } from './fixtures/addresses';
 import { gmxYieldStrategyFixture } from './fixtures/gmx-yield-strategy';
 import { activateMainnetFork } from './utils/mainnet-fork';
@@ -25,6 +25,7 @@ describe('GmxYieldStrategy', () => {
     await impersonateAccount('0x087e9c8ef2d97740340a471ff8bb49f5490f6cf6');
     whale = await hre.ethers.getSigner('0x087e9c8ef2d97740340a471ff8bb49f5490f6cf6');
   });
+
 
   beforeEach(async () => {
     ({ gmxYieldStrategy, sGLP, fsGLP } = await gmxYieldStrategyFixture());
@@ -69,10 +70,12 @@ describe('GmxYieldStrategy', () => {
       await gmxYieldStrategy.connect(whale).deposit(parseEther('1'), whale.address);
 
       const userSharesBefore = await gmxYieldStrategy.balanceOf(whale.address);
+      console.log('userSharesBefore', userSharesBefore)
 
       await gmxYieldStrategy.connect(whale).withdraw(parseEther('0.9'), whale.address, whale.address);
 
       const userSharesAfter = await gmxYieldStrategy.balanceOf(whale.address);
+      console.log('userSharesAfter', userSharesAfter)
 
       expect(userSharesBefore.sub(userSharesAfter).toString()).to.eq(parseEther('0.9'));
     });
@@ -102,7 +105,7 @@ describe('GmxYieldStrategy', () => {
     it('withdraws fees and updates state', async () => {});
   });
 
-  describe.only('#getMarketValue', () => {
+  describe('#getMarketValue', () => {
     it('works', async () => {
       await sGLP.connect(whale).approve(gmxYieldStrategy.address, parseEther('2'));
       await gmxYieldStrategy.connect(whale).deposit(parseEther('2'), whale.address);
@@ -120,7 +123,7 @@ describe('GmxYieldStrategy', () => {
     });
   });
 
-  describe.only('#getVaultMarketValue', () => {
+  describe('#getVaultMarketValue', () => {
     it('works', async () => {
       await sGLP.connect(whale).approve(gmxYieldStrategy.address, parseEther('2'));
       await gmxYieldStrategy.connect(whale).deposit(parseEther('2'), whale.address);
@@ -156,4 +159,29 @@ describe('GmxYieldStrategy', () => {
   describe('#redeemToken', () => {
     it('works');
   });
+
+  describe('compouding rewards and profit', () => {
+    it('increases eth rewards, esGMX and multiplier points', () => {
+      /**
+       * stakes: fGLP (feeGLP)
+       * rewards: esGMX
+       */
+      const stakedGlpTracker = IRewardTracker__factory.connect('0x1addd80e6039594ee970e5872d247bf0414c8903', signers[0])
+      /**
+       * stakes: GMX and esGMX
+       * rewards: esGMX
+       */
+      const stakedGmxTracker = IRewardTracker__factory.connect('0x908c4d94d34924765f1edc22a1dd098397c59dd4', signers[0])
+
+      const bonusGmxTracker = IRewardTracker__factory.connect('0x4d268a7d4C16ceB5a606c173Bd974984343fea13', signers[0])
+
+      const feeGmxTracker = IRewardTracker__factory.connect('0xd2D1162512F927a7e282Ef43a362659E4F2a728F', signers[0])
+      const feeGlpTracker = IRewardTracker__factory.connect('0xd2D1162512F927a7e282Ef43a362659E4F2a728F', signers[0])
+
+      // claim esGMX from both trackers
+      // staking claimed esGMX
+      // claim multiplier points (bnGMX) from bonusGmxTracker
+      // stake multiplier points (bnGMX)
+    })
+  })
 });

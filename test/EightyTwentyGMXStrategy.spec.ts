@@ -90,7 +90,7 @@ describe('EightyTwentyGMXStrategy', () => {
   });
 
   describe('#Scenarios', () => {
-    it.skip('Rebalance', async () => {
+    it.only('Rebalance', async () => {
       await sGLP.connect(whale).transfer(user1.address, parseEther('18139.0650524482'));
       await gmxYieldStrategy.connect(user1).deposit(parseEther('18139.0650524482'), user1.address);
 
@@ -305,7 +305,7 @@ describe('EightyTwentyGMXStrategy', () => {
       );
     });
 
-    it.only('EndToEnd Scenario - Multiple Deposits & Withdrawals', async () => {
+    it.skip('EndToEnd Scenario - Multiple Deposits & Withdrawals', async () => {
       await sGLP.connect(whale).transfer(user1.address, parseEther('36278.1301048964'));
       await sGLP.connect(whale).transfer(user2.address, parseEther('18139.0650524482'));
 
