@@ -27,7 +27,7 @@ export async function checkTotalSupplyGLPApproximate(
   vault: { totalSupply: () => Promise<BigNumber> },
   expectedTotalSupply: BigNumberish,
 ) {
-  expect((await vault.totalSupply()).sub(expectedTotalSupply).abs()).to.lte(10n ** 18n);
+  expect((await vault.totalSupply()).sub(expectedTotalSupply).abs()).to.lte(2n * (10n ** 18n));
 }
 
 export async function checkTotalAssets(

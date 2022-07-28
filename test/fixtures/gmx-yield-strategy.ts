@@ -113,6 +113,6 @@ export const gmxYieldStrategyFixture = deployments.createFixture(async hre => {
     ethPoolId,
     swapSimulator,
     clearingHouseLens,
-    gmxBatchingManager
+    gmxBatchingManager,
   };
 });
