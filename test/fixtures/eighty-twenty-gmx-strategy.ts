@@ -153,11 +153,10 @@ export const gmxYieldStrategyFixture = deployments.createFixture(async hre => {
     gmxYieldStrategy.address,
     signer.address,
   );
-
-  await gmxYieldStrategy.grantAllowances();
-
   await gmxYieldStrategy.updateBaseParams(ethers.constants.MaxUint256, admin.address, 0, 0);
   await gmxYieldStrategy.updateGMXParams(100, gmxBatchingManager.address);
+
+  await gmxYieldStrategy.grantAllowances();
 
   await collateralToken.grantRole(await collateralToken.MINTER_ROLE(), gmxYieldStrategy.address);
   const vaultAccountNo = await gmxYieldStrategy.rageAccountNo();
