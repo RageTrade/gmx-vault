@@ -2,11 +2,14 @@ import { impersonateAccount } from '@nomicfoundation/hardhat-network-helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { priceX128ToPrice } from '@ragetrade/sdk';
 import { expect } from 'chai';
+import { BigNumber } from 'ethers';
 import { formatEther, parseEther } from 'ethers/lib/utils';
 import hre from 'hardhat';
-import { ERC20, GMXYieldStrategy } from '../typechain-types';
+import { ERC20, GMXYieldStrategy, IGlpManager__factory, IERC20__factory } from '../typechain-types';
+import { GMX_ECOSYSTEM_ADDRESSES } from './fixtures/addresses';
 import { gmxYieldStrategyFixture } from './fixtures/gmx-yield-strategy';
 import { activateMainnetFork } from './utils/mainnet-fork';
+
 describe('GmxYieldStrategy', () => {
   let gmxYieldStrategy: GMXYieldStrategy;
   let sGLP: ERC20;
@@ -73,20 +76,67 @@ describe('GmxYieldStrategy', () => {
 
       expect(userSharesBefore.sub(userSharesAfter).toString()).to.eq(parseEther('0.9'));
     });
-    it('prevents withdraw if less balance');
+    it('prevents withdraw if less balance', async () => {
+      await sGLP.connect(whale).approve(gmxYieldStrategy.address, parseEther('1'));
+      await gmxYieldStrategy.connect(whale).deposit(parseEther('1'), whale.address);
+      await expect(gmxYieldStrategy.connect(whale).withdraw(parseEther('1.1'), whale.address, whale.address)).to.be
+        .reverted;
+    });
   });
 
   describe('#updateGMXParams', () => {
-    it('allows owner to update params');
-    it('reverts when not owner');
+    it('allows owner to update params', async () => {
+      await expect(gmxYieldStrategy.updateGMXParams(100, signers[0].address))
+        .to.emit(gmxYieldStrategy, 'GmxParamsUpdated')
+        .withArgs(100, signers[0].address);
+    });
+
+    it('reverts when not owner', async () => {
+      await expect(gmxYieldStrategy.connect(signers[1]).updateGMXParams(100, signers[0].address)).to.be.revertedWith(
+        `VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'`,
+      );
+    });
   });
 
   describe('#withdrawFees', () => {
-    it('withdraws fees and updates state');
+    it('withdraws fees and updates state', async () => {});
   });
 
-  describe('#getMarketValue', () => {
-    it('works');
+  describe.only('#getMarketValue', () => {
+    it('works', async () => {
+      await sGLP.connect(whale).approve(gmxYieldStrategy.address, parseEther('2'));
+      await gmxYieldStrategy.connect(whale).deposit(parseEther('2'), whale.address);
+
+      const glpManager = IGlpManager__factory.connect(GMX_ECOSYSTEM_ADDRESSES.GlpManager, signers[0]);
+      const glp = IERC20__factory.connect(GMX_ECOSYSTEM_ADDRESSES.GLP, signers[0]);
+
+      const aum = await glpManager.getAum(false);
+      const totalSupply = await glp.totalSupply();
+
+      const price = aum.div(totalSupply).div(10 ** 6);
+      const mktValue = await gmxYieldStrategy.getMarketValue(parseEther('1'));
+
+      expect(price).eq(mktValue);
+    });
+  });
+
+  describe.only('#getVaultMarketValue', () => {
+    it('works', async () => {
+      await sGLP.connect(whale).approve(gmxYieldStrategy.address, parseEther('2'));
+      await gmxYieldStrategy.connect(whale).deposit(parseEther('2'), whale.address);
+
+      const mktValue = await gmxYieldStrategy.getVaultMarketValue();
+
+      const glpManager = IGlpManager__factory.connect(GMX_ECOSYSTEM_ADDRESSES.GlpManager, signers[0]);
+      const glp = IERC20__factory.connect(GMX_ECOSYSTEM_ADDRESSES.GLP, signers[0]);
+
+      const aum = await glpManager.getAum(false);
+      const totalSupply = await glp.totalSupply();
+
+      const price = aum.div(totalSupply).div(10 ** 6);
+
+      expect(mktValue).eq(BigNumber.from(2).mul(price));
+    });
   });
 
   describe('#getPriceX128', () => {
@@ -98,8 +148,9 @@ describe('GmxYieldStrategy', () => {
   });
 
   describe('#withdrawToken', () => {
-    it('withdraws token and burns shares');
-    it('does not withdraw if not enough shares');
+    it('withdraws token and burns shares', async () => {});
+
+    it('does not withdraw if not enough shares', async () => {});
   });
 
   describe('#redeemToken', () => {

@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import { BigNumber, BigNumberish, ethers } from 'ethers';
+import { parseUnits } from 'ethers/lib/utils';
 import hre, { network } from 'hardhat';
 
 import { EightyTwentyRangeStrategyVaultTest } from '../../typechain-types';
@@ -20,6 +21,13 @@ export async function checkTotalSupplyApproximate(
   expectedTotalSupply: BigNumberish,
 ) {
   expect((await vault.totalSupply()).sub(expectedTotalSupply).abs()).to.lte(10n ** 15n);
+}
+
+export async function checkTotalSupplyGLPApproximate(
+  vault: { totalSupply: () => Promise<BigNumber> },
+  expectedTotalSupply: BigNumberish,
+) {
+  expect((await vault.totalSupply()).sub(expectedTotalSupply).abs()).to.lte(10n ** 18n);
 }
 
 export async function checkTotalAssets(
@@ -137,7 +145,7 @@ export const changeEthPriceInGLP = async (price: number) => {
   await hre.network.provider.send('hardhat_setStorageAt', [
     '0x3607e46698d218B3a5Cae44bF381475C0a5e2ca7', // address
     '0x265b84761fa8813caeca7f721d05ef6bdf526034306315bc1279417cc7c803ba', // slot
-    ethers.utils.hexZeroPad(BigNumber.from(price * 10 ** 8).toHexString(), 32), // new value
+    ethers.utils.hexZeroPad(parseUnits(price.toString(), 8).toHexString(), 32), // new value
   ]);
 
   await increaseBlockTimestamp(310);
