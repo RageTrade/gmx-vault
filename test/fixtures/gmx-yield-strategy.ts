@@ -84,9 +84,9 @@ export const gmxYieldStrategyFixture = deployments.createFixture(async hre => {
   );
 
   await gmxYieldStrategy.updateBaseParams(parseEther('100'), signer.address, 0, 0);
-  await gmxYieldStrategy.grantAllowances();
-
   await gmxYieldStrategy.updateGMXParams(100, gmxBatchingManager.address);
+
+  await gmxYieldStrategy.grantAllowances();
 
   await collateralToken.grantRole(await collateralToken.MINTER_ROLE(), gmxYieldStrategy.address);
 

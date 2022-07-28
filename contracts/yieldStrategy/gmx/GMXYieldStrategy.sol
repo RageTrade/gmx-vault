@@ -91,9 +91,11 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
         weth.approve(address(glpManager), type(uint256).max);
         weth.approve(address(rewardRouter), type(uint256).max);
+        weth.approve(address(batchingManager), type(uint256).max);
 
         rageSettlementToken.approve(address(glpManager), type(uint256).max);
         rageSettlementToken.approve(address(rewardRouter), type(uint256).max);
+        rageSettlementToken.approve(address(batchingManager), type(uint256).max);
     }
 
     /// @notice withdraw accumulated CRV fees
