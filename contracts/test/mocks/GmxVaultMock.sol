@@ -29,6 +29,6 @@ contract GmxVaultMock is ERC20PresetMinterPauser {
     }
 
     function depositToken(address token, uint256 amount) external returns (uint256) {
-        batchingManager.depositToken(token, amount, address(this));
+        return batchingManager.depositToken(token, amount, address(this));
     }
 }
