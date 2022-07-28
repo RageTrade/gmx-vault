@@ -193,6 +193,6 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         // Convert tokens to glp
         //USDG has 18 decimals and usdc has 6 decimals => 18-6 = 12
         IERC20(token).approve(address(glpManager), amount);
-        glpStaked = rewardRouter.mintAndStakeGlp(token, amount, amount.mulDiv(95 * 10**12, 100), 0);
+        glpStaked = rewardRouter.mintAndStakeGlp(token, amount, amount.mulDiv(0, 100), 0);
     }
 }
