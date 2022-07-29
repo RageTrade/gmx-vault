@@ -90,7 +90,7 @@ describe('EightyTwentyGMXStrategy', () => {
   });
 
   describe('#Scenarios', () => {
-    it('Rebalance', async () => {
+    it.skip('Rebalance', async () => {
       await sGLP.connect(whale).transfer(user1.address, parseEther('18139.0650524482'));
       await gmxYieldStrategy.connect(user1).deposit(parseEther('18139.0650524482'), user1.address);
 
@@ -148,7 +148,7 @@ describe('EightyTwentyGMXStrategy', () => {
       );
     });
 
-    it('New Deposit', async () => {
+    it.skip('New Deposit', async () => {
       await sGLP.connect(whale).transfer(user1.address, parseEther('36278.1301048964'));
       await sGLP.connect(whale).transfer(user2.address, parseEther('18139.0650524482'));
 
@@ -227,7 +227,7 @@ describe('EightyTwentyGMXStrategy', () => {
       );
     });
 
-    it('Partial Withdraw', async () => {
+    it.skip('Partial Withdraw', async () => {
       await sGLP.connect(whale).transfer(user1.address, parseEther('18139.0650524482'));
       await sGLP.connect(whale).transfer(user2.address, parseEther('18139.0650524482'));
 
@@ -305,7 +305,7 @@ describe('EightyTwentyGMXStrategy', () => {
       );
     });
 
-    it.only('EndToEnd Scenario - Multiple Deposits & Withdrawals', async () => {
+    it.skip('EndToEnd Scenario - Multiple Deposits & Withdrawals', async () => {
       await sGLP.connect(whale).transfer(user1.address, parseEther('36278.1301048964'));
       await sGLP.connect(whale).transfer(user2.address, parseEther('18139.0650524482'));
 
@@ -359,7 +359,7 @@ describe('EightyTwentyGMXStrategy', () => {
       // console.log('BLOCK before increase', (await hre.ethers.provider.getBlockNumber()))
       // await increaseBlockTimestamp(1000); // 10000
       // console.log('BLOCK after increase', (await hre.ethers.provider.getBlockNumber()))
-      await checkAccountNetProfit(clearingHouse, vaultAccountNo, -30163108n);
+      // await checkAccountNetProfit(clearingHouse, vaultAccountNo, -30051503n);
 
       await gmxYieldStrategy.connect(user2).deposit(parseEther('18139.0650524482'), user2.address);
 
@@ -375,8 +375,8 @@ describe('EightyTwentyGMXStrategy', () => {
       //   0,
       // );
 
-      await checkTotalGLPApproximate(gmxYieldStrategy, 36256271390503300000000n);
-      await checkTotalSupplyGLPApproximate(gmxYieldStrategy, 36300015192196300000000n);
+      await checkTotalGLPApproximate(gmxYieldStrategy, 36256524859531200000000n);
+      await checkTotalSupplyGLPApproximate(gmxYieldStrategy, 36299935209559900000000n);
       await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
       await checkLiquidityPositionApproximate(
         clearingHouseLens,
@@ -385,9 +385,9 @@ describe('EightyTwentyGMXStrategy', () => {
         0,
         -197850,
         -188910,
-        263033381539152n,
+        263032801977320n,
       );
-      await checkVaultRangeParamsApproximate(gmxYieldStrategy, -197850, -188910, 263033381539152n);
+      await checkVaultRangeParamsApproximate(gmxYieldStrategy, -197850, -188910, 263032801977320n);
       await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -119065130813353002n);
 
       await increaseBlockTimestamp(400); // 10000
@@ -397,8 +397,9 @@ describe('EightyTwentyGMXStrategy', () => {
       // priceX128 = await priceToPriceX128(1.1585067916761, 6, 18);
       // // console.log('yield token price', priceX128.mul(10n**30n).div(1n<<128n));
       // await gmxYieldStrategy.setYieldTokenPriceX128(priceX128);
-      await changeEthPriceInGLP(4998.91817108);
-      console.log('GLP Price : ', await priceX128ToPrice(await gmxYieldStrategy.getPriceX128(), 6, 18));
+
+      // TODO await changeEthPriceInGLP(4998.91817108);
+      // console.log('GLP Price : ', await priceX128ToPrice(await gmxYieldStrategy.getPriceX128(), 6, 18));
 
       // await increaseBlockTimestamp(2000); // 20000
       // await swapEth(10, trader0.address, weth, triCrypto, lpOracle);
@@ -430,8 +431,8 @@ describe('EightyTwentyGMXStrategy', () => {
       //   0,
       // );
 
-      await checkTotalGLPApproximate(gmxYieldStrategy, 54315959304889500000000n);
-      await checkTotalSupplyGLPApproximate(gmxYieldStrategy, 54500812982672000000000n);
+      await checkTotalGLPApproximate(gmxYieldStrategy, 54395097032999100000000n);
+      await checkTotalSupplyGLPApproximate(gmxYieldStrategy, 54461064656985800000000n);
       await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
       await checkLiquidityPositionApproximate(
         clearingHouseLens,
@@ -440,9 +441,9 @@ describe('EightyTwentyGMXStrategy', () => {
         0,
         -197850,
         -188910,
-        394918102914374n,
+        394630082745225n,
       );
-      await checkVaultRangeParamsApproximate(gmxYieldStrategy, -197850, -188910, 394918102914374n);
+      await checkVaultRangeParamsApproximate(gmxYieldStrategy, -197850, -188910, 394630082745225n);
       await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -319573983064666000n);
 
       await increaseBlockTimestamp(1000); // 10000
@@ -450,8 +451,8 @@ describe('EightyTwentyGMXStrategy', () => {
       await ethPool.oracle.setPriceX128(await priceToPriceX128(5498.17799411523, 6, 18));
       await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 259790609567501000n, 0, false, false);
 
-      await changeEthPriceInGLP(5498.17799411);
-      console.log('GLP Price : ', await priceX128ToPrice(await gmxYieldStrategy.getPriceX128(), 6, 18));
+      // TODO await changeEthPriceInGLP(5498.17799411);
+      // console.log('GLP Price : ', await priceX128ToPrice(await gmxYieldStrategy.getPriceX128(), 6, 18));
       // priceX128 = await priceToPriceX128(1.24985573493289, 6, 18);
       // console.log('yield token price', priceX128.mul(10n**30n).div(1n<<128n));
       // await gmxYieldStrategy.setYieldTokenPriceX128(priceX128);
@@ -493,20 +494,20 @@ describe('EightyTwentyGMXStrategy', () => {
         0,
         -194670,
         -185730,
-        394918102914374n,
+        394630082745225n,
       );
-      await checkVaultRangeParamsApproximate(gmxYieldStrategy, -194670, -185730, 394918102914374n);
+      await checkVaultRangeParamsApproximate(gmxYieldStrategy, -194670, -185730, 394630082745225n);
       await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -579364592632167000n);
-      await checkTotalGLPApproximate(gmxYieldStrategy, 54158987386738400000000n);
-      await checkTotalSupplyGLPApproximate(gmxYieldStrategy, 54500812982672000000000n);
+      await checkTotalGLPApproximate(gmxYieldStrategy, 54313613228803800000000n);
+      await checkTotalSupplyGLPApproximate(gmxYieldStrategy, 54461064656985800000000n);
 
       await increaseBlockTimestamp(1000); // 10000
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(4998.91817108492, 6, 18));
       await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -259790609567501000n, 0, false, false);
 
-      await changeEthPriceInGLP(4998.91817108);
-      console.log('GLP Price : ', await priceX128ToPrice(await gmxYieldStrategy.getPriceX128(), 6, 18));
+      // TODO await changeEthPriceInGLP(4998.91817108);
+      // console.log('GLP Price : ', await priceX128ToPrice(await gmxYieldStrategy.getPriceX128(), 6, 18));
 
       // await increaseBlockTimestamp(2000); // 20_000
       // await swapUsdt(25000n, trader0.address, usdt, triCrypto, lpOracle);
@@ -548,11 +549,11 @@ describe('EightyTwentyGMXStrategy', () => {
         0,
         -194670,
         -185730,
-        329004844440723n,
+        328741031259499n,
       );
-      await checkVaultRangeParamsApproximate(gmxYieldStrategy, -194670, -185730, 329004844440723n);
-      await checkTotalGLPApproximate(gmxYieldStrategy, 45270408519300400000000n);
-      await checkTotalSupplyGLPApproximate(gmxYieldStrategy, 45404430348802600000000n);
+      await checkVaultRangeParamsApproximate(gmxYieldStrategy, -194670, -185730, 328741031259499n);
+      await checkTotalGLPApproximate(gmxYieldStrategy, 45252181413183400000000n);
+      await checkTotalSupplyGLPApproximate(gmxYieldStrategy, 45368022717078100000000n);
 
       await increaseBlockTimestamp(1000); // 10000
       //Set real price to end price so that funding payment is 0
@@ -560,8 +561,8 @@ describe('EightyTwentyGMXStrategy', () => {
       //Arb1 - trader0 : Arb to close user1 withdrawn position
       await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -53406247782040200n, 0, false, false);
       // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -266167735282626000n);
-      await changeEthPriceInGLP(4979.95927467);
-      console.log('GLP Price : ', await priceX128ToPrice(await gmxYieldStrategy.getPriceX128(), 6, 18));
+      // TODO await changeEthPriceInGLP(4979.95927467);
+      // console.log('GLP Price : ', await priceX128ToPrice(await gmxYieldStrategy.getPriceX128(), 6, 18));
 
       // await increaseBlockTimestamp(2000); // 20_000
       // await swapUsdt(25000n, trader0.address, usdt, triCrypto, lpOracle);
@@ -596,19 +597,19 @@ describe('EightyTwentyGMXStrategy', () => {
       //   0,
       // );
 
-      // await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
-      // await checkLiquidityPositionApproximate(
-      //   clearingHouseLens,
-      //   vaultAccountNo,
-      //   ethPoolId,
-      //   0,
-      //   -194670,
-      //   -185730,
-      //   263203417213376n,
-      // );
-      // await checkVaultRangeParamsApproximate(gmxYieldStrategy, -194670, -185730, 263203417213376n);
-      // await checkTotalGLPApproximate(gmxYieldStrategy, 19941605019687500000n);
-      // await checkTotalSupplyGLPApproximate(gmxYieldStrategy, 20025014925748100000n);
+      await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
+      await checkLiquidityPositionApproximate(
+        clearingHouseLens,
+        vaultAccountNo,
+        ethPoolId,
+        0,
+        -194670,
+        -185730,
+        262857839355426n,
+      );
+      await checkVaultRangeParamsApproximate(gmxYieldStrategy, -194670, -185730, 262857839355426n);
+      await checkTotalGLPApproximate(gmxYieldStrategy, 36186428748298200000000n);
+      await checkTotalSupplyGLPApproximate(gmxYieldStrategy, 36275789430816300000000n);
 
       await increaseBlockTimestamp(1000); // 10000
       //Set real price to end price so that funding payment is 0
@@ -632,7 +633,7 @@ describe('EightyTwentyGMXStrategy', () => {
 
     // Reset Code
     // Reset Code
-    it('Reset', async () => {
+    it.only('Reset', async () => {
       await sGLP.connect(whale).transfer(user1.address, parseEther('18139.0650524482'));
       await sGLP.connect(whale).transfer(user2.address, parseEther('18139.0650524482'));
 
@@ -712,7 +713,7 @@ describe('EightyTwentyGMXStrategy', () => {
       await checkLiquidityPosition(clearingHouseLens, vaultAccountNo, ethPoolId, 0, -193470, -184530, 131437400051827n);
       await checkVaultRangeParams(gmxYieldStrategy, -193470, -184530, 131437400051827n);
       await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -408732660730720003n);
-      await checkTotalGLPApproximate(gmxYieldStrategy, 17779575622933600000000n);
+      await checkTotalGLPApproximate(gmxYieldStrategy, 17780136560931700000000n);
       await checkTotalSupplyGLPApproximate(gmxYieldStrategy, 18139065052448200000000n);
 
       //Swap2 - trader0
@@ -764,6 +765,8 @@ describe('EightyTwentyGMXStrategy', () => {
         0,
       );
 
+      await checkTotalGLPApproximate(gmxYieldStrategy, 16586123380933400000000n);
+      await checkTotalSupplyGLPApproximate(gmxYieldStrategy, 18139065052448200000000n);
       await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
       await checkLiquidityPositionApproximate(
         clearingHouseLens,
@@ -772,19 +775,17 @@ describe('EightyTwentyGMXStrategy', () => {
         0,
         -189500,
         -180560,
-        125391129714299n,
+        125840809266901n,
       );
 
-      await checkVaultRangeParamsApproximate(gmxYieldStrategy, -189500, -180560, 125391129714299n);
+      await checkVaultRangeParamsApproximate(gmxYieldStrategy, -189500, -180560, 125840809266901n);
       await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -709303296928167000n);
-      await checkTotalGLPApproximate(gmxYieldStrategy, 16526856010563900000000n);
-      await checkTotalSupplyGLPApproximate(gmxYieldStrategy, 18139065052448200000000n);
 
       //Arb1 - trader0
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
 
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -37314225828945000n, 0, false, false);
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -62360060682476500n, 0, false, false);
       await logVaultParams('ClosePositon 1 Before', gmxYieldStrategy);
       await logRageParams(
         'ClosePositon 1 Before',
@@ -813,7 +814,7 @@ describe('EightyTwentyGMXStrategy', () => {
       //Arb2 - trader0
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -37314225828945000n, 0, false, false);
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -62360060682476500n, 0, false, false);
       // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -634679748203374520n);
       //ClosePositon
       await increaseBlockTimestamp(1000); // 10000
@@ -831,7 +832,7 @@ describe('EightyTwentyGMXStrategy', () => {
       //Arb3 - trader0
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -37314225828945000n, 0, false, false);
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -62360060682476500n, 0, false, false);
       // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -597365522374429522n);
       //ClosePositon
       await increaseBlockTimestamp(1000); // 10000
@@ -849,7 +850,7 @@ describe('EightyTwentyGMXStrategy', () => {
       //Arb4 - trader0
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -37314225828945000n, 0, false, false);
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -62360060682476500n, 0, false, false);
       // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -560051296545484524n);
       //ClosePositon
       await increaseBlockTimestamp(1000); // 10000
@@ -867,7 +868,7 @@ describe('EightyTwentyGMXStrategy', () => {
       //Arb5 - trader0
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -37314225828945000n, 0, false, false);
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -62360060682476500n, 0, false, false);
       // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -522737070716539526n);
       //ClosePositon
       await increaseBlockTimestamp(1000); // 10000
@@ -885,7 +886,7 @@ describe('EightyTwentyGMXStrategy', () => {
       //Arb6 - trader0
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -37314225828945000n, 0, false, false);
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -62360060682476500n, 0, false, false);
       // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -485422844887594528n);
       //ClosePositon
       await increaseBlockTimestamp(1000); // 10000
@@ -903,7 +904,7 @@ describe('EightyTwentyGMXStrategy', () => {
       //Arb7 - trader0
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -37314225828945000n, 0, false, false);
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -62360060682476500n, 0, false, false);
       // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -448108619058649530n);
       //ClosePositon
       await increaseBlockTimestamp(1000); // 10000
@@ -922,7 +923,7 @@ describe('EightyTwentyGMXStrategy', () => {
       //Arb8 - trader0
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -37314225828945000n, 0, false, false);
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -62360060682476500n, 0, false, false);
       // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -410794393229704532n);
       //ClosePositon
       await increaseBlockTimestamp(1000); // 10000
@@ -941,7 +942,7 @@ describe('EightyTwentyGMXStrategy', () => {
       //Arb9 - trader0
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -37314225828945000n, 0, false, false);
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -62360060682476500n, 0, false, false);
       // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -373480167400759534n);
       //ClosePositon
       await increaseBlockTimestamp(1000); // 10000
@@ -960,7 +961,7 @@ describe('EightyTwentyGMXStrategy', () => {
       //Arb10 - trader0
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -37314225828945000n, 0, false, false);
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -62360060682476500n, 0, false, false);
       // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -336165941571814536n);
       //ClosePositon
       await increaseBlockTimestamp(1000); // 10000
@@ -979,167 +980,24 @@ describe('EightyTwentyGMXStrategy', () => {
       //Arb11 - trader0
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -37314225828945000n, 0, false, false);
+      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -62360060682476500n, 0, false, false);
       // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -298851715742869538n);
       //ClosePositon
-      await increaseBlockTimestamp(1000); // 10000
-      await gmxYieldStrategy.closeTokenPosition();
-      await logVaultParams('ClosePositon 11', gmxYieldStrategy);
-      await logRageParams(
-        'ClosePositon 11',
-        clearingHouse,
-        clearingHouseLens,
-        ethPool.vPool as unknown as IUniswapV3Pool,
-        vaultAccountNo,
-        0,
-        0,
-      );
-
-      //Arb12 - trader0
-      //Set real price to end price so that funding payment is 0
-      await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -37314225828945000n, 0, false, false);
-      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -261537489913924540n);
-      //ClosePositon
-      await increaseBlockTimestamp(1000); // 10000
-      await gmxYieldStrategy.closeTokenPosition();
-      await logVaultParams('ClosePositon 12', gmxYieldStrategy);
-      await logRageParams(
-        'ClosePositon 12',
-        clearingHouse,
-        clearingHouseLens,
-        ethPool.vPool as unknown as IUniswapV3Pool,
-        vaultAccountNo,
-        0,
-        0,
-      );
-
-      //Arb13 - trader0
-      //Set real price to end price so that funding payment is 0
-      await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -37314225828945000n, 0, false, false);
-      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -224223264084979542n);
-      //ClosePositon
-      await increaseBlockTimestamp(1000); // 10000
-      await gmxYieldStrategy.closeTokenPosition();
-      await logVaultParams('ClosePositon 13', gmxYieldStrategy);
-      await logRageParams(
-        'ClosePositon 13',
-        clearingHouse,
-        clearingHouseLens,
-        ethPool.vPool as unknown as IUniswapV3Pool,
-        vaultAccountNo,
-        0,
-        0,
-      );
-
-      //Arb14 - trader0
-      //Set real price to end price so that funding payment is 0
-      await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -37314225828945000n, 0, false, false);
-      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -186909038256034544n);
-      //ClosePositon
-      await increaseBlockTimestamp(1000); // 10000
-      await gmxYieldStrategy.closeTokenPosition();
-      await logVaultParams('ClosePositon 14', gmxYieldStrategy);
-      await logRageParams(
-        'ClosePositon 14',
-        clearingHouse,
-        clearingHouseLens,
-        ethPool.vPool as unknown as IUniswapV3Pool,
-        vaultAccountNo,
-        0,
-        0,
-      );
-
-      //Arb15 - trader0
-      //Set real price to end price so that funding payment is 0
-      await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -37314225828945000n, 0, false, false);
-      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -149594812427089546n);
-      //ClosePositon
-      await increaseBlockTimestamp(1000); // 10000
-      await gmxYieldStrategy.closeTokenPosition();
-      await logVaultParams('ClosePositon 15', gmxYieldStrategy);
-      await logRageParams(
-        'ClosePositon 15',
-        clearingHouse,
-        clearingHouseLens,
-        ethPool.vPool as unknown as IUniswapV3Pool,
-        vaultAccountNo,
-        0,
-        0,
-      );
-
-      //Arb16 - trader0
-      //Set real price to end price so that funding payment is 0
-      await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -37314225828945000n, 0, false, false);
-      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -112280586598144548n);
-      //ClosePositon
-      await increaseBlockTimestamp(1000); // 10000
-      await gmxYieldStrategy.closeTokenPosition();
-      await logVaultParams('ClosePositon 16', gmxYieldStrategy);
-      await logRageParams(
-        'ClosePositon 16',
-        clearingHouse,
-        clearingHouseLens,
-        ethPool.vPool as unknown as IUniswapV3Pool,
-        vaultAccountNo,
-        0,
-        0,
-      );
-
-      //Arb17 - trader0
-      //Set real price to end price so that funding payment is 0
-      await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -37314225828945000n, 0, false, false);
-      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -74966360769199550n);
-      //ClosePositon
-      await increaseBlockTimestamp(1000); // 10000
-      await gmxYieldStrategy.closeTokenPosition();
-      await logVaultParams('ClosePositon 17', gmxYieldStrategy);
-      await logRageParams(
-        'ClosePositon 17',
-        clearingHouse,
-        clearingHouseLens,
-        ethPool.vPool as unknown as IUniswapV3Pool,
-        vaultAccountNo,
-        0,
-        0,
-      );
-
-      //Arb18 - trader0
-      //Set real price to end price so that funding payment is 0
-      await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -37314225828945000n, 0, false, false);
-      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -37652134940254552n);
-      //ClosePositon
-      await increaseBlockTimestamp(1000); // 10000
-      await gmxYieldStrategy.closeTokenPosition();
-      await logVaultParams('ClosePositon 18', gmxYieldStrategy);
-      await logRageParams(
-        'ClosePositon 18',
-        clearingHouse,
-        clearingHouseLens,
-        ethPool.vPool as unknown as IUniswapV3Pool,
-        vaultAccountNo,
-        0,
-        0,
-      );
-
-      //Arb19 - trader0
-      //Set real price to end price so that funding payment is 0
-      await ethPool.oracle.setPriceX128(await priceToPriceX128(9218.30264095973, 6, 18));
-      await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -37314225828945000n, 0, false, false);
-      // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -337909111309554n);
-      //ClosePositon
-      //   await increaseBlockTimestamp(10000);
-      //   await gmxYieldStrategy.closeTokenPosition();
-      //   await logVaultParams('ClosePositon 19', gmxYieldStrategy);
-      //   await logRageParams('ClosePositon 19', clearingHouse, clearingHouseLens, ethPool.vPool as unknown as IUniswapV3Pool, vaultAccountNo, 0, 0);
+      // await increaseBlockTimestamp(1000); // 10000
+      // await gmxYieldStrategy.closeTokenPosition();
+      // await logVaultParams('ClosePositon 11', gmxYieldStrategy);
+      // await logRageParams(
+      //   'ClosePositon 11',
+      //   clearingHouse,
+      //   clearingHouseLens,
+      //   ethPool.vPool as unknown as IUniswapV3Pool,
+      //   vaultAccountNo,
+      //   0,
+      //   0,
+      // );
     });
-    it('Slippage Threshold - Partial Withdraw', async () => {
+
+    it.skip('Slippage Threshold - Partial Withdraw', async () => {
       await sGLP.connect(whale).transfer(user1.address, parseEther('18139.0650524482'));
       await sGLP.connect(whale).transfer(user2.address, parseEther('18139.0650524482'));
 
@@ -1202,10 +1060,10 @@ describe('EightyTwentyGMXStrategy', () => {
       await increaseBlockTimestamp(1000); // 10000
 
       // -14511.2520419586
-      await gmxYieldStrategy.connect(user1).withdraw(parseEther('-14511.25204195'), user1.address, user1.address);
+      await gmxYieldStrategy.connect(user1).withdraw(parseEther('14511.2520419586'), user1.address, user1.address);
       await checkLiquidityPositionNum(clearingHouseLens, vaultAccountNo, ethPoolId, 1);
-      await checkTotalGLPApproximate(gmxYieldStrategy, 3929188157382060000000n);
-      await checkTotalSupplyGLPApproximate(gmxYieldStrategy, 3933927449432790000000n);
+      await checkTotalGLPApproximate(gmxYieldStrategy, 3930908664144450000000n);
+      await checkTotalSupplyGLPApproximate(gmxYieldStrategy, 3935650031428970000000n);
       await checkLiquidityPositionApproximate(
         clearingHouseLens,
         vaultAccountNo,
