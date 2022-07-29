@@ -27,7 +27,7 @@ export async function checkTotalSupplyGLPApproximate(
   vault: { totalSupply: () => Promise<BigNumber> },
   expectedTotalSupply: BigNumberish,
 ) {
-  expect((await vault.totalSupply()).sub(expectedTotalSupply).abs()).to.lte(2n * (10n ** 18n));
+  expect((await vault.totalSupply()).sub(expectedTotalSupply).abs()).to.lte(2n * 10n ** 18n);
 }
 
 export async function checkTotalAssets(
@@ -43,7 +43,7 @@ export async function checkTotalGLPApproximate(
 ) {
   console.log('from excel', expectedTotalAssets);
   console.log('from contract', await vault.totalAssets());
-  expect((await vault.totalAssets()).sub(expectedTotalAssets).abs()).to.lte(2n * (10n ** 18n));
+  expect((await vault.totalAssets()).sub(expectedTotalAssets).abs()).to.lte(2n * 10n ** 18n);
 }
 
 export async function checkTotalAssetsApproximate(
