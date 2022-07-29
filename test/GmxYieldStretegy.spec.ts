@@ -4,7 +4,7 @@ import { priceX128ToPrice } from '@ragetrade/sdk';
 import { expect } from 'chai';
 import { BigNumber } from 'ethers';
 import { formatEther, parseEther } from 'ethers/lib/utils';
-import hre from 'hardhat';
+import hre, { ethers } from 'hardhat';
 import {
   ERC20,
   GMXYieldStrategy,
@@ -126,13 +126,15 @@ describe('GmxYieldStrategy', () => {
 
   describe('#updateGMXParams', () => {
     it('allows owner to update params', async () => {
-      await expect(gmxYieldStrategy.updateGMXParams(100, signers[0].address))
+      await expect(gmxYieldStrategy.updateGMXParams(100, 0, 0, 0, signers[0].address))
         .to.emit(gmxYieldStrategy, 'GmxParamsUpdated')
         .withArgs(100, signers[0].address);
     });
 
     it('reverts when not owner', async () => {
-      await expect(gmxYieldStrategy.connect(signers[1]).updateGMXParams(100, signers[0].address)).to.be.revertedWith(
+      await expect(
+        gmxYieldStrategy.connect(signers[1]).updateGMXParams(100, 0, 0, 0, signers[0].address),
+      ).to.be.revertedWith(
         `VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'`,
       );
     });
@@ -188,9 +190,24 @@ describe('GmxYieldStrategy', () => {
   });
 
   describe('#withdrawToken', () => {
-    it('withdraws token and burns shares', async () => {});
+    it('withdraws token and burns shares', async () => {
+      await sGLP.connect(whale).approve(gmxYieldStrategy.address, parseEther('2'));
+      await gmxYieldStrategy.approve(gmxYieldStrategy.address, ethers.constants.MaxUint256);
+      await gmxYieldStrategy.connect(whale).deposit(parseEther('2'), whale.address);
 
-    it('does not withdraw if not enough shares', async () => {});
+      const tx = gmxYieldStrategy.connect(whale).withdrawToken(addresses.WETH, parseEther('1.5'), 0, whale.address);
+
+      await expect(tx).to.emit(gmxYieldStrategy, 'TokenWithdrawn');
+    });
+
+    it('does not withdraw if not enough shares', async () => {
+      await sGLP.connect(whale).approve(gmxYieldStrategy.address, parseEther('2'));
+      await gmxYieldStrategy.connect(whale).deposit(parseEther('2'), whale.address);
+
+      const tx = gmxYieldStrategy.connect(whale).withdrawToken(addresses.WETH, parseEther('2.1'), 0, whale.address);
+
+      await expect(tx).to.be.reverted;
+    });
   });
 
   describe('#redeemToken', () => {
