@@ -141,21 +141,41 @@ export const gmxYieldStrategyFixture = deployments.createFixture(async hre => {
     rewardRouter: GMX_ECOSYSTEM_ADDRESSES.RewardRouter,
   });
 
+  const glpStakingManagerFactory = await hre.ethers.getContractFactory('GlpStakingManager');
+
+  const glpStakingManager = await glpStakingManagerFactory.deploy();
+
+  glpStakingManager.initialize({
+    rageErc4626InitParams: {
+      asset: lpToken.address,
+      name: 'TriCrypto Shares',
+      symbol: 'TCS',
+    },
+    weth: addresses.WETH,
+    usdc: addresses.USDC, // TODO needs to change
+    glpManager: GMX_ECOSYSTEM_ADDRESSES.GlpManager,
+    rewardRouter: GMX_ECOSYSTEM_ADDRESSES.RewardRouter,
+  });
+
   const gmxBatchingManagerFactory = await hre.ethers.getContractFactory('GMXBatchingManager');
 
   const gmxBatchingManager = await gmxBatchingManagerFactory.deploy();
+
   // console.log({gmxBatchingManagerAddress,actualAddress:gmxBatchingManager.address});
 
   await gmxBatchingManager.initialize(
     GMX_ECOSYSTEM_ADDRESSES.StakedGlp,
     GMX_ECOSYSTEM_ADDRESSES.RewardRouter,
     GMX_ECOSYSTEM_ADDRESSES.GlpManager,
-    gmxYieldStrategy.address,
+    glpStakingManager.address,
     signer.address,
   );
-  await gmxYieldStrategy.updateBaseParams(ethers.constants.MaxUint256, admin.address, 0, 0);
-  await gmxYieldStrategy.updateGMXParams(100, 0, 0, 0, gmxBatchingManager.address);
 
+  await glpStakingManager.updateGMXParams(100, gmxBatchingManager.address);
+  await gmxYieldStrategy.updateBaseParams(ethers.constants.MaxUint256, admin.address, 0, 0);
+  await gmxYieldStrategy.updateGMXParams(100, 0, 0, 0, gmxBatchingManager.address, glpStakingManager.address);
+
+  await glpStakingManager.grantAllowances();
   await gmxYieldStrategy.grantAllowances();
 
   await collateralToken.grantRole(await collateralToken.MINTER_ROLE(), gmxYieldStrategy.address);
