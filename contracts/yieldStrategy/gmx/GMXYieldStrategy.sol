@@ -11,6 +11,7 @@ import { ISGLPExtended } from 'contracts/interfaces/gmx/ISGLPExtended.sol';
 import { IRewardTracker } from 'contracts/interfaces/gmx/IRewardTracker.sol';
 import { IRewardRouterV2 } from 'contracts/interfaces/gmx/IRewardRouterV2.sol';
 import { IGMXBatchingManager } from 'contracts/interfaces/gmx/IGMXBatchingManager.sol';
+import { IGlpStakingManager } from 'contracts/interfaces/gmx/IGlpStakingManager.sol';
 
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
@@ -23,7 +24,7 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     error GYS_INVALID_SETTER_VALUES();
 
     event FeesWithdrawn(uint256 vaule);
-    event GmxParamsUpdated(uint256 newFee, address batchingManager);
+    event GmxParamsUpdated(uint256 newFee, address batchingManager, address stakingManager);
 
     event TokenWithdrawn(address token, uint256 sGLPQuantity, uint256 shares, address receiver);
     event TokenRedeemded(address token, uint256 sGLPQuantity, uint256 shares, address receiver);
@@ -48,6 +49,7 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     IGlpManager private glpManager;
     IRewardRouterV2 private rewardRouter;
     IGMXBatchingManager private batchingManager;
+    IGlpStakingManager private stakingManager;
 
     struct GMXYieldStrategyInitParams {
         EightyTwentyRangeStrategyVaultInitParams eightyTwentyRangeStrategyVaultInitParams;
@@ -80,7 +82,8 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         uint256 _wethThreshold,
         uint256 _usdcConversionThreshold,
         uint256 _usdcReedemSlippage,
-        address _batchingManager
+        address _batchingManager,
+		address _stakingManager
     ) external onlyOwner {
         if (_feeBps < MAX_BPS && _batchingManager != address(0)) {
             FEE = _feeBps;
@@ -88,9 +91,10 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
             usdcReedemSlippage = _usdcReedemSlippage;
             usdcConversionThreshold = _usdcConversionThreshold;
             batchingManager = IGMXBatchingManager(_batchingManager);
+            stakingManager = IGlpStakingManager(_stakingManager);
         } else revert GYS_INVALID_SETTER_VALUES();
 
-        emit GmxParamsUpdated(_feeBps, _batchingManager);
+        emit GmxParamsUpdated(_feeBps, _batchingManager, _stakingManager);
     }
 
     /// @notice grants one time max allowance to various third parties
@@ -120,33 +124,25 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     /// @notice triggered from the afterDeposit hook, stakes the deposited tricrypto LP tokens
     /// @param amount amount of LP tokens
     function _afterDepositYield(uint256 amount) internal override {
-        //NO OP
+        stakingManager.deposit(amount, address(this));
     }
 
     /// @notice triggered from beforeWithdraw hook
     /// @param amount amount of LP tokens
     function _beforeWithdrawYield(uint256 amount) internal override {
-        //NO OP
+        stakingManager.withdraw(amount, address(this), address(this));
     }
 
     /// @notice sells rageSettlementToken for LP tokens and then stakes LP tokens
     /// @param amount amount of rageSettlementToken
     function _convertSettlementTokenToAsset(uint256 amount) internal override {
         //USDG has 18 decimals and usdc has 6 decimals => 18-6 = 12
-        batchingManager.depositToken(address(rageSettlementToken), amount, address(this));
+        stakingManager.depositToken(address(rageSettlementToken), amount);
     }
 
     /// @notice claims the accumulated CRV rewards from the gauge, sells CRV rewards for LP tokens and stakes LP tokens
     function _harvestFees() internal override {
-        rewardRouter.handleRewards(false, false, true, true, true, true, false);
-        uint256 wethHarvested = weth.balanceOf(address(this)) - protocolFee;
-        if (wethHarvested > wethThreshold) {
-            uint256 protocolFeeHarvested = (wethHarvested * FEE) / MAX_BPS;
-            protocolFee += protocolFeeHarvested;
-
-            uint256 wethToCompound = wethHarvested - protocolFeeHarvested;
-            batchingManager.depositToken(address(weth), wethToCompound, address(this));
-        }
+        //NO OP
     }
 
     /// @notice stakes LP tokens (i.e deposits into reward gauge)
@@ -157,7 +153,7 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
     /// @notice total LP tokens staked in the curve rewards gauge
     function _stakedAssetBalance() internal view override returns (uint256) {
-        return fsGlp.balanceOf(address(this)) + batchingManager.glpBalance(address(this));
+        return fsGlp.balanceOf(address(this)) + stakingManager.maxWithdraw(address(this));
     }
 
     /// @notice withdraws LP tokens from gauge, sells LP token for rageSettlementToken
