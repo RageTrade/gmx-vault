@@ -25,8 +25,8 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     event FeesWithdrawn(uint256 vaule);
     event GmxParamsUpdated(uint256 newFee, address batchingManager);
 
-    event TokenWithdrawn(address token, uint256 shares, address receiver);
-    event TokenRedeemded(address token, uint256 _sGLPQuantity, address receiver);
+    event TokenWithdrawn(address token, uint256 sGLPQuantity, uint256 shares, address receiver);
+    event TokenRedeemded(address token, uint256 sGLPQuantity, uint256 shares, address receiver);
 
     /* solhint-disable var-name-mixedcase */
     uint256 public constant MAX_BPS = 10_000;
@@ -36,6 +36,8 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
     uint256 public protocolFee;
     uint256 public wethThreshold;
+    uint256 public usdcReedemSlippage;
+    uint256 public usdcConversionThreshold;
 
     IERC20 private gmx;
     IERC20 private glp;
@@ -73,9 +75,18 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         fsGlp = IERC20(ISGLPExtended(address(asset)).stakedGlpTracker());
     }
 
-    function updateGMXParams(uint256 _feeBps, address _batchingManager) external onlyOwner {
+    function updateGMXParams(
+        uint256 _feeBps,
+        uint256 _wethThreshold,
+        uint256 _usdcConversionThreshold,
+        uint256 _usdcReedemSlippage,
+        address _batchingManager
+    ) external onlyOwner {
         if (_feeBps < MAX_BPS && _batchingManager != address(0)) {
             FEE = _feeBps;
+            wethThreshold = _wethThreshold;
+            usdcReedemSlippage = _usdcReedemSlippage;
+            usdcConversionThreshold = _usdcConversionThreshold;
             batchingManager = IGMXBatchingManager(_batchingManager);
         } else revert GYS_INVALID_SETTER_VALUES();
 
@@ -153,12 +164,12 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     /// @param usdcAmountDesired amount of USDC desired
     function _convertAssetToSettlementToken(uint256 usdcAmountDesired) internal override returns (uint256 usdcAmount) {
         /// @dev if usdcAmountDesired < 10, then there is precision issue while redeeming for usdg
-        if (usdcAmountDesired < 10) return 0;
+        if (usdcAmountDesired < usdcConversionThreshold) return 0;
         // USDG has 18 decimals and usdc has 6 decimals => 18-6 = 12
         rewardRouter.unstakeAndRedeemGlp(
             address(rageSettlementToken),
             usdcAmountDesired.mulDiv(1 << 128, getPriceX128()), // glp amount
-            usdcAmountDesired.mulDiv(0, 100), // usdc
+            usdcAmountDesired.mulDiv(usdcReedemSlippage, MAX_BPS), // usdc
             address(this)
         );
 
@@ -179,37 +190,33 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         return aum.mulDiv(FixedPoint128.Q128, totalSupply * 1e24);
     }
 
-    function withdrawToken(
+    function redeemToken(
         IERC20 token,
         uint256 shares,
         uint256 minTokenOut,
         address receiver
     ) external {
-        transferFrom(msg.sender, address(this), shares);
         uint256 sGLPReceived = redeem(shares, address(this), msg.sender);
 
         asset.approve(address(glpManager), sGLPReceived);
 
         rewardRouter.unstakeAndRedeemGlp(address(token), sGLPReceived, minTokenOut, receiver);
 
-        emit TokenWithdrawn(address(token), shares, receiver);
+        emit TokenRedeemded(address(token), sGLPReceived, shares, receiver);
     }
 
-    function redeemToken(
+    function withdrawToken(
         IERC20 token,
         uint256 _sGLP,
         uint256 minTokenOut,
         address receiver
     ) external {
-        uint256 shares = previewWithdraw(_sGLP);
-
-        transferFrom(msg.sender, address(this), shares);
-        withdraw(_sGLP, address(this), msg.sender);
+        uint256 shares = withdraw(_sGLP, address(this), msg.sender);
 
         asset.approve(address(glpManager), _sGLP);
 
         rewardRouter.unstakeAndRedeemGlp(address(token), _sGLP, minTokenOut, receiver);
 
-        emit TokenRedeemded(address(token), _sGLP, receiver);
+        emit TokenWithdrawn(address(token), _sGLP, shares, receiver);
     }
 }

@@ -84,7 +84,7 @@ export const gmxYieldStrategyFixture = deployments.createFixture(async hre => {
   );
 
   await gmxYieldStrategy.updateBaseParams(parseEther('100'), signer.address, 0, 0);
-  await gmxYieldStrategy.updateGMXParams(100, gmxBatchingManager.address);
+  await gmxYieldStrategy.updateGMXParams(100, 0, 0, 0, gmxBatchingManager.address);
 
   await gmxYieldStrategy.grantAllowances();
 
