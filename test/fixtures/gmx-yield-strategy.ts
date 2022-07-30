@@ -81,7 +81,7 @@ export const gmxYieldStrategyFixture = deployments.createFixture(async hre => {
       symbol: 'TCS',
     },
     weth: addresses.WETH,
-    usdc: addresses.USDC, // TODO needs to change
+    usdc: addresses.USDC,
     glpManager: GMX_ECOSYSTEM_ADDRESSES.GlpManager,
     rewardRouter: GMX_ECOSYSTEM_ADDRESSES.RewardRouter,
   });
@@ -101,6 +101,7 @@ export const gmxYieldStrategyFixture = deployments.createFixture(async hre => {
   );
 
   await glpStakingManager.updateGMXParams(100, gmxBatchingManager.address);
+  await glpStakingManager.setVault(gmxYieldStrategy.address, true);
   await gmxYieldStrategy.updateBaseParams(parseEther('100'), signer.address, 0, 0);
   await gmxYieldStrategy.updateGMXParams(100, 0, 0, 0, gmxBatchingManager.address, glpStakingManager.address);
 
@@ -133,5 +134,6 @@ export const gmxYieldStrategyFixture = deployments.createFixture(async hre => {
     swapSimulator,
     clearingHouseLens,
     gmxBatchingManager,
+    glpStakingManager,
   };
 });
