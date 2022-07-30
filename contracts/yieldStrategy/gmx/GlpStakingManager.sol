@@ -8,15 +8,10 @@ import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadat
 
 import { IGlpManager } from 'contracts/interfaces/gmx/IGlpManager.sol';
 import { ISGLPExtended } from 'contracts/interfaces/gmx/ISGLPExtended.sol';
-import { IRewardTracker } from 'contracts/interfaces/gmx/IRewardTracker.sol';
 import { IRewardRouterV2 } from 'contracts/interfaces/gmx/IRewardRouterV2.sol';
 import { IGMXBatchingManager } from 'contracts/interfaces/gmx/IGMXBatchingManager.sol';
-import { IGlpStakingManager } from 'contracts/interfaces/gmx/IGlpStakingManager.sol';
-
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
-import { FixedPoint128 } from '@uniswap/v3-core-0.8-support/contracts/libraries/FixedPoint128.sol';
 
-import { EightyTwentyRangeStrategyVault } from '../../rangeStrategy/EightyTwentyRangeStrategyVault.sol';
 import { RageERC4626 } from '../../base/RageERC4626.sol';
 import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 
@@ -62,6 +57,7 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
     }
 
     function initialize(GlpStakingManagerInitParams memory glpStakingManagerInitParams) external initializer {
+        __Ownable_init();
         __RageERC4626_init(glpStakingManagerInitParams.rageErc4626InitParams);
         __GlpStakingManager_init(glpStakingManagerInitParams);
     }
@@ -136,6 +132,15 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
 
     function beforeWithdrawClosePosition(int256) internal override {
         // NO OP
+    }
+
+    function _simulateBeforeWithdraw(uint256 assets)
+        internal
+        view
+        override
+        returns (uint256 adjustedAssets, int256 tokensToTrade)
+    {
+        return (assets, 0);
     }
 
     function totalAssets() public view override returns (uint256) {
