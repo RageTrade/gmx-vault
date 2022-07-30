@@ -259,6 +259,15 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         twapSqrtPriceX96 = Logic.getTwapSqrtPriceX96(rageVPool, rageClearingHouse.getTwapDuration(ethPoolId));
     }
 
+    function _simulateBeforeWithdraw(uint256 assets)
+        internal
+        view
+        override
+        returns (uint256 adjustedAssets, int256 tokensToTrade)
+    {
+        return _simulateBeforeWithdrawRanges(assets);
+    }
+
     /// @notice converts all non-asset balances into asset
     /// @dev to be called before functions which allocate and deallocate shares (deposit, withdraw, mint and redeem)
     function _beforeShareAllocation() internal virtual override {
@@ -355,6 +364,12 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     /// @notice Closes net token position before withdrawal
     /// @param tokensToTrade The amount of token position to close before withdrawal
     function _beforeWithdrawClosePositionRanges(int256 tokensToTrade) internal virtual;
+
+    function _simulateBeforeWithdrawRanges(uint256 assets)
+        internal
+        view
+        virtual
+        returns (uint256 adjustedAssets, int256 tokensToTrade);
 
     /// @notice Updates liquidity position and collateral in rage core before withdrawal
     /// @param amountBeforeWithdraw The amount of asset tokens before withdrawal

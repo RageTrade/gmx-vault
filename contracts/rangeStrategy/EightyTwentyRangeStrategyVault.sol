@@ -281,6 +281,15 @@ abstract contract EightyTwentyRangeStrategyVault is BaseVault {
         liqCount++;
     }
 
+    function _simulateBeforeWithdrawRanges(uint256 assets)
+        internal
+        view
+        override
+        returns (uint256 adjustedAssets, int256 tokensToTrade)
+    {
+        return Logic.simulateBeforeWithdraw(address(this), totalAssets(), assets);
+    }
+
     /// @notice Get liquidity change params on deposit
     /// @param amountBefore Amount of asset tokens after deposit
     /// @param amountDelta Amount of asset tokens deposited
