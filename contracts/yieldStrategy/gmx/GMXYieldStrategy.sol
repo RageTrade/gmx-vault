@@ -35,7 +35,6 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     /* solhint-disable var-name-mixedcase */
     uint256 public FEE = 1000;
 
-    uint256 public protocolFee;
     uint256 public wethThreshold;
     uint256 public usdcReedemSlippage;
     uint256 public usdcConversionThreshold;
@@ -83,7 +82,7 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         uint256 _usdcConversionThreshold,
         uint256 _usdcReedemSlippage,
         address _batchingManager,
-		address _stakingManager
+        address _stakingManager
     ) external onlyOwner {
         if (_feeBps < MAX_BPS && _batchingManager != address(0)) {
             FEE = _feeBps;
@@ -103,22 +102,15 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
         asset.approve(address(glpManager), type(uint256).max);
         asset.approve(address(rewardRouter), type(uint256).max);
+        asset.approve(address(stakingManager), type(uint256).max);
 
         weth.approve(address(glpManager), type(uint256).max);
         weth.approve(address(rewardRouter), type(uint256).max);
-        weth.approve(address(batchingManager), type(uint256).max);
+        weth.approve(address(stakingManager), type(uint256).max);
 
         rageSettlementToken.approve(address(glpManager), type(uint256).max);
         rageSettlementToken.approve(address(rewardRouter), type(uint256).max);
-        rageSettlementToken.approve(address(batchingManager), type(uint256).max);
-    }
-
-    /// @notice withdraw accumulated CRV fees
-    function withdrawFees() external onlyOwner {
-        uint256 amount = protocolFee;
-        protocolFee = 0;
-        weth.transfer(msg.sender, amount);
-        emit FeesWithdrawn(amount);
+        rageSettlementToken.approve(address(stakingManager), type(uint256).max);
     }
 
     /// @notice triggered from the afterDeposit hook, stakes the deposited tricrypto LP tokens
@@ -161,10 +153,12 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     function _convertAssetToSettlementToken(uint256 usdcAmountDesired) internal override returns (uint256 usdcAmount) {
         /// @dev if usdcAmountDesired < 10, then there is precision issue while redeeming for usdg
         if (usdcAmountDesired < usdcConversionThreshold) return 0;
+        uint256 glpAmountDesired = usdcAmountDesired.mulDiv(1 << 128, getPriceX128());
         // USDG has 18 decimals and usdc has 6 decimals => 18-6 = 12
+        stakingManager.withdraw(glpAmountDesired, address(this), address(this));
         rewardRouter.unstakeAndRedeemGlp(
             address(rageSettlementToken),
-            usdcAmountDesired.mulDiv(1 << 128, getPriceX128()), // glp amount
+            glpAmountDesired, // glp amount
             usdcAmountDesired.mulDiv(usdcReedemSlippage, MAX_BPS), // usdc
             address(this)
         );
