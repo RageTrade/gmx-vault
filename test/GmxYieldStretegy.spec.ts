@@ -81,7 +81,7 @@ describe('GmxYieldStrategy', () => {
       await gmxYieldStrategy.connect(whale).deposit(parseEther('1'), whale.address);
 
       const assetsBefore = await gmxYieldStrategy.convertToAssets(await gmxYieldStrategy.balanceOf(whale.address));
-      console.log('assetsBefore', assetsBefore);
+      // console.log('assetsBefore', assetsBefore);
 
       const tx = await (
         await gmxYieldStrategy.connect(whale).withdraw(parseEther('0.9'), whale.address, whale.address)
@@ -108,15 +108,15 @@ describe('GmxYieldStrategy', () => {
   describe('#redeem', () => {
     it('withdraws tokens that are deposits', async () => {
       await sGLP.connect(whale).approve(gmxYieldStrategy.address, parseEther('1'));
-      await gmxYieldStrategy.connect(whale).redeem(parseEther('1'), whale.address, whale.address);
+      await gmxYieldStrategy.connect(whale).deposit(parseEther('1'), whale.address);
 
       const userSharesBefore = await gmxYieldStrategy.balanceOf(whale.address);
-      console.log('userSharesBefore', userSharesBefore);
+      // console.log('userSharesBefore', userSharesBefore);
 
       await gmxYieldStrategy.connect(whale).redeem(parseEther('0.9'), whale.address, whale.address);
 
       const userSharesAfter = await gmxYieldStrategy.balanceOf(whale.address);
-      console.log('userSharesAfter', userSharesAfter);
+      // console.log('userSharesAfter', userSharesAfter);
 
       expect(userSharesBefore.sub(userSharesAfter).toString()).to.eq(parseEther('0.9'));
     });
@@ -130,14 +130,14 @@ describe('GmxYieldStrategy', () => {
 
   describe('#updateGMXParams', () => {
     it('allows owner to update params', async () => {
-      await expect(gmxYieldStrategy.updateGMXParams(100, 0, 0, 0, signers[0].address, signers[0].address))
+      await expect(gmxYieldStrategy.updateGMXParams(100, 0, 0, signers[0].address, signers[0].address))
         .to.emit(gmxYieldStrategy, 'GmxParamsUpdated')
         .withArgs(100, signers[0].address, signers[0].address);
     });
 
     it('reverts when not owner', async () => {
       await expect(
-        gmxYieldStrategy.connect(signers[1]).updateGMXParams(100, 0, 0, 0, signers[0].address, signers[0].address),
+        gmxYieldStrategy.connect(signers[1]).updateGMXParams(100, 0, 0, signers[0].address, signers[0].address),
       ).to.be.revertedWith(
         `VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'`,
       );
