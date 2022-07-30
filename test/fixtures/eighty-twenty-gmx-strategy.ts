@@ -133,10 +133,8 @@ export const gmxYieldStrategyFixture = deployments.createFixture(async hre => {
       resetPositionThresholdBps: resetPositionThresholdBps,
       minNotionalPositionToCloseThreshold: minNotionalPositionToCloseThreshold,
     },
-    gmx: GMX_ECOSYSTEM_ADDRESSES.GMX,
     glp: GMX_ECOSYSTEM_ADDRESSES.GLP,
     weth: addresses.WETH,
-    esGMX: GMX_ECOSYSTEM_ADDRESSES.StakedGmx, // TODO needs to change
     glpManager: GMX_ECOSYSTEM_ADDRESSES.GlpManager,
     rewardRouter: GMX_ECOSYSTEM_ADDRESSES.RewardRouter,
   });
@@ -171,10 +169,10 @@ export const gmxYieldStrategyFixture = deployments.createFixture(async hre => {
     signer.address,
   );
 
-  await glpStakingManager.updateGMXParams(100, gmxBatchingManager.address);
+  await glpStakingManager.updateGMXParams(100, 0, gmxBatchingManager.address);
   await glpStakingManager.setVault(gmxYieldStrategy.address, true);
   await gmxYieldStrategy.updateBaseParams(ethers.constants.MaxUint256, admin.address, 0, 0);
-  await gmxYieldStrategy.updateGMXParams(100, 0, 0, 0, gmxBatchingManager.address, glpStakingManager.address);
+  await gmxYieldStrategy.updateGMXParams(100, 10, 0, gmxBatchingManager.address, glpStakingManager.address);
 
   await glpStakingManager.grantAllowances();
   await gmxYieldStrategy.grantAllowances();
