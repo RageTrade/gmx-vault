@@ -39,10 +39,8 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     uint256 public usdcReedemSlippage;
     uint256 public usdcConversionThreshold;
 
-    IERC20 private gmx;
     IERC20 private glp;
     IERC20 private weth;
-    IERC20 private esGMX;
     IERC20 private fsGlp;
 
     IGlpManager private glpManager;
@@ -52,10 +50,8 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
     struct GMXYieldStrategyInitParams {
         EightyTwentyRangeStrategyVaultInitParams eightyTwentyRangeStrategyVaultInitParams;
-        IERC20 gmx;
         IERC20 glp;
         IERC20 weth;
-        IERC20 esGMX;
         IGlpManager glpManager;
         IRewardRouterV2 rewardRouter;
     }
@@ -69,7 +65,6 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         __EightyTwentyRangeStrategyVault_init(params.eightyTwentyRangeStrategyVaultInitParams);
         glp = params.glp;
         weth = params.weth;
-        esGMX = params.esGMX;
         glpManager = params.glpManager;
         rewardRouter = params.rewardRouter;
 
@@ -78,7 +73,6 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
     function updateGMXParams(
         uint256 _feeBps,
-        uint256 _wethThreshold,
         uint256 _usdcConversionThreshold,
         uint256 _usdcReedemSlippage,
         address _batchingManager,
@@ -86,7 +80,6 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     ) external onlyOwner {
         if (_feeBps < MAX_BPS && _batchingManager != address(0)) {
             FEE = _feeBps;
-            wethThreshold = _wethThreshold;
             usdcReedemSlippage = _usdcReedemSlippage;
             usdcConversionThreshold = _usdcConversionThreshold;
             batchingManager = IGMXBatchingManager(_batchingManager);

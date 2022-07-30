@@ -72,9 +72,14 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
         fsGlp = IERC20(ISGLPExtended(address(asset)).stakedGlpTracker());
     }
 
-    function updateGMXParams(uint256 _feeBps, address _batchingManager) external onlyOwner {
+    function updateGMXParams(
+        uint256 _feeBps,
+        uint256 _wethThreshold,
+        address _batchingManager
+    ) external onlyOwner {
         if (_feeBps < MAX_BPS && _batchingManager != address(0)) {
             FEE = _feeBps;
+            wethThreshold = _wethThreshold;
             batchingManager = IGMXBatchingManager(_batchingManager);
         } else revert GYS_INVALID_SETTER_VALUES();
 
