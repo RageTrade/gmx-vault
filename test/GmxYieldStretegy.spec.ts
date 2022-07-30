@@ -12,6 +12,7 @@ import {
   IERC20__factory,
   IRewardTracker__factory,
   GMXBatchingManager,
+  GlpStakingManager,
 } from '../typechain-types';
 import addresses, { GMX_ECOSYSTEM_ADDRESSES } from './fixtures/addresses';
 import { gmxYieldStrategyFixture } from './fixtures/gmx-yield-strategy';
@@ -24,6 +25,7 @@ describe('GmxYieldStrategy', () => {
   let signers: SignerWithAddress[];
   let whale: SignerWithAddress;
   let gmxBatchingManager: GMXBatchingManager;
+  let glpStakingManager: GlpStakingManager;
 
   before(async () => {
     await activateMainnetFork({ blockNumber: 18099162 });
@@ -35,7 +37,7 @@ describe('GmxYieldStrategy', () => {
   });
 
   beforeEach(async () => {
-    ({ gmxYieldStrategy, sGLP, fsGLP, gmxBatchingManager } = await gmxYieldStrategyFixture());
+    ({ gmxYieldStrategy, sGLP, fsGLP, gmxBatchingManager, glpStakingManager } = await gmxYieldStrategyFixture());
   });
 
   describe('#deposit', () => {
@@ -49,7 +51,9 @@ describe('GmxYieldStrategy', () => {
       await gmxYieldStrategy.connect(whale).deposit(parseEther('1'), signers[0].address);
 
       const userBalAfter = await fsGLP.balanceOf(whale.address);
-      const vaultBalAfter = await fsGLP.balanceOf(gmxYieldStrategy.address);
+      const vaultBalAfter = (await fsGLP.balanceOf(gmxYieldStrategy.address)).add(
+        await glpStakingManager.maxWithdraw(gmxYieldStrategy.address),
+      );
 
       expect(userBalBefore.sub(userBalAfter).toString()).to.eq(parseEther('1').toString());
       expect(vaultBalAfter.sub(vaultBalBefore).toString()).to.eq(parseEther('1').toString());
@@ -126,23 +130,23 @@ describe('GmxYieldStrategy', () => {
 
   describe('#updateGMXParams', () => {
     it('allows owner to update params', async () => {
-      await expect(gmxYieldStrategy.updateGMXParams(100, 0, 0, 0, signers[0].address))
+      await expect(gmxYieldStrategy.updateGMXParams(100, 0, 0, 0, signers[0].address, signers[0].address))
         .to.emit(gmxYieldStrategy, 'GmxParamsUpdated')
-        .withArgs(100, signers[0].address);
+        .withArgs(100, signers[0].address, signers[0].address);
     });
 
     it('reverts when not owner', async () => {
       await expect(
-        gmxYieldStrategy.connect(signers[1]).updateGMXParams(100, 0, 0, 0, signers[0].address),
+        gmxYieldStrategy.connect(signers[1]).updateGMXParams(100, 0, 0, 0, signers[0].address, signers[0].address),
       ).to.be.revertedWith(
         `VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'`,
       );
     });
   });
 
-  describe('#withdrawFees', () => {
-    it('withdraws fees and updates state', async () => {});
-  });
+  // describe('#withdrawFees', () => {
+  //   it('withdraws fees and updates state', async () => {});
+  // });
 
   describe('#getMarketValue', () => {
     it('works', async () => {

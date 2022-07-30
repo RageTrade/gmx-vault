@@ -41,8 +41,8 @@ export async function checkTotalGLPApproximate(
   vault: { totalAssets: () => Promise<BigNumber> },
   expectedTotalAssets: BigNumberish,
 ) {
-  console.log('from excel', expectedTotalAssets);
-  console.log('from contract', await vault.totalAssets());
+  // console.log('from excel', expectedTotalAssets);
+  // console.log('from contract', await vault.totalAssets());
   expect((await vault.totalAssets()).sub(expectedTotalAssets).abs()).to.lte(2n * 10n ** 18n);
 }
 
