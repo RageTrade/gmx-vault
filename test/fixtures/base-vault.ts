@@ -20,11 +20,7 @@ export const baseVaultFixture = deployments.createFixture(async hre => {
   ).deploy();
 
   const baseVaultTest = await (
-    await hre.ethers.getContractFactory('BaseVaultTest', {
-      libraries: {
-        ['contracts/libraries/Logic.sol:Logic']: logic.address,
-      },
-    })
+    await hre.ethers.getContractFactory('BaseVaultTest')
   ).deploy(asset.address, clearingHouse.address, pool0.clearingHouseLens.address);
 
   await baseVaultTest.updateBaseParams(0, keeper.address, 86400, 0);
