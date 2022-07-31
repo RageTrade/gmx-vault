@@ -8,6 +8,8 @@ import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import { ERC20PresetMinterPauser } from '@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol';
 import { IGMXBatchingManager } from 'contracts/interfaces/gmx/IGMXBatchingManager.sol';
 
+import { IERC4626 } from '../../interfaces/IERC4626.sol';
+
 contract GmxVaultMock is ERC20PresetMinterPauser {
     IGMXBatchingManager batchingManager;
     IERC20 sGlp;

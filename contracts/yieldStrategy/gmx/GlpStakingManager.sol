@@ -172,7 +172,11 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
     }
 
     /// @dev only works for usdc and weth because approval is only given for those tokens
-    function depositToken(address token, uint256 amount) external returns (uint256 shares) {
+    function depositToken(
+        IERC4626 gmxVault,
+        address token,
+        uint256 amount
+    ) external returns (uint256 shares) {
         _beforeShareAllocation();
 
         IERC20(token).transferFrom(_msgSender(), address(this), amount);

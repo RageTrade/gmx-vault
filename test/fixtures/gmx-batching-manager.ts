@@ -36,7 +36,7 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
     keeper.address,
   );
   await vault.grantAllowances();
-  await gmxBatchingManager.grantAllowances();
+  await gmxBatchingManager.grantAllowances(vault.address);
 
   const usdc = (await hre.ethers.getContractAt(
     '@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20',
