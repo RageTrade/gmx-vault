@@ -21,17 +21,17 @@ describe('GMX Batching Manager', () => {
   let fsGlp: ERC20;
   let sGlp: ERC20;
   let gmxBatchingManager: GMXBatchingManager;
-  // before(async () => {
-  //   await activateMainnetFork({ blockNumber: 18099162 });
-  //   await gmxBatchingManagerFixture();
-  // });
+  before(async () => {
+    await activateMainnetFork({ blockNumber: 18099162 });
+    await gmxBatchingManagerFixture();
+  });
   beforeEach(async () => {
     ({ admin, vault, user1, user2, keeper, usdc, fsGlp, sGlp, gmxBatchingManager } = await gmxBatchingManagerFixture());
   });
-  // after(async () => {
-  //   // deploys contracts once
-  //   await deactivateMainnetFork();
-  // });
+  after(async () => {
+    // deploys contracts once
+    await deactivateMainnetFork();
+  });
   describe('Start State', () => {
     it('initialized state', async () => {
       expect(await gmxBatchingManager.currentRound()).to.eq(1);
