@@ -20,9 +20,14 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
   const usdcWhale = await hre.ethers.getSigner(gmxAddresses.USDC_WHALE);
   const gmxBatchingManagerAddress = await getCreateAddressFor(admin, 1);
 
+  const stakingManager = await (
+    await hre.ethers.getContractFactory('GmxVaultMock')
+  ).deploy(gmxBatchingManagerAddress, gmxAddresses.StakedGlp);
+
   const vault = await (
     await hre.ethers.getContractFactory('GmxVaultMock')
   ).deploy(gmxBatchingManagerAddress, gmxAddresses.StakedGlp);
+
   const gmxBatchingManagerFactory = await hre.ethers.getContractFactory('GMXBatchingManager');
 
   const gmxBatchingManager = await gmxBatchingManagerFactory.deploy();
@@ -32,10 +37,12 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
     gmxAddresses.StakedGlp,
     gmxAddresses.RewardRouter,
     gmxAddresses.GlpManager,
-    vault.address,
+    stakingManager.address,
     keeper.address,
   );
   await vault.grantAllowances();
+  await stakingManager.grantAllowances();
+  await gmxBatchingManager.addVault(vault.address);
   await gmxBatchingManager.grantAllowances(vault.address);
 
   const usdc = (await hre.ethers.getContractAt(
@@ -66,6 +73,7 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
     sGlp,
     fsGlp,
     vault,
+    stakingManager,
     keeper,
     usdcWhale,
     user1,
