@@ -9,7 +9,10 @@ interface IGMXBatchingManager {
     error InsufficientShares(uint256 balance);
     error InvalidInput(uint256 errorCode);
     error CallerNotKeeper();
+    error CallerNotStakingManager();
     error ZeroBalance();
+    error VaultsLimitExceeded();
+    error VaultAlreadyAdded();
 
     event DepositToken(uint256 round, address token, address receiver, uint256 amount, uint256 glpStaked);
     event VaultDeposit(uint256 vaultGlpAmount);
@@ -27,6 +30,8 @@ interface IGMXBatchingManager {
         uint128 totalShares;
     }
 
+    function depositToken(address token, uint256 amount) external returns (uint256 glpStaked);
+
     function depositToken(
         IERC4626 gmxVault,
         address token,
@@ -35,7 +40,7 @@ interface IGMXBatchingManager {
         address receiver
     ) external returns (uint256 glpStaked);
 
-    function executeBatchDeposit(IERC4626 gmxVault) external;
+    function executeBatchDeposit() external;
 
     function glpBalance(address account) external view returns (uint256 balance);
 
@@ -50,6 +55,4 @@ interface IGMXBatchingManager {
         address receiver,
         uint256 amount
     ) external;
-
-    function defaultVault() external view returns (IERC4626);
 }

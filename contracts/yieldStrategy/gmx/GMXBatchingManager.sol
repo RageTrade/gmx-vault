@@ -28,15 +28,21 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         mapping(uint256 => RoundDeposit) roundDeposits;
     }
 
-    IERC4626[] public vaults;
+    IERC4626[10] public vaults;
+    uint8 vaultCount;
     mapping(IERC4626 => VaultBatchingState) public vaultBatchingState;
-    IERC4626 public defaultVault; // used for depositing harvested rewards
-
+    address public stakingManager; // used for depositing harvested rewards
+    uint256 public stakingManagerGlpBalance;
     IRewardRouterV2 public rewardRouter;
     IGlpManager public glpManager;
 
     IERC20 public sGlp;
     address public keeper;
+
+    modifier onlyStakingManager() {
+        if (_msgSender() != stakingManager) revert CallerNotStakingManager();
+        _;
+    }
 
     modifier onlyKeeper() {
         if (_msgSender() != keeper) revert CallerNotKeeper();
@@ -47,26 +53,26 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         IERC20 _sGlp,
         IRewardRouterV2 _rewardRouter,
         IGlpManager _glpManager,
-        IERC4626 _gmxVault,
+        address _stakingManager,
         address _keeper
     ) external initializer {
         __Ownable_init();
         __Pausable_init();
-        __GMXBatchingManager_init(_sGlp, _rewardRouter, _glpManager, _gmxVault, _keeper);
+        __GMXBatchingManager_init(_sGlp, _rewardRouter, _glpManager, _stakingManager, _keeper);
     }
 
     function __GMXBatchingManager_init(
         IERC20 _sGlp,
         IRewardRouterV2 _rewardRouter,
         IGlpManager _glpManager,
-        IERC4626 _gmxVault,
+        address _stakingManager,
         address _keeper
     ) internal onlyInitializing {
         sGlp = _sGlp;
         rewardRouter = _rewardRouter;
         glpManager = _glpManager;
 
-        _addVault(_gmxVault);
+        stakingManager = _stakingManager;
 
         keeper = _keeper;
         emit KeeperUpdated(_keeper);
@@ -90,6 +96,24 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         _unpause();
     }
 
+    function depositToken(address token, uint256 amount)
+        external
+        whenNotPaused
+        onlyStakingManager
+        returns (uint256 glpStaked)
+    {
+        if (token == address(0)) revert InvalidInput(0x30);
+        if (amount == 0) revert InvalidInput(0x31);
+
+        IERC20(token).transferFrom(_msgSender(), address(this), amount);
+
+        // Convert tokens to glp
+        glpStaked = _stakeGlp(token, amount);
+        stakingManagerGlpBalance += glpStaked.toUint128();
+
+        emit DepositToken(0, token, _msgSender(), amount, glpStaked);
+    }
+
     function depositToken(
         IERC4626 gmxVault,
         address token,
@@ -107,50 +131,59 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         VaultBatchingState storage state = vaultBatchingState[gmxVault];
         UserDeposit storage userDeposit = state.userDeposits[receiver];
         uint128 userGlpBalance = userDeposit.glpBalance;
-        if (receiver == address(gmxVault)) {
-            // Convert tokens to glp
-            glpStaked = _stakeGlp(token, amount, minUSDG);
-            userDeposit.glpBalance = userGlpBalance + glpStaked.toUint128();
-        } else {
-            //Convert previous round glp balance into unredeemed shares
-            uint256 userDepositRound = userDeposit.round;
-            if (userDepositRound < state.currentRound && userGlpBalance > 0) {
-                RoundDeposit storage roundDeposit = state.roundDeposits[userDepositRound];
-                userDeposit.unclaimedShares += userDeposit
-                    .glpBalance
-                    .mulDiv(roundDeposit.totalShares, roundDeposit.totalGlp)
-                    .toUint128();
-                userGlpBalance = 0;
-            }
 
-            // Convert tokens to glp
-            glpStaked = _stakeGlp(token, amount, minUSDG);
-
-            //Update round and glp balance for current round
-            userDeposit.round = state.currentRound;
-            userDeposit.glpBalance = userGlpBalance + glpStaked.toUint128();
-            state.roundGlpBalance += glpStaked.toUint128();
+        //Convert previous round glp balance into unredeemed shares
+        uint256 userDepositRound = userDeposit.round;
+        if (userDepositRound < state.currentRound && userGlpBalance > 0) {
+            RoundDeposit storage roundDeposit = state.roundDeposits[userDepositRound];
+            userDeposit.unclaimedShares += userDeposit
+                .glpBalance
+                .mulDiv(roundDeposit.totalShares, roundDeposit.totalGlp)
+                .toUint128();
+            userGlpBalance = 0;
         }
+
+        // Convert tokens to glp
+        glpStaked = _stakeGlp(token, amount);
+
+        //Update round and glp balance for current round
+        userDeposit.round = state.currentRound;
+        userDeposit.glpBalance = userGlpBalance + glpStaked.toUint128();
+        state.roundGlpBalance += glpStaked.toUint128();
+
         emit DepositToken(state.currentRound, token, receiver, amount, glpStaked);
     }
 
-    function executeBatchDeposit(IERC4626 gmxVault) external {
+    function executeBatchDeposit() external {
         // Transfer vault glp directly
-        VaultBatchingState storage state = vaultBatchingState[gmxVault];
-        UserDeposit storage vaultDeposit = state.userDeposits[address(gmxVault)];
-        uint256 vaultGlpBalance = vaultDeposit.glpBalance;
 
-        if (vaultGlpBalance == 0 && state.roundGlpBalance == 0) revert ZeroBalance();
+        // if (stakingManagerGlpBalance == 0 && state.roundGlpBalance == 0) revert ZeroBalance();
 
-        if (vaultGlpBalance > 0) {
-            vaultDeposit.glpBalance = 0;
-            sGlp.transfer(address(gmxVault), vaultGlpBalance);
-            emit VaultDeposit(vaultGlpBalance);
+        //Needs to be called only for StakingManager
+        if (stakingManagerGlpBalance > 0) {
+            stakingManagerGlpBalance = 0;
+            sGlp.transfer(address(stakingManager), stakingManagerGlpBalance);
+            emit VaultDeposit(stakingManagerGlpBalance);
         }
+
+        for (uint256 i = 0; i < vaults.length; i++) {
+            IERC4626 vault = vaults[i];
+            if (address(vault) == address(0)) break;
+
+            _executeVaultUserBatchDeposit(vault);
+        }
+        // If the deposit is paused then unpause on execute batch deposit
+        if (paused()) {
+            _unpause();
+        }
+    }
+
+    function _executeVaultUserBatchDeposit(IERC4626 vault) internal {
+        VaultBatchingState storage state = vaultBatchingState[vault];
 
         // Transfer user glp through deposit
         if (state.roundGlpBalance > 0) {
-            uint256 totalShares = gmxVault.deposit(state.roundGlpBalance, address(this));
+            uint256 totalShares = vault.deposit(state.roundGlpBalance, address(this));
 
             // Update round data
             state.roundDeposits[state.currentRound] = RoundDeposit(
@@ -162,10 +195,6 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
 
             state.roundGlpBalance = 0;
             ++state.currentRound;
-        }
-        // If the deposit is paused then unpause on execute batch deposit
-        if (paused()) {
-            _unpause();
         }
     }
 
@@ -249,10 +278,12 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         glpStaked = rewardRouter.mintAndStakeGlp(token, amount, minUSDG, 0);
     }
 
-    function _addVault(IERC4626 vault) internal {
-        require(vaultBatchingState[vault].currentRound == 0);
+    function addVault(IERC4626 vault) external onlyOwner {
+        if (vaultCount == vaults.length) revert VaultsLimitExceeded();
+        if (vaultBatchingState[vault].currentRound != 0) revert VaultAlreadyAdded();
         vaultBatchingState[vault].currentRound = 1;
-        vaults.push(vault);
+        vaults[vaultCount] = vault;
+        ++vaultCount;
     }
 
     function _isVaultValid(IERC4626 vault) internal view returns (bool) {
