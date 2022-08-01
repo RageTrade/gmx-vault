@@ -18,7 +18,7 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
   });
 
   const usdcWhale = await hre.ethers.getSigner(gmxAddresses.USDC_WHALE);
-  const gmxBatchingManagerAddress = await getCreateAddressFor(admin, 1);
+  const gmxBatchingManagerAddress = await getCreateAddressFor(admin, 2);
 
   const stakingManager = await (
     await hre.ethers.getContractFactory('GmxVaultMock')
