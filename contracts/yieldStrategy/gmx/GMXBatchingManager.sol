@@ -87,6 +87,7 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
     function depositToken(
         address token,
         uint256 amount,
+        uint256 minUSDG,
         address receiver
     ) external whenNotPaused returns (uint256 glpStaked) {
         if (token == address(0)) revert InvalidInput(0x20);
@@ -100,7 +101,7 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         uint128 userGlpBalance = userDeposit.glpBalance;
         if (receiver == address(gmxVault)) {
             // Convert tokens to glp
-            glpStaked = _stakeGlp(token, amount);
+            glpStaked = _stakeGlp(token, amount, minUSDG);
             userDeposit.glpBalance = userGlpBalance + glpStaked.toUint128();
         } else {
             //Convert previous round glp balance into unredeemed shares
@@ -115,7 +116,7 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
             }
 
             // Convert tokens to glp
-            glpStaked = _stakeGlp(token, amount);
+            glpStaked = _stakeGlp(token, amount, minUSDG);
 
             //Update round and glp balance for current round
             userDeposit.round = currentRound;
@@ -189,10 +190,13 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         emit SharesClaimed(_msgSender(), receiver, amount);
     }
 
-    function _stakeGlp(address token, uint256 amount) internal returns (uint256 glpStaked) {
-        // Convert tokens to glp
-        //USDG has 18 decimals and usdc has 6 decimals => 18-6 = 12
+    function _stakeGlp(
+        address token,
+        uint256 amount,
+        uint256 minUSDG
+    ) internal returns (uint256 glpStaked) {
+        // Convert tokens to glp and stake glp to obtain sGLP
         IERC20(token).approve(address(glpManager), amount);
-        glpStaked = rewardRouter.mintAndStakeGlp(token, amount, amount.mulDiv(0, 100), 0);
+        glpStaked = rewardRouter.mintAndStakeGlp(token, amount, minUSDG, 0);
     }
 }

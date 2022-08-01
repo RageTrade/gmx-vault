@@ -7,6 +7,7 @@ import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadata.sol';
 
 import { IGlpManager } from 'contracts/interfaces/gmx/IGlpManager.sol';
+import { IVault as IGMXVault } from 'contracts/interfaces/gmx/IVault.sol';
 import { ISGLPExtended } from 'contracts/interfaces/gmx/ISGLPExtended.sol';
 import { IRewardRouterV2 } from 'contracts/interfaces/gmx/IRewardRouterV2.sol';
 import { IGMXBatchingManager } from 'contracts/interfaces/gmx/IGMXBatchingManager.sol';
@@ -31,17 +32,22 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
 
     /* solhint-disable var-name-mixedcase */
     uint256 public constant MAX_BPS = 10_000;
+    uint256 public constant USDG_DECIMALS = 18;
+    uint256 public constant WETH_DECIMALS = 18;
+    uint256 public constant PRICE_PRECISION = 10**30;
 
     /* solhint-disable var-name-mixedcase */
     uint256 public FEE = 1000;
 
     uint256 public protocolFee;
     uint256 public wethThreshold;
+    uint256 public slippageThreshold;
 
     IERC20 private weth;
     IERC20 private fsGlp;
     IERC20 private usdc;
 
+    IGMXVault private gmxVault;
     IGlpManager private glpManager;
     IRewardRouterV2 private rewardRouter;
     IGMXBatchingManager private batchingManager;
@@ -70,19 +76,23 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
         rewardRouter = params.rewardRouter;
 
         fsGlp = IERC20(ISGLPExtended(address(asset)).stakedGlpTracker());
+        gmxVault = IGMXVault(glpManager.vault());
     }
 
     function updateGMXParams(
         uint256 _feeBps,
         uint256 _wethThreshold,
+        uint256 _slippageThreshold,
         address _batchingManager
     ) external onlyOwner {
-        if (_feeBps < MAX_BPS && _batchingManager != address(0)) {
+        if (_feeBps < MAX_BPS && _slippageThreshold < MAX_BPS && _batchingManager != address(0)) {
             FEE = _feeBps;
             wethThreshold = _wethThreshold;
+            slippageThreshold = _slippageThreshold;
             batchingManager = IGMXBatchingManager(_batchingManager);
         } else revert GYS_INVALID_SETTER_VALUES();
 
+        // TODO: update event
         emit GmxParamsUpdated(_feeBps, _batchingManager);
     }
 
@@ -125,7 +135,16 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
             protocolFee += protocolFeeHarvested;
 
             uint256 wethToCompound = wethHarvested - protocolFeeHarvested;
-            batchingManager.depositToken(address(weth), wethToCompound, address(this));
+
+            uint256 price = gmxVault.getMinPrice(address(weth));
+            uint256 usdgAmount = wethToCompound.mulDiv(
+                price * (MAX_BPS - slippageThreshold),
+                PRICE_PRECISION * MAX_BPS
+            );
+
+            usdgAmount = usdgAmount.mulDiv(10**USDG_DECIMALS, 10**WETH_DECIMALS);
+
+            batchingManager.depositToken(address(weth), wethToCompound, usdgAmount, address(this));
         }
     }
 
@@ -158,7 +177,12 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
 
         IERC20(token).transferFrom(_msgSender(), address(this), amount);
 
-        uint256 assets = batchingManager.depositToken(address(token), amount, address(this));
+        uint256 price = gmxVault.getMinPrice(token);
+        uint256 usdgAmount = amount.mulDiv(price * (MAX_BPS - slippageThreshold), PRICE_PRECISION * MAX_BPS);
+
+        usdgAmount = usdgAmount.mulDiv(10**USDG_DECIMALS, 10**IERC20Metadata(token).decimals());
+
+        uint256 assets = batchingManager.depositToken(token, amount, usdgAmount, address(this));
 
         require((shares = previewDeposit(assets)) != 0, 'ZERO_SHARES');
 
