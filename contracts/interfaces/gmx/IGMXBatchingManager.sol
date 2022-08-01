@@ -28,6 +28,7 @@ interface IGMXBatchingManager {
     function depositToken(
         address token,
         uint256 amount,
+        uint256 minUSDG,
         address receiver
     ) external returns (uint256 glpStaked);
 

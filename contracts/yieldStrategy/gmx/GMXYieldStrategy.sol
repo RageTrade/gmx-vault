@@ -45,8 +45,8 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
     IGlpManager private glpManager;
     IRewardRouterV2 private rewardRouter;
-    IGMXBatchingManager private batchingManager;
     IGlpStakingManager private stakingManager;
+    IGMXBatchingManager private batchingManager;
 
     struct GMXYieldStrategyInitParams {
         EightyTwentyRangeStrategyVaultInitParams eightyTwentyRangeStrategyVaultInitParams;

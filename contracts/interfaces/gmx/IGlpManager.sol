@@ -40,6 +40,8 @@ interface IGlpManager {
 
     function getAums() external view returns (uint256[] memory);
 
+    function vault() external view returns (address);
+
     function getAumInUsdg(bool maximise) external view returns (uint256);
 
     function getAum(bool maximise) external view returns (uint256);
