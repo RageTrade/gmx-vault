@@ -158,7 +158,7 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
 
         IERC20(token).transferFrom(_msgSender(), address(this), amount);
 
-        uint256 assets = batchingManager.depositToken(address(usdc), amount, address(this));
+        uint256 assets = batchingManager.depositToken(address(token), amount, address(this));
 
         require((shares = previewDeposit(assets)) != 0, 'ZERO_SHARES');
 
