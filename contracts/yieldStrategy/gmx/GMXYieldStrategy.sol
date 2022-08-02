@@ -138,7 +138,7 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
     /// @notice total LP tokens staked in the curve rewards gauge
     function _stakedAssetBalance() internal view override returns (uint256) {
-        return fsGlp.balanceOf(address(this)) + stakingManager.maxWithdraw(address(this));
+        return fsGlp.balanceOf(address(this)) + stakingManager.maxRedeem(address(this));
     }
 
     /// @notice withdraws LP tokens from gauge, sells LP token for rageSettlementToken
