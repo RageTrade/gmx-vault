@@ -161,9 +161,10 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
 
         //Needs to be called only for StakingManager
         if (stakingManagerGlpBalance > 0) {
+            uint256 glpToTransfer = stakingManagerGlpBalance;
             stakingManagerGlpBalance = 0;
-            sGlp.transfer(address(stakingManager), stakingManagerGlpBalance);
-            emit VaultDeposit(stakingManagerGlpBalance);
+            sGlp.transfer(address(stakingManager), glpToTransfer);
+            emit VaultDeposit(glpToTransfer);
         }
 
         for (uint256 i = 0; i < vaults.length; i++) {
