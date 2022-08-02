@@ -209,5 +209,6 @@ export const gmxYieldStrategyFixture = deployments.createFixture(async hre => {
     trader0AccountNo,
     admin,
     adminAccountNo,
+    glpStakingManager,
   };
 });
