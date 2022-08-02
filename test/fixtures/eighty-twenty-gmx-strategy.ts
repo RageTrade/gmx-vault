@@ -174,6 +174,9 @@ export const gmxYieldStrategyFixture = deployments.createFixture(async hre => {
   await gmxYieldStrategy.updateBaseParams(ethers.constants.MaxUint256, admin.address, 0, 0);
   await gmxYieldStrategy.updateGMXParams(100, 10, 0, gmxBatchingManager.address, glpStakingManager.address);
 
+  await gmxBatchingManager.addVault(gmxYieldStrategy.address);
+  await gmxBatchingManager.grantAllowances(gmxYieldStrategy.address);
+
   await glpStakingManager.grantAllowances();
   await gmxYieldStrategy.grantAllowances();
 
