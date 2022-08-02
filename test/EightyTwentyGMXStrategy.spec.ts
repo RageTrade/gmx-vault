@@ -292,7 +292,7 @@ describe('EightyTwentyGMXStrategy', () => {
         65647411349174n,
       );
       await checkVaultRangeParamsApproximate(gmxYieldStrategy, -197850, -188910, 65647411349174n);
-      await checkNetTokenPosition(clearingHouse, vaultAccountNo, ethPoolId, -119065130813353000n - 2n);
+      await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -119065130813353000n - 1n);
       // await logVaultParams('Withdraw', gmxYieldStrategy);
       // await logRageParams(
       //   'Withdraw',
