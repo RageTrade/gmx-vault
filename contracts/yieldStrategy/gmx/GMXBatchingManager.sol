@@ -96,19 +96,18 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         _unpause();
     }
 
-    function depositToken(address token, uint256 amount)
-        external
-        whenNotPaused
-        onlyStakingManager
-        returns (uint256 glpStaked)
-    {
+    function depositToken(
+        address token,
+        uint256 amount,
+        uint256 minUSDG
+    ) external whenNotPaused onlyStakingManager returns (uint256 glpStaked) {
         if (token == address(0)) revert InvalidInput(0x30);
         if (amount == 0) revert InvalidInput(0x31);
 
         IERC20(token).transferFrom(_msgSender(), address(this), amount);
 
         // Convert tokens to glp
-        glpStaked = _stakeGlp(token, amount);
+        glpStaked = _stakeGlp(token, amount, minUSDG);
         stakingManagerGlpBalance += glpStaked.toUint128();
 
         emit DepositToken(0, token, _msgSender(), amount, glpStaked);
@@ -144,7 +143,7 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         }
 
         // Convert tokens to glp
-        glpStaked = _stakeGlp(token, amount);
+        glpStaked = _stakeGlp(token, amount, minUSDG);
 
         //Update round and glp balance for current round
         userDeposit.round = state.currentRound;
