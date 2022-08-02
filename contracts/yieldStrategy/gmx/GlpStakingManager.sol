@@ -168,7 +168,7 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
     }
 
     function totalAssets() public view override returns (uint256) {
-        return fsGlp.balanceOf(address(this)) + batchingManager.glpBalance(address(this));
+        return fsGlp.balanceOf(address(this)) + batchingManager.stakingManagerGlpBalance();
     }
 
     /// @dev only works for usdc and weth because approval is only given for those tokens
