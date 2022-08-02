@@ -63,6 +63,7 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
   await usdc.connect(usdcWhale).transfer(user1.address, parseTokenAmount(1000, 6));
   await usdc.connect(usdcWhale).transfer(user2.address, parseTokenAmount(1000, 6));
   await usdc.connect(usdcWhale).transfer(vault.address, parseTokenAmount(1000, 6));
+  await usdc.connect(usdcWhale).transfer(stakingManager.address, parseTokenAmount(1000, 6));
 
   await usdc.connect(user1).approve(gmxBatchingManager.address, 2n ** 255n);
   await usdc.connect(user2).approve(gmxBatchingManager.address, 2n ** 255n);
