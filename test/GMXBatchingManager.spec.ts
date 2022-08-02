@@ -157,7 +157,7 @@ describe('GMX Batching Manager', () => {
 
       await expect(() => stakingManager.depositToken(usdc.address, depositAmount)).to.changeTokenBalance(
         usdc,
-        vault,
+        stakingManager,
         depositAmount.mul(-1n),
       );
 
@@ -236,12 +236,12 @@ describe('GMX Batching Manager', () => {
 
       await increaseBlockTimestamp(15 * 60); //15 mins
 
-      const vaultBalanceBefore = await gmxBatchingManager.stakingManagerGlpBalance();
+      const stakingManagerBalanceBefore = await gmxBatchingManager.stakingManagerGlpBalance();
       //Check sGlp transfer and vault share transfer
       await expect(() => gmxBatchingManager.connect(keeper).executeBatchDeposit()).to.changeTokenBalances(
         fsGlp,
-        [gmxBatchingManager, vault],
-        [vaultBalanceBefore.mul(-1), vaultBalanceBefore],
+        [gmxBatchingManager, stakingManager],
+        [stakingManagerBalanceBefore.mul(-1), stakingManagerBalanceBefore],
       );
       const vaultBalance = await gmxBatchingManager.stakingManagerGlpBalance();
       expect(vaultBalance).to.eq(0);
@@ -265,7 +265,7 @@ describe('GMX Batching Manager', () => {
 
       await expect(() => stakingManager.depositToken(usdc.address, depositAmount)).to.changeTokenBalance(
         usdc,
-        vault,
+        stakingManager,
         depositAmount.mul(-1n),
       );
 
@@ -280,12 +280,13 @@ describe('GMX Batching Manager', () => {
       const balanceAfterUser2Deposit = await fsGlp.balanceOf(gmxBatchingManager.address);
 
       await increaseBlockTimestamp(15 * 60); //15 mins
+      const totalUserGlp = balanceAfterUser2Deposit.sub(balanceAfterVaultDeposit).add(balanceAfterUser1Deposit);
 
       //Check sGlp transfer and vault share transfer
       await expect(() => gmxBatchingManager.connect(keeper).executeBatchDeposit()).to.changeTokenBalances(
         fsGlp,
-        [gmxBatchingManager, vault],
-        [balanceAfterUser2Deposit.mul(-1), balanceAfterUser2Deposit],
+        [gmxBatchingManager, vault, stakingManager],
+        [balanceAfterUser2Deposit.mul(-1), totalUserGlp, balanceAfterVaultDeposit.sub(balanceAfterUser1Deposit)],
       );
 
       const user1Deposit = await gmxBatchingManager.userDeposits(vault.address, user1.address);
@@ -302,7 +303,6 @@ describe('GMX Batching Manager', () => {
       expect(user2Deposit.round).to.eq(1);
       expect(user2Deposit.unclaimedShares).to.eq(0);
 
-      const totalUserGlp = balanceAfterUser2Deposit.sub(balanceAfterVaultDeposit).add(balanceAfterUser1Deposit);
       expect(round1Deposit.totalGlp).to.eq(totalUserGlp);
       expect(round1Deposit.totalShares).to.eq(totalUserGlp);
 
