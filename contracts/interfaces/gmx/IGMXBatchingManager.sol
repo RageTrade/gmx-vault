@@ -30,7 +30,11 @@ interface IGMXBatchingManager {
         uint128 totalShares;
     }
 
-    function depositToken(address token, uint256 amount) external returns (uint256 glpStaked);
+    function depositToken(
+        address token,
+        uint256 amount,
+        uint256 minUSDG
+    ) external returns (uint256 glpStaked);
 
     function depositToken(
         IERC4626 gmxVault,

@@ -144,7 +144,7 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
 
             usdgAmount = usdgAmount.mulDiv(10**USDG_DECIMALS, 10**WETH_DECIMALS);
 
-            batchingManager.depositToken(address(weth), wethToCompound, usdgAmount, address(this));
+            batchingManager.depositToken(address(weth), wethToCompound, usdgAmount);
         }
     }
 
@@ -172,11 +172,7 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
     }
 
     /// @dev only works for usdc and weth because approval is only given for those tokens
-    function depositToken(
-        IERC4626 gmxVault,
-        address token,
-        uint256 amount
-    ) external returns (uint256 shares) {
+    function depositToken(address token, uint256 amount) external returns (uint256 shares) {
         _beforeShareAllocation();
 
         IERC20(token).transferFrom(_msgSender(), address(this), amount);
@@ -186,7 +182,7 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
 
         usdgAmount = usdgAmount.mulDiv(10**USDG_DECIMALS, 10**IERC20Metadata(token).decimals());
 
-        uint256 assets = batchingManager.depositToken(token, amount, usdgAmount, address(this));
+        uint256 assets = batchingManager.depositToken(token, amount, usdgAmount);
 
         require((shares = previewDeposit(assets)) != 0, 'ZERO_SHARES');
 
