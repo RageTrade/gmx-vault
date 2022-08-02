@@ -46,6 +46,8 @@ interface IGMXBatchingManager {
 
     function executeBatchDeposit() external;
 
+    function stakingManagerGlpBalance() external view returns (uint256 balance);
+
     function glpBalance(address account) external view returns (uint256 balance);
 
     function glpBalancePerVault(IERC4626 gmxVault, address account) external view returns (uint256 balance);
