@@ -282,7 +282,7 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         ++vaultCount;
     }
 
-    function _ensureVaultIsValid(IERC4626 vault) internal view returns (bool) {
+    function _ensureVaultIsValid(IERC4626 vault) internal view {
         if (!_isVaultValid(vault)) revert InvalidVault(address(vault));
     }
 
