@@ -32,12 +32,12 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
     uint8 vaultCount;
     mapping(IERC4626 => VaultBatchingState) public vaultBatchingState;
     address public stakingManager; // used for depositing harvested rewards
-    uint256 public stakingManagerGlpBalance;
-    IRewardRouterV2 public rewardRouter;
-    IGlpManager public glpManager;
-
-    IERC20 public sGlp;
     address public keeper;
+    uint256 public stakingManagerGlpBalance;
+
+    IRewardRouterV2 private rewardRouter;
+    IGlpManager private glpManager;
+    IERC20 private sGlp;
 
     modifier onlyStakingManager() {
         if (_msgSender() != stakingManager) revert CallerNotStakingManager();
