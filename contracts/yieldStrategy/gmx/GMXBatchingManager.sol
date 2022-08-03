@@ -39,6 +39,8 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
     IGlpManager private glpManager;
     IERC20 private sGlp;
 
+    error InvalidVault(address vault);
+
     modifier onlyStakingManager() {
         if (_msgSender() != stakingManager) revert CallerNotStakingManager();
         _;
@@ -79,7 +81,7 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
     }
 
     function grantAllowances(IERC4626 gmxVault) external onlyOwner {
-        require(_isVaultValid(gmxVault));
+        _ensureVaultIsValid(gmxVault);
         sGlp.approve(address(gmxVault), type(uint256).max);
     }
 
@@ -278,6 +280,10 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         vaultBatchingState[vault].currentRound = 1;
         vaults[vaultCount] = vault;
         ++vaultCount;
+    }
+
+    function _ensureVaultIsValid(IERC4626 vault) internal view returns (bool) {
+        if (!_isVaultValid(vault)) revert InvalidVault(address(vault));
     }
 
     function _isVaultValid(IERC4626 vault) internal view returns (bool) {
