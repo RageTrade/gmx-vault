@@ -19,9 +19,9 @@ import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/O
 contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
     using FullMath for uint256;
 
-    error GYS_INVALID_SETTER_VALUES();
-    error GYS_INVALID_SET_VAULT();
-    error GYS_CALLER_NOT_VAULT();
+    error GSM_INVALID_SETTER_VALUES();
+    error GSM_INVALID_SET_VAULT();
+    error GSM_CALLER_NOT_VAULT();
 
     event FeesWithdrawn(uint256 vaule);
     event GmxParamsUpdated(uint256 newFee, address batchingManager);
@@ -92,7 +92,7 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
             wethThreshold = _wethThreshold;
             slippageThreshold = _slippageThreshold;
             batchingManager = IGMXBatchingManager(_batchingManager);
-        } else revert GYS_INVALID_SETTER_VALUES();
+        } else revert GSM_INVALID_SETTER_VALUES();
 
         // TODO: update event
         emit GmxParamsUpdated(_feeBps, _batchingManager);
@@ -101,7 +101,7 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
     function setVault(address vaultAddress, bool _isVault) external onlyOwner {
         if (isVault[vaultAddress] != _isVault) {
             isVault[vaultAddress] = _isVault;
-        } else revert GYS_INVALID_SET_VAULT();
+        } else revert GSM_INVALID_SET_VAULT();
 
         emit VaultUpdated(vaultAddress, _isVault);
     }
@@ -152,7 +152,7 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
 
     /// @dev also check if the msg.sender is vault
     function _beforeShareAllocation() internal override {
-        if (!isVault[_msgSender()]) revert GYS_CALLER_NOT_VAULT();
+        if (!isVault[_msgSender()]) revert GSM_CALLER_NOT_VAULT();
         _harvestFees();
     }
 

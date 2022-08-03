@@ -43,18 +43,18 @@ describe('GmxYieldStrategy', () => {
   describe('#update params', () => {
     it('fails - fee incorrect', async () => {
       await expect(glpStakingManager.updateGMXParams(100000, 0, 0, randomAddress())).to.be.revertedWith(
-        'GYS_INVALID_SETTER_VALUES()',
+        'GSM_INVALID_SETTER_VALUES()',
       );
     });
     it('fails - slippage threshold', async () => {
       await expect(glpStakingManager.updateGMXParams(0, 0, 100000, randomAddress())).to.be.revertedWith(
-        'GYS_INVALID_SETTER_VALUES()',
+        'GSM_INVALID_SETTER_VALUES()',
       );
     });
 
     it('fails - batching manager address', async () => {
       await expect(glpStakingManager.updateGMXParams(0, 0, 0, ethers.constants.AddressZero)).to.be.revertedWith(
-        'GYS_INVALID_SETTER_VALUES()',
+        'GSM_INVALID_SETTER_VALUES()',
       );
     });
   });
@@ -62,12 +62,12 @@ describe('GmxYieldStrategy', () => {
   describe('#set vault', () => {
     it('fails - already set', async () => {
       await expect(glpStakingManager.setVault(gmxYieldStrategy.address, true)).to.be.revertedWith(
-        'GYS_INVALID_SET_VAULT()',
+        'GSM_INVALID_SET_VAULT()',
       );
     });
     it('fails - already unset', async () => {
       await expect(glpStakingManager.setVault(ethers.constants.AddressZero, false)).to.be.revertedWith(
-        'GYS_INVALID_SET_VAULT()',
+        'GSM_INVALID_SET_VAULT()',
       );
     });
 
@@ -99,28 +99,28 @@ describe('GmxYieldStrategy', () => {
   describe('#called not vault ', () => {
     it('deposit', async () => {
       await expect(glpStakingManager.connect(signers[1]).deposit(10, signers[1].address)).to.be.revertedWith(
-        'GYS_CALLER_NOT_VAULT()',
+        'GSM_CALLER_NOT_VAULT()',
       );
     });
     it('withdraw', async () => {
       await expect(
         glpStakingManager.connect(signers[1]).withdraw(10, signers[1].address, signers[1].address),
-      ).to.be.revertedWith('GYS_CALLER_NOT_VAULT()');
+      ).to.be.revertedWith('GSM_CALLER_NOT_VAULT()');
     });
 
     it('mint', async () => {
       await expect(glpStakingManager.connect(signers[1]).mint(10, signers[1].address)).to.be.revertedWith(
-        'GYS_CALLER_NOT_VAULT()',
+        'GSM_CALLER_NOT_VAULT()',
       );
     });
     it('redeem', async () => {
       await expect(
         glpStakingManager.connect(signers[1]).redeem(10, signers[1].address, signers[1].address),
-      ).to.be.revertedWith('GYS_CALLER_NOT_VAULT()');
+      ).to.be.revertedWith('GSM_CALLER_NOT_VAULT()');
     });
     it('depositToken', async () => {
       await expect(glpStakingManager.connect(signers[1]).depositToken(addresses.WETH, 10)).to.be.revertedWith(
-        'GYS_CALLER_NOT_VAULT()',
+        'GSM_CALLER_NOT_VAULT()',
       );
     });
   });
