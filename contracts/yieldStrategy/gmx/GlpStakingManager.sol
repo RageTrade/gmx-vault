@@ -27,8 +27,8 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
     event GmxParamsUpdated(uint256 newFee, address batchingManager);
     event VaultUpdated(address vaultAddress, bool isVault);
 
-    event TokenWithdrawn(address token, uint256 shares, address receiver);
-    event TokenRedeemded(address token, uint256 _sGLPQuantity, address receiver);
+    event TokenWithdrawn(address indexed token, uint256 shares, address indexed receiver);
+    event TokenRedeemded(address indexed token, uint256 _sGLPQuantity, address indexed receiver);
 
     /* solhint-disable var-name-mixedcase */
     uint256 public constant MAX_BPS = 10_000;
