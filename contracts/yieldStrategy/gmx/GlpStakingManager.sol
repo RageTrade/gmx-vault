@@ -54,6 +54,8 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
 
     mapping(address => bool) public isVault;
 
+    error ZeroShares();
+
     struct GlpStakingManagerInitParams {
         RageERC4626InitParams rageErc4626InitParams;
         IERC20 weth;
@@ -184,7 +186,8 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
 
         uint256 assets = batchingManager.depositToken(token, amount, usdgAmount);
 
-        require((shares = previewDeposit(assets)) != 0, 'ZERO_SHARES');
+        shares = previewDeposit(assets);
+        if (shares == 0) revert ZeroShares();
 
         // // Need to transfer before minting or ERC777s could reenter.
         // asset.safeTransferFrom(msg.sender, address(this), assets);
