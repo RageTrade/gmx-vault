@@ -1,13 +1,12 @@
 import { deployments } from 'hardhat';
-import { ERC20 } from '../../typechain-types/artifacts/@openzeppelin/contracts/token/ERC20/ERC20';
 import { GMXYieldStrategy__factory } from '../../typechain-types';
 
 import { parseTokenAmount } from '@ragetrade/sdk';
 
-import addresses, { GMX_ECOSYSTEM_ADDRESSES } from './addresses';
-import { eightyTwentyRangeStrategyFixture } from './eighty-twenty-range-strategy-vault';
 import { getErc20 } from '../utils/erc20';
 import { parseEther } from 'ethers/lib/utils';
+import addresses, { GMX_ECOSYSTEM_ADDRESSES } from './addresses';
+import { eightyTwentyRangeStrategyFixture } from './eighty-twenty-range-strategy-vault';
 
 export const gmxYieldStrategyFixture = deployments.createFixture(async hre => {
   const {
@@ -62,9 +61,6 @@ export const gmxYieldStrategyFixture = deployments.createFixture(async hre => {
       resetPositionThresholdBps: 0,
       minNotionalPositionToCloseThreshold: 0,
     },
-    glp: GMX_ECOSYSTEM_ADDRESSES.GLP,
-    weth: addresses.WETH,
-    glpManager: GMX_ECOSYSTEM_ADDRESSES.GlpManager,
     rewardRouter: GMX_ECOSYSTEM_ADDRESSES.RewardRouter,
   });
 
@@ -72,23 +68,20 @@ export const gmxYieldStrategyFixture = deployments.createFixture(async hre => {
 
   const glpStakingManager = await glpStakingManagerFactory.deploy();
 
-  glpStakingManager.initialize({
+  await glpStakingManager.initialize({
     rageErc4626InitParams: {
       asset: sGLP.address,
-      name: 'TriCrypto Shares',
-      symbol: 'TCS',
+      name: 'Staking Manager Shares',
+      symbol: 'SMS',
     },
     weth: addresses.WETH,
     usdc: addresses.USDC,
-    glpManager: GMX_ECOSYSTEM_ADDRESSES.GlpManager,
     rewardRouter: GMX_ECOSYSTEM_ADDRESSES.RewardRouter,
   });
 
   const gmxBatchingManagerFactory = await hre.ethers.getContractFactory('GMXBatchingManager');
 
   const gmxBatchingManager = await gmxBatchingManagerFactory.deploy();
-
-  // console.log({gmxBatchingManagerAddress,actualAddress:gmxBatchingManager.address});
 
   await gmxBatchingManager.initialize(
     GMX_ECOSYSTEM_ADDRESSES.StakedGlp,
@@ -101,7 +94,7 @@ export const gmxYieldStrategyFixture = deployments.createFixture(async hre => {
   await glpStakingManager.updateGMXParams(100, 0, 500, gmxBatchingManager.address);
   await glpStakingManager.setVault(gmxYieldStrategy.address, true);
   await gmxYieldStrategy.updateBaseParams(parseEther('100'), signer.address, 0, 0);
-  await gmxYieldStrategy.updateGMXParams(100, 10, 0, gmxBatchingManager.address, glpStakingManager.address);
+  await gmxYieldStrategy.updateGMXParams(glpStakingManager.address, gmxBatchingManager.address, 0, 10);
 
   await gmxBatchingManager.addVault(gmxYieldStrategy.address);
   await gmxBatchingManager.grantAllowances(gmxYieldStrategy.address);

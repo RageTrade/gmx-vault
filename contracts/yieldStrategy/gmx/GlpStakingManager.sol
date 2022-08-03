@@ -19,21 +19,23 @@ import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/O
 contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
     using FullMath for uint256;
 
-    error GYS_INVALID_SETTER_VALUES();
-    error GYS_INVALID_SET_VAULT();
     error GYS_CALLER_NOT_VAULT();
+    error GYS_INVALID_SET_VAULT();
+    error GYS_INVALID_SETTER_VALUES();
 
     event FeesWithdrawn(uint256 vaule);
-    event GmxParamsUpdated(uint256 newFee, address batchingManager);
     event VaultUpdated(address vaultAddress, bool isVault);
+    event GmxParamsUpdated(uint256 newFee, uint256 wethThreshold, uint256 slippageThreshold, address batchingManager);
 
     event TokenWithdrawn(address indexed token, uint256 shares, address indexed receiver);
     event TokenRedeemded(address indexed token, uint256 _sGLPQuantity, address indexed receiver);
 
     /* solhint-disable var-name-mixedcase */
     uint256 public constant MAX_BPS = 10_000;
+
     uint256 public constant USDG_DECIMALS = 18;
     uint256 public constant WETH_DECIMALS = 18;
+
     uint256 public constant PRICE_PRECISION = 10**30;
 
     /* solhint-disable var-name-mixedcase */
@@ -44,8 +46,8 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
     uint256 public slippageThreshold;
 
     IERC20 private weth;
-    IERC20 private fsGlp;
     IERC20 private usdc;
+    IERC20 private fsGlp;
 
     IGMXVault private gmxVault;
     IGlpManager private glpManager;
@@ -60,7 +62,6 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
         RageERC4626InitParams rageErc4626InitParams;
         IERC20 weth;
         IERC20 usdc;
-        IGlpManager glpManager;
         IRewardRouterV2 rewardRouter;
     }
 
@@ -74,10 +75,11 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
     function __GlpStakingManager_init(GlpStakingManagerInitParams memory params) internal onlyInitializing {
         weth = params.weth;
         usdc = params.usdc;
-        glpManager = params.glpManager;
         rewardRouter = params.rewardRouter;
 
         fsGlp = IERC20(ISGLPExtended(address(asset)).stakedGlpTracker());
+        glpManager = IGlpManager(ISGLPExtended(address(asset)).glpManager());
+
         gmxVault = IGMXVault(glpManager.vault());
     }
 
@@ -94,8 +96,7 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
             batchingManager = IGMXBatchingManager(_batchingManager);
         } else revert GYS_INVALID_SETTER_VALUES();
 
-        // TODO: update event
-        emit GmxParamsUpdated(_feeBps, _batchingManager);
+        emit GmxParamsUpdated(_feeBps, _wethThreshold, _slippageThreshold, _batchingManager);
     }
 
     function setVault(address vaultAddress, bool _isVault) external onlyOwner {
@@ -109,18 +110,15 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
     /// @notice grants one time max allowance to various third parties
     function grantAllowances() public onlyOwner {
         asset.approve(address(glpManager), type(uint256).max);
-        asset.approve(address(rewardRouter), type(uint256).max);
 
         weth.approve(address(glpManager), type(uint256).max);
-        weth.approve(address(rewardRouter), type(uint256).max);
         weth.approve(address(batchingManager), type(uint256).max);
 
         usdc.approve(address(glpManager), type(uint256).max);
-        usdc.approve(address(rewardRouter), type(uint256).max);
         usdc.approve(address(batchingManager), type(uint256).max);
     }
 
-    /// @notice withdraw accumulated CRV fees
+    /// @notice withdraw accumulated WETH fees
     function withdrawFees() external onlyOwner {
         uint256 amount = protocolFee;
         protocolFee = 0;
@@ -128,9 +126,18 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
         emit FeesWithdrawn(amount);
     }
 
-    /// @notice claims the accumulated CRV rewards from the gauge, sells CRV rewards for LP tokens and stakes LP tokens
+    /// @notice stakes the rewards from the staked Glp and claims WETH to buy glp
     function _harvestFees() internal {
-        rewardRouter.handleRewards(false, false, true, true, true, true, false);
+        rewardRouter.handleRewards(
+            false, // _shouldClaimGmx
+            false, // _shouldStakeGmx
+            true, // _shouldClaimEsGmx
+            true, // _shouldStakeEsGmx
+            true, // _shouldStakeMultiplierPoints
+            true, // _shouldClaimWeth
+            false // _shouldConvertWethToEth
+        );
+
         uint256 wethHarvested = weth.balanceOf(address(this)) - protocolFee;
         if (wethHarvested > wethThreshold) {
             uint256 protocolFeeHarvested = (wethHarvested * FEE) / MAX_BPS;
@@ -152,7 +159,7 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
 
     /// @dev also check if the msg.sender is vault
     function _beforeShareAllocation() internal override {
-        if (!isVault[_msgSender()]) revert GYS_CALLER_NOT_VAULT();
+        if (!isVault[msg.sender]) revert GYS_CALLER_NOT_VAULT();
         _harvestFees();
     }
 
@@ -177,7 +184,7 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
     function depositToken(address token, uint256 amount) external returns (uint256 shares) {
         _beforeShareAllocation();
 
-        IERC20(token).transferFrom(_msgSender(), address(this), amount);
+        IERC20(token).transferFrom(msg.sender, address(this), amount);
 
         uint256 price = gmxVault.getMinPrice(token);
         uint256 usdgAmount = amount.mulDiv(price * (MAX_BPS - slippageThreshold), PRICE_PRECISION * MAX_BPS);
@@ -192,9 +199,9 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
         // // Need to transfer before minting or ERC777s could reenter.
         // asset.safeTransferFrom(msg.sender, address(this), assets);
 
-        _mint(_msgSender(), shares);
+        _mint(msg.sender, shares);
 
-        emit Deposit(msg.sender, _msgSender(), assets, shares);
+        emit Deposit(msg.sender, msg.sender, assets, shares);
 
         afterDeposit(assets, shares);
     }
