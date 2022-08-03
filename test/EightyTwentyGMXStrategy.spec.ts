@@ -1,9 +1,8 @@
 // Integration Testing New
-import { ClearingHouse, parseTokenAmount, priceToPriceX128, IUniswapV3Pool, priceX128ToPrice } from '@ragetrade/sdk';
-import { BigNumber } from 'ethers';
 import hre from 'hardhat';
+import { BigNumber } from 'ethers';
+import { ClearingHouse, priceToPriceX128 } from '@ragetrade/sdk';
 
-import { eightyTwentyCurveStrategyFixture } from './fixtures/eighty-twenty-curve-strategy';
 import {
   checkAccountNetProfit,
   checkLiquidityPosition,
@@ -11,7 +10,6 @@ import {
   checkLiquidityPositionNum,
   checkNetTokenPosition,
   checkNetTokenPositionApproximate,
-  logRageParams,
   swapToken,
 } from './utils/rage-helpers';
 import {
@@ -19,28 +17,26 @@ import {
   checkTotalAssets,
   checkTotalGLPApproximate,
   checkTotalSupply,
-  checkTotalSupplyApproximate,
   checkTotalSupplyGLPApproximate,
   checkVaultRangeParams,
   checkVaultRangeParamsApproximate,
   increaseBlockTimestamp,
-  logVaultParams,
 } from './utils/vault-helpers';
 
-import { impersonateAccount } from '@nomicfoundation/hardhat-network-helpers';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { parseEther } from 'ethers/lib/utils';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { impersonateAccount } from '@nomicfoundation/hardhat-network-helpers';
 import {
   ClearingHouseLens,
   ERC20,
   GMXYieldStrategy,
-  UniswapV3Pool,
-  VPoolWrapper,
   OracleMock,
   SwapSimulator,
+  UniswapV3Pool,
+  VPoolWrapper,
 } from '../typechain-types';
-import { gmxYieldStrategyFixture } from './fixtures/eighty-twenty-gmx-strategy';
 import { activateMainnetFork } from './utils/mainnet-fork';
+import { gmxYieldStrategyFixture } from './fixtures/eighty-twenty-gmx-strategy';
 
 describe('EightyTwentyGMXStrategy', () => {
   let gmxYieldStrategy: GMXYieldStrategy;
@@ -334,8 +330,6 @@ describe('EightyTwentyGMXStrategy', () => {
       //Set real price to end price so that funding payment is 0
       await ethPool.oracle.setPriceX128(await priceToPriceX128(4500.67224272213, 6, 18));
       await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 119065130813353000n, 0, false, false);
-      // TODO: Fix the check - expected = -1811804020n
-      // // await checkAccountNetProfit(clearingHouse,vaultAccountNo,-1811821349n);
 
       await changeEthPriceInGLP(4500.67224272);
       // console.log('GLP Price : ', await priceX128ToPrice(await gmxYieldStrategy.getPriceX128(), 6, 18));
@@ -451,7 +445,6 @@ describe('EightyTwentyGMXStrategy', () => {
       await ethPool.oracle.setPriceX128(await priceToPriceX128(5498.17799411523, 6, 18));
       await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, 259790609567501000n, 0, false, false);
 
-      // TODO await changeEthPriceInGLP(5498.17799411);
       // console.log('GLP Price : ', await priceX128ToPrice(await gmxYieldStrategy.getPriceX128(), 6, 18));
       // priceX128 = await priceToPriceX128(1.24985573493289, 6, 18);
       // console.log('yield token price', priceX128.mul(10n**30n).div(1n<<128n));
@@ -506,7 +499,6 @@ describe('EightyTwentyGMXStrategy', () => {
       await ethPool.oracle.setPriceX128(await priceToPriceX128(4998.91817108492, 6, 18));
       await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -259790609567501000n, 0, false, false);
 
-      // TODO await changeEthPriceInGLP(4998.91817108);
       // console.log('GLP Price : ', await priceX128ToPrice(await gmxYieldStrategy.getPriceX128(), 6, 18));
 
       // await increaseBlockTimestamp(2000); // 20_000
@@ -561,7 +553,6 @@ describe('EightyTwentyGMXStrategy', () => {
       //Arb1 - trader0 : Arb to close user1 withdrawn position
       await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -53406247782040200n, 0, false, false);
       // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -266167735282626000n);
-      // TODO await changeEthPriceInGLP(4979.95927467);
       // console.log('GLP Price : ', await priceX128ToPrice(await gmxYieldStrategy.getPriceX128(), 6, 18));
 
       // await increaseBlockTimestamp(2000); // 20_000

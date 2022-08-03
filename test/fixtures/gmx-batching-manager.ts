@@ -1,13 +1,7 @@
-import { GMX_ECOSYSTEM_ADDRESSES as gmxAddresses } from './addresses';
-import addresses from './addresses';
 import { deployments } from 'hardhat';
-import { curveYieldStrategyFixture } from './curve-yield-strategy';
-import { ERC20, GMXBatchingManager__factory, GMXYieldStrategy } from '../../typechain-types';
-import { ethers } from 'ethers';
-import { unlockWhales } from '../utils/curve-helper';
-import { smock } from '@defi-wonderland/smock';
-import { parseUnits } from 'ethers/lib/utils';
+import { ERC20 } from '../../typechain-types';
 import { getCreateAddressFor, parseTokenAmount } from '@ragetrade/sdk';
+import addresses, { GMX_ECOSYSTEM_ADDRESSES as gmxAddresses } from './addresses';
 
 export const gmxBatchingManagerFixture = deployments.createFixture(async hre => {
   const [admin, keeper, user1, user2] = await hre.ethers.getSigners();
@@ -31,7 +25,6 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
   const gmxBatchingManagerFactory = await hre.ethers.getContractFactory('GMXBatchingManager');
 
   const gmxBatchingManager = await gmxBatchingManagerFactory.deploy();
-  // console.log({gmxBatchingManagerAddress,actualAddress:gmxBatchingManager.address});
 
   await gmxBatchingManager.initialize(
     gmxAddresses.StakedGlp,
