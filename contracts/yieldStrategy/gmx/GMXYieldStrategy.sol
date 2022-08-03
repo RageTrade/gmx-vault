@@ -23,17 +23,13 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
     error GYS_INVALID_SETTER_VALUES();
 
-    event FeesWithdrawn(uint256 vaule);
-    event GmxParamsUpdated(uint256 newFee, address batchingManager, address stakingManager);
+    event GmxParamsUpdated(uint256 _usdcConversionThreshold, uint256 _usdcReedemSlippage, address _stakingManager);
 
     event TokenWithdrawn(address token, uint256 sGLPQuantity, uint256 shares, address receiver);
     event TokenRedeemded(address token, uint256 sGLPQuantity, uint256 shares, address receiver);
 
     /* solhint-disable var-name-mixedcase */
     uint256 public constant MAX_BPS = 10_000;
-
-    /* solhint-disable var-name-mixedcase */
-    uint256 public FEE = 1000;
 
     uint256 public wethThreshold;
     uint256 public usdcReedemSlippage;
@@ -46,8 +42,6 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     IGlpManager private glpManager;
     IRewardRouterV2 private rewardRouter;
     IGlpStakingManager private stakingManager;
-    IGMXBatchingManager private batchingManager;
-
     struct GMXYieldStrategyInitParams {
         EightyTwentyRangeStrategyVaultInitParams eightyTwentyRangeStrategyVaultInitParams;
         IERC20 glp;
@@ -72,21 +66,17 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     function updateGMXParams(
-        uint256 _feeBps,
         uint256 _usdcConversionThreshold,
         uint256 _usdcReedemSlippage,
-        address _batchingManager,
         address _stakingManager
     ) external onlyOwner {
-        if (_feeBps < MAX_BPS && _batchingManager != address(0)) {
-            FEE = _feeBps;
+        if (_usdcReedemSlippage < MAX_BPS && _stakingManager != address(0)) {
             usdcReedemSlippage = _usdcReedemSlippage;
             usdcConversionThreshold = _usdcConversionThreshold;
-            batchingManager = IGMXBatchingManager(_batchingManager);
             stakingManager = IGlpStakingManager(_stakingManager);
         } else revert GYS_INVALID_SETTER_VALUES();
 
-        emit GmxParamsUpdated(_feeBps, _batchingManager, _stakingManager);
+        emit GmxParamsUpdated(_usdcReedemSlippage, _usdcConversionThreshold, _stakingManager);
     }
 
     /// @notice grants one time max allowance to various third parties

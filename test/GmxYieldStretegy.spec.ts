@@ -1,6 +1,6 @@
 import { impersonateAccount } from '@nomicfoundation/hardhat-network-helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { priceX128ToPrice } from '@ragetrade/sdk';
+import { priceX128ToPrice, randomAddress } from '@ragetrade/sdk';
 import { expect } from 'chai';
 import { BigNumber } from 'ethers';
 import { formatEther, parseEther } from 'ethers/lib/utils';
@@ -130,16 +130,25 @@ describe('GmxYieldStrategy', () => {
 
   describe('#updateGMXParams', () => {
     it('allows owner to update params', async () => {
-      await expect(gmxYieldStrategy.updateGMXParams(100, 0, 0, signers[0].address, signers[0].address))
+      await expect(gmxYieldStrategy.updateGMXParams(0, 0, signers[0].address))
         .to.emit(gmxYieldStrategy, 'GmxParamsUpdated')
-        .withArgs(100, signers[0].address, signers[0].address);
+        .withArgs(0, 0, signers[0].address);
     });
 
     it('reverts when not owner', async () => {
-      await expect(
-        gmxYieldStrategy.connect(signers[1]).updateGMXParams(100, 0, 0, signers[0].address, signers[0].address),
-      ).to.be.revertedWith(
+      await expect(gmxYieldStrategy.connect(signers[1]).updateGMXParams(0, 0, signers[0].address)).to.be.revertedWith(
         `VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'`,
+      );
+    });
+    it('fails - slippage threshold', async () => {
+      await expect(gmxYieldStrategy.updateGMXParams(0, 100000, randomAddress())).to.be.revertedWith(
+        'GYS_INVALID_SETTER_VALUES()',
+      );
+    });
+
+    it('fails - staking manager address', async () => {
+      await expect(gmxYieldStrategy.updateGMXParams(0, 0, ethers.constants.AddressZero)).to.be.revertedWith(
+        'GYS_INVALID_SETTER_VALUES()',
       );
     });
   });
