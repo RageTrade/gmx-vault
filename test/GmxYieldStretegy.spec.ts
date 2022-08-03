@@ -215,7 +215,24 @@ describe('GmxYieldStrategy', () => {
   });
 
   describe('#redeemToken', () => {
-    it('works');
+    it('redeems token and burns shares', async () => {
+      await sGLP.connect(whale).approve(gmxYieldStrategy.address, parseEther('2'));
+      await gmxYieldStrategy.approve(gmxYieldStrategy.address, ethers.constants.MaxUint256);
+      await gmxYieldStrategy.connect(whale).deposit(parseEther('2'), whale.address);
+
+      const tx = gmxYieldStrategy.connect(whale).redeemToken(addresses.WETH, parseEther('1.5'), 0, whale.address);
+
+      await expect(tx).to.emit(gmxYieldStrategy, 'TokenRedeemded');
+    });
+
+    it('does not redeem if not enough shares', async () => {
+      await sGLP.connect(whale).approve(gmxYieldStrategy.address, parseEther('2'));
+      await gmxYieldStrategy.connect(whale).deposit(parseEther('2'), whale.address);
+
+      const tx = gmxYieldStrategy.connect(whale).redeemToken(addresses.WETH, parseEther('2.1'), 0, whale.address);
+
+      await expect(tx).to.be.reverted;
+    });
   });
 
   describe('compouding rewards and profit', () => {
