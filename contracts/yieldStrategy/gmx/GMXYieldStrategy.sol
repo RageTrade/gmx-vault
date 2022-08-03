@@ -23,24 +23,23 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
     error GYS_INVALID_SETTER_VALUES();
 
-    event FeesWithdrawn(uint256 vaule);
-    event GmxParamsUpdated(uint256 newFee, address batchingManager, address stakingManager);
-
     event TokenWithdrawn(address token, uint256 sGLPQuantity, uint256 shares, address receiver);
     event TokenRedeemded(address token, uint256 sGLPQuantity, uint256 shares, address receiver);
+
+    event GmxParamsUpdated(
+        address stakingManager,
+        address batchingManager,
+        uint256 usdcReedemSlippage,
+        uint256 usdcConversionThreshold
+    );
 
     /* solhint-disable var-name-mixedcase */
     uint256 public constant MAX_BPS = 10_000;
 
-    /* solhint-disable var-name-mixedcase */
-    uint256 public FEE = 1000;
-
-    uint256 public wethThreshold;
     uint256 public usdcReedemSlippage;
     uint256 public usdcConversionThreshold;
 
     IERC20 private glp;
-    IERC20 private weth;
     IERC20 private fsGlp;
 
     IGlpManager private glpManager;
@@ -50,9 +49,6 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
     struct GMXYieldStrategyInitParams {
         EightyTwentyRangeStrategyVaultInitParams eightyTwentyRangeStrategyVaultInitParams;
-        IERC20 glp;
-        IERC20 weth;
-        IGlpManager glpManager;
         IRewardRouterV2 rewardRouter;
     }
 
@@ -63,30 +59,27 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     /* solhint-disable-next-line func-name-mixedcase */
     function __GMXYieldStrategy_init(GMXYieldStrategyInitParams memory params) internal onlyInitializing {
         __EightyTwentyRangeStrategyVault_init(params.eightyTwentyRangeStrategyVaultInitParams);
-        glp = params.glp;
-        weth = params.weth;
-        glpManager = params.glpManager;
         rewardRouter = params.rewardRouter;
 
+        glp = IERC20(ISGLPExtended(address(asset)).glp());
         fsGlp = IERC20(ISGLPExtended(address(asset)).stakedGlpTracker());
+        glpManager = IGlpManager(ISGLPExtended(address(asset)).glpManager());
     }
 
     function updateGMXParams(
-        uint256 _feeBps,
-        uint256 _usdcConversionThreshold,
-        uint256 _usdcReedemSlippage,
+        address _stakingManager,
         address _batchingManager,
-        address _stakingManager
+        uint256 _usdcReedemSlippage,
+        uint256 _usdcConversionThreshold
     ) external onlyOwner {
-        if (_feeBps < MAX_BPS && _batchingManager != address(0)) {
-            FEE = _feeBps;
+        if (_batchingManager != address(0)) {
             usdcReedemSlippage = _usdcReedemSlippage;
             usdcConversionThreshold = _usdcConversionThreshold;
             batchingManager = IGMXBatchingManager(_batchingManager);
             stakingManager = IGlpStakingManager(_stakingManager);
         } else revert GYS_INVALID_SETTER_VALUES();
 
-        emit GmxParamsUpdated(_feeBps, _batchingManager, _stakingManager);
+        emit GmxParamsUpdated(_stakingManager, _batchingManager, _usdcReedemSlippage, _usdcConversionThreshold);
     }
 
     /// @notice grants one time max allowance to various third parties
@@ -94,15 +87,9 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         _grantBaseAllowances();
 
         asset.approve(address(glpManager), type(uint256).max);
-        asset.approve(address(rewardRouter), type(uint256).max);
         asset.approve(address(stakingManager), type(uint256).max);
 
-        weth.approve(address(glpManager), type(uint256).max);
-        weth.approve(address(rewardRouter), type(uint256).max);
-        weth.approve(address(stakingManager), type(uint256).max);
-
         rageSettlementToken.approve(address(glpManager), type(uint256).max);
-        rageSettlementToken.approve(address(rewardRouter), type(uint256).max);
         rageSettlementToken.approve(address(stakingManager), type(uint256).max);
     }
 

@@ -9,11 +9,10 @@ import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/O
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
 import { SafeCast } from '../../libraries/SafeCast.sol';
 
+import { IERC4626 } from 'contracts/interfaces/IERC4626.sol';
 import { IGlpManager } from 'contracts/interfaces/gmx/IGlpManager.sol';
-import { IRewardTracker } from 'contracts/interfaces/gmx/IRewardTracker.sol';
 import { IRewardRouterV2 } from 'contracts/interfaces/gmx/IRewardRouterV2.sol';
 import { IGMXBatchingManager } from 'contracts/interfaces/gmx/IGMXBatchingManager.sol';
-import { IERC4626 } from 'contracts/interfaces/IERC4626.sol';
 import { PausableUpgradeable } from '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 
 contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, PausableUpgradeable {
@@ -42,12 +41,12 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
     error InvalidVault(address vault);
 
     modifier onlyStakingManager() {
-        if (_msgSender() != stakingManager) revert CallerNotStakingManager();
+        if (msg.sender != stakingManager) revert CallerNotStakingManager();
         _;
     }
 
     modifier onlyKeeper() {
-        if (_msgSender() != keeper) revert CallerNotKeeper();
+        if (msg.sender != keeper) revert CallerNotKeeper();
         _;
     }
 
@@ -106,13 +105,13 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         if (token == address(0)) revert InvalidInput(0x30);
         if (amount == 0) revert InvalidInput(0x31);
 
-        IERC20(token).transferFrom(_msgSender(), address(this), amount);
+        IERC20(token).transferFrom(msg.sender, address(this), amount);
 
         // Convert tokens to glp
         glpStaked = _stakeGlp(token, amount, minUSDG);
         stakingManagerGlpBalance += glpStaked.toUint128();
 
-        emit DepositToken(0, token, _msgSender(), amount, glpStaked);
+        emit DepositToken(0, token, msg.sender, amount, glpStaked);
     }
 
     function depositToken(
@@ -127,7 +126,7 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         if (receiver == address(0)) revert InvalidInput(0x22);
 
         // Transfer Tokens To Manager
-        IERC20(token).transferFrom(_msgSender(), address(this), amount);
+        IERC20(token).transferFrom(msg.sender, address(this), amount);
 
         VaultBatchingState storage state = vaultBatchingState[gmxVault];
         UserDeposit storage userDeposit = state.userDeposits[receiver];
@@ -223,7 +222,7 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         if (amount == 0) revert InvalidInput(0x11);
 
         VaultBatchingState storage state = vaultBatchingState[gmxVault];
-        UserDeposit storage userDeposit = state.userDeposits[_msgSender()];
+        UserDeposit storage userDeposit = state.userDeposits[msg.sender];
         uint128 userUnclaimedShares = userDeposit.unclaimedShares;
         uint128 userGlpBalance = userDeposit.glpBalance;
         {
@@ -241,7 +240,7 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         userDeposit.unclaimedShares = userUnclaimedShares - amount.toUint128();
         IERC20(gmxVault).transfer(receiver, amount);
 
-        emit SharesClaimed(_msgSender(), receiver, amount);
+        emit SharesClaimed(msg.sender, receiver, amount);
     }
 
     function currentRound(IERC4626 vault) external view returns (uint256) {

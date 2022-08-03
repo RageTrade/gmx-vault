@@ -1,7 +1,7 @@
 import { expect } from 'chai';
-import { BigNumber, BigNumberish, ethers } from 'ethers';
-import { parseUnits } from 'ethers/lib/utils';
 import hre, { network } from 'hardhat';
+import { parseUnits } from 'ethers/lib/utils';
+import { BigNumber, BigNumberish, ethers } from 'ethers';
 
 import { EightyTwentyRangeStrategyVaultTest } from '../../typechain-types';
 
