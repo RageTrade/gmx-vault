@@ -67,7 +67,7 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         uint256 _usdcReedemSlippage,
         uint256 _usdcConversionThreshold
     ) external onlyOwner {
-        if (_stakingManager != address(0)) {
+        if (_stakingManager != address(0) && _usdcReedemSlippage < MAX_BPS) {
             usdcReedemSlippage = _usdcReedemSlippage;
             usdcConversionThreshold = _usdcConversionThreshold;
             stakingManager = IGlpStakingManager(_stakingManager);
