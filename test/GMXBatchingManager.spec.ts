@@ -14,6 +14,7 @@ import { increaseBlockTimestamp } from './utils/vault-helpers';
 describe('GMX Batching Manager', () => {
   let admin: SignerWithAddress;
   let vault: GmxVaultMock;
+  let vault1: GmxVaultMock;
   let stakingManager: GmxVaultMock;
   let keeper: SignerWithAddress;
   let user1: SignerWithAddress;
@@ -23,11 +24,11 @@ describe('GMX Batching Manager', () => {
   let sGlp: ERC20;
   let gmxBatchingManager: GMXBatchingManager;
   before(async () => {
-    await activateMainnetFork({ blockNumber: 18099162 });
+    // await activateMainnetFork({ blockNumber: 18099162 });
     await gmxBatchingManagerFixture();
   });
   beforeEach(async () => {
-    ({ admin, vault, user1, user2, keeper, usdc, fsGlp, sGlp, stakingManager, gmxBatchingManager } =
+    ({ admin, vault, vault1, user1, user2, keeper, usdc, fsGlp, sGlp, stakingManager, gmxBatchingManager } =
       await gmxBatchingManagerFixture());
   });
   after(async () => {
@@ -356,6 +357,88 @@ describe('GMX Batching Manager', () => {
       expect(await gmxBatchingManager.roundGlpBalance(vault.address)).to.eq(0);
     });
 
+    it('Multiple Vault & Staking Manager Batch Deposit', async () => {
+      const depositAmount = parseTokenAmount(100n, 6);
+
+      await expect(() =>
+        gmxBatchingManager
+          .connect(user1)
+          ['depositToken(address,address,uint256,uint256,address)'](
+            vault.address,
+            usdc.address,
+            depositAmount,
+            0,
+            user1.address,
+          ),
+      ).to.changeTokenBalance(usdc, user1, depositAmount.mul(-1n));
+
+      const balanceAfterUser1Deposit = await fsGlp.balanceOf(gmxBatchingManager.address);
+
+      await expect(() => stakingManager.depositToken(usdc.address, depositAmount, 0)).to.changeTokenBalance(
+        usdc,
+        stakingManager,
+        depositAmount.mul(-1n),
+      );
+
+      const balanceAfterVaultDeposit = await fsGlp.balanceOf(gmxBatchingManager.address);
+
+      await expect(() =>
+        gmxBatchingManager
+          .connect(user1)
+          ['depositToken(address,address,uint256,uint256,address)'](
+            vault1.address,
+            usdc.address,
+            depositAmount,
+            0,
+            user1.address,
+          ),
+      ).to.changeTokenBalance(usdc, user1, depositAmount.mul(-1n));
+
+      const balanceAfterUser2Deposit = await fsGlp.balanceOf(gmxBatchingManager.address);
+
+      await increaseBlockTimestamp(15 * 60); //15 mins
+      const totalUserGlp = balanceAfterUser2Deposit.sub(balanceAfterVaultDeposit).add(balanceAfterUser1Deposit);
+      const vaultGlp = balanceAfterUser1Deposit;
+      const vault1Glp = balanceAfterUser2Deposit.sub(balanceAfterVaultDeposit);
+
+      //Check sGlp transfer and vault share transfer
+      await expect(() => gmxBatchingManager.connect(keeper).executeBatchDeposit()).to.changeTokenBalances(
+        fsGlp,
+        [gmxBatchingManager, vault, vault1, stakingManager],
+        [balanceAfterUser2Deposit.mul(-1), vaultGlp, vault1Glp, balanceAfterVaultDeposit.sub(balanceAfterUser1Deposit)],
+      );
+
+      const vaultDeposit = await gmxBatchingManager.userDeposits(vault.address, user1.address);
+      const vaultBalance = await gmxBatchingManager.stakingManagerGlpBalance();
+      const vault1Deposit = await gmxBatchingManager.userDeposits(vault1.address, user1.address);
+
+      const round1VaultDeposit = await gmxBatchingManager.roundDeposits(vault.address, 1);
+      const round1Vault1Deposit = await gmxBatchingManager.roundDeposits(vault1.address, 1);
+
+      expect(vaultDeposit.round).to.eq(1);
+      expect(vaultDeposit.unclaimedShares).to.eq(0);
+      expect(vaultDeposit.glpBalance).to.eq(vaultGlp);
+
+      expect(vaultBalance).to.eq(0);
+
+      expect(vault1Deposit.round).to.eq(1);
+      expect(vault1Deposit.unclaimedShares).to.eq(0);
+      expect(vault1Deposit.glpBalance).to.eq(vault1Glp);
+
+      expect(round1VaultDeposit.totalGlp).to.eq(vaultGlp);
+      expect(round1VaultDeposit.totalShares).to.eq(vaultGlp);
+      expect(round1Vault1Deposit.totalGlp).to.eq(vault1Glp);
+      expect(round1Vault1Deposit.totalShares).to.eq(vault1Glp);
+
+      expect(await vault.balanceOf(gmxBatchingManager.address)).to.eq(vaultGlp);
+      expect(await vault1.balanceOf(gmxBatchingManager.address)).to.eq(vault1Glp);
+
+      expect(await gmxBatchingManager.currentRound(vault.address)).to.eq(2);
+      expect(await gmxBatchingManager.roundGlpBalance(vault.address)).to.eq(0);
+      expect(await gmxBatchingManager.currentRound(vault1.address)).to.eq(2);
+      expect(await gmxBatchingManager.roundGlpBalance(vault1.address)).to.eq(0);
+    });
+
     it('Single User Multiple Round Batch Deposit', async () => {
       const depositAmount = parseTokenAmount(100n, 6);
 
@@ -470,7 +553,7 @@ describe('GMX Batching Manager', () => {
       expect(await gmxBatchingManager.paused()).to.be.false;
     });
 
-    it.only('Single User Claim After another deposit', async () => {
+    it('Single User Claim After another deposit', async () => {
       const depositAmount = parseTokenAmount(100n, 6);
 
       await gmxBatchingManager
@@ -652,6 +735,58 @@ describe('GMX Batching Manager', () => {
       expect(user2Deposit.round).to.eq(1);
       expect(user2Deposit.glpBalance).to.eq(0);
       expect(user2Deposit.unclaimedShares).to.eq(0);
+    });
+
+    it('Multiple Vault Claim', async () => {
+      const vaultDepositAmount = parseTokenAmount(100n, 6);
+      const vault1DepositAmount = parseTokenAmount(2n * 100n, 6);
+
+      await gmxBatchingManager
+        .connect(user1)
+        ['depositToken(address,address,uint256,uint256,address)'](
+          vault.address,
+          usdc.address,
+          vaultDepositAmount,
+          0,
+          user1.address,
+        );
+
+      const vaultShare = await fsGlp.balanceOf(gmxBatchingManager.address);
+
+      await gmxBatchingManager
+        .connect(user1)
+        ['depositToken(address,address,uint256,uint256,address)'](
+          vault1.address,
+          usdc.address,
+          vault1DepositAmount,
+          0,
+          user1.address,
+        );
+
+      const vault1Share = (await fsGlp.balanceOf(gmxBatchingManager.address)).sub(vaultShare);
+
+      await increaseBlockTimestamp(15 * 60); //15 mins
+
+      await gmxBatchingManager.connect(keeper).executeBatchDeposit();
+
+      await expect(() =>
+        gmxBatchingManager.connect(user1).claim(vault.address, user1.address, vaultShare),
+      ).to.changeTokenBalances(vault, [gmxBatchingManager, user1], [vaultShare.mul(-1), vaultShare]);
+
+      await expect(() =>
+        gmxBatchingManager.connect(user1).claim(vault1.address, user1.address, vault1Share),
+      ).to.changeTokenBalances(vault1, [gmxBatchingManager, user1], [vault1Share.mul(-1), vault1Share]);
+
+      const vaultDeposit = await gmxBatchingManager.userDeposits(vault.address, user1.address);
+      const vault1Deposit = await gmxBatchingManager.userDeposits(vault1.address, user1.address);
+
+      expect(vaultDeposit.round).to.eq(1);
+      expect(vaultDeposit.glpBalance).to.eq(0);
+      expect(vaultDeposit.unclaimedShares).to.eq(0);
+
+      expect(vault1Deposit.round).to.eq(1);
+      expect(vault1Deposit.glpBalance).to.eq(0);
+      expect(vault1Deposit.unclaimedShares).to.eq(0);
     });
 
     it('Single User Multiple Round Claim', async () => {
