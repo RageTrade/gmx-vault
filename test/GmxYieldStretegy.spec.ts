@@ -1,6 +1,6 @@
 import { impersonateAccount } from '@nomicfoundation/hardhat-network-helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { priceX128ToPrice } from '@ragetrade/sdk';
+import { priceX128ToPrice, randomAddress } from '@ragetrade/sdk';
 import { expect } from 'chai';
 import { BigNumber } from 'ethers';
 import { formatEther, parseEther } from 'ethers/lib/utils';
@@ -132,12 +132,24 @@ describe('GmxYieldStrategy', () => {
     it('allows owner to update params', async () => {
       await expect(gmxYieldStrategy.updateGMXParams(signers[0].address, 10, 0))
         .to.emit(gmxYieldStrategy, 'GmxParamsUpdated')
-        .withArgs(signers[0].address, signers[0].address, 10, 0);
+        .withArgs(signers[0].address, 10, 0);
     });
 
     it('reverts when not owner', async () => {
       await expect(gmxYieldStrategy.connect(signers[1]).updateGMXParams(signers[0].address, 10, 0)).to.be.revertedWith(
         `VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'`,
+      );
+    });
+
+    it('fails - slippage threshold', async () => {
+      await expect(gmxYieldStrategy.updateGMXParams(randomAddress(), 100000, 0)).to.be.revertedWith(
+        'GYS_INVALID_SETTER_VALUES()',
+      );
+    });
+
+    it('fails - staking manager address', async () => {
+      await expect(gmxYieldStrategy.updateGMXParams(ethers.constants.AddressZero, 0, 0)).to.be.revertedWith(
+        'GYS_INVALID_SETTER_VALUES()',
       );
     });
   });
