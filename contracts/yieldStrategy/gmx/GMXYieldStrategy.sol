@@ -8,9 +8,7 @@ import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadat
 
 import { IGlpManager } from 'contracts/interfaces/gmx/IGlpManager.sol';
 import { ISGLPExtended } from 'contracts/interfaces/gmx/ISGLPExtended.sol';
-import { IRewardTracker } from 'contracts/interfaces/gmx/IRewardTracker.sol';
 import { IRewardRouterV2 } from 'contracts/interfaces/gmx/IRewardRouterV2.sol';
-import { IGMXBatchingManager } from 'contracts/interfaces/gmx/IGMXBatchingManager.sol';
 import { IGlpStakingManager } from 'contracts/interfaces/gmx/IGlpStakingManager.sol';
 
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
@@ -26,12 +24,7 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     event TokenWithdrawn(address token, uint256 sGLPQuantity, uint256 shares, address receiver);
     event TokenRedeemded(address token, uint256 sGLPQuantity, uint256 shares, address receiver);
 
-    event GmxParamsUpdated(
-        address stakingManager,
-        address batchingManager,
-        uint256 usdcReedemSlippage,
-        uint256 usdcConversionThreshold
-    );
+    event GmxParamsUpdated(address stakingManager, uint256 usdcReedemSlippage, uint256 usdcConversionThreshold);
 
     /* solhint-disable var-name-mixedcase */
     uint256 public constant MAX_BPS = 10_000;
@@ -45,7 +38,6 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     IGlpManager private glpManager;
     IRewardRouterV2 private rewardRouter;
     IGlpStakingManager private stakingManager;
-    IGMXBatchingManager private batchingManager;
 
     struct GMXYieldStrategyInitParams {
         EightyTwentyRangeStrategyVaultInitParams eightyTwentyRangeStrategyVaultInitParams;
@@ -68,18 +60,16 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
     function updateGMXParams(
         address _stakingManager,
-        address _batchingManager,
         uint256 _usdcReedemSlippage,
         uint256 _usdcConversionThreshold
     ) external onlyOwner {
-        if (_batchingManager != address(0)) {
+        if (_stakingManager != address(0)) {
             usdcReedemSlippage = _usdcReedemSlippage;
             usdcConversionThreshold = _usdcConversionThreshold;
-            batchingManager = IGMXBatchingManager(_batchingManager);
             stakingManager = IGlpStakingManager(_stakingManager);
         } else revert GYS_INVALID_SETTER_VALUES();
 
-        emit GmxParamsUpdated(_stakingManager, _batchingManager, _usdcReedemSlippage, _usdcConversionThreshold);
+        emit GmxParamsUpdated(_stakingManager, _usdcReedemSlippage, _usdcConversionThreshold);
     }
 
     /// @notice grants one time max allowance to various third parties
