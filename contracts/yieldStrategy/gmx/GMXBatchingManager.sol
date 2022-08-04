@@ -28,15 +28,18 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
     }
 
     IERC4626[10] public vaults;
-    uint8 vaultCount;
-    mapping(IERC4626 => VaultBatchingState) public vaultBatchingState;
-    address public stakingManager; // used for depositing harvested rewards
+
     address public keeper;
+    address public stakingManager; // used for depositing harvested rewards
+
+    uint256 public vaultCount;
     uint256 public stakingManagerGlpBalance;
 
-    IRewardRouterV2 private rewardRouter;
-    IGlpManager private glpManager;
     IERC20 private sGlp;
+    IGlpManager private glpManager;
+    IRewardRouterV2 private rewardRouter;
+
+    mapping(IERC4626 => VaultBatchingState) public vaultBatchingState;
 
     error InvalidVault(address vault);
 
@@ -62,6 +65,7 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         __GMXBatchingManager_init(_sGlp, _rewardRouter, _glpManager, _stakingManager, _keeper);
     }
 
+    /* solhint-disable-next-line func-name-mixedcase */
     function __GMXBatchingManager_init(
         IERC20 _sGlp,
         IRewardRouterV2 _rewardRouter,

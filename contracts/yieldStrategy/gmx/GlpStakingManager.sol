@@ -83,6 +83,11 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
         gmxVault = IGMXVault(glpManager.vault());
     }
 
+    /// @notice updates several state variables related to external addresses, slippage, fee, threshold, etc.
+    /// @param _feeBps fee value (in terms of BPS) to be charged on WETH rewards
+    /// @param _wethThreshold minimum threshold to swap WETH to GLP
+    /// @param _slippageThreshold maximum slippage allowed (in BPS) on converting tokens to GLP
+    /// @param _batchingManager address of batching manager (which batches deposits to GYS)
     function updateGMXParams(
         uint256 _feeBps,
         uint256 _wethThreshold,
@@ -99,6 +104,9 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
         emit GmxParamsUpdated(_feeBps, _wethThreshold, _slippageThreshold, _batchingManager);
     }
 
+    /// @notice add/remove vaults for allowing to stake using this contract
+    /// @param vaultAddress address of vault (GmxYieldStrategy)
+    /// @param _isVault true to set, false to unset
     function setVault(address vaultAddress, bool _isVault) external onlyOwner {
         if (isVault[vaultAddress] != _isVault) {
             isVault[vaultAddress] = _isVault;
@@ -157,14 +165,15 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
         }
     }
 
-    /// @dev also check if the msg.sender is vault
     function _beforeShareAllocation() internal override {
+        /// @dev check if the msg.sender is vault
         if (!isVault[msg.sender]) revert GYS_CALLER_NOT_VAULT();
         _harvestFees();
     }
 
+    /* solhint-disable no-empty-blocks */
     function beforeWithdrawClosePosition(int256) internal override {
-        // NO OP
+        /// @dev NO OP but not removed because of backwards compatibility with RageERC4626
     }
 
     function _simulateBeforeWithdraw(uint256 assets)
@@ -176,11 +185,15 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
         return (assets, 0);
     }
 
+    /// @notice total assets controlled by this staking manager
     function totalAssets() public view override returns (uint256) {
         return fsGlp.balanceOf(address(this)) + batchingManager.stakingManagerGlpBalance();
     }
 
+    /// @notice converts input token to sGLP
     /// @dev only works for usdc and weth because approval is only given for those tokens
+    /// @param token address of token
+    /// @param amount amount of token
     function depositToken(address token, uint256 amount) external returns (uint256 shares) {
         _beforeShareAllocation();
 

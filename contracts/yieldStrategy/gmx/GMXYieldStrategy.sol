@@ -58,6 +58,10 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         glpManager = IGlpManager(ISGLPExtended(address(asset)).glpManager());
     }
 
+    /// @notice updates several state variables related to external addresses, slippage, fee, threshold, etc.
+    /// @param _stakingManager address of staking manager (which compounds rewards)
+    /// @param _usdcReedemSlippage max slippage for _convertAssetToSettlementToken
+    /// @param _usdcConversionThreshold threshold value for swapping asset to settlementToken
     function updateGMXParams(
         address _stakingManager,
         uint256 _usdcReedemSlippage,
@@ -83,13 +87,13 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         rageSettlementToken.approve(address(stakingManager), type(uint256).max);
     }
 
-    /// @notice triggered from the afterDeposit hook, stakes the deposited tricrypto LP tokens
+    /// @notice triggered from the afterDeposit hook, transfers sGLP(LP token) to staking manager
     /// @param amount amount of LP tokens
     function _afterDepositYield(uint256 amount) internal override {
         stakingManager.deposit(amount, address(this));
     }
 
-    /// @notice triggered from beforeWithdraw hook
+    /// @notice triggered from beforeWithdraw , withdraw sGLP(LP token) from staking manager
     /// @param amount amount of LP tokens
     function _beforeWithdrawYield(uint256 amount) internal override {
         stakingManager.withdraw(amount, address(this), address(this));
@@ -102,18 +106,17 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         stakingManager.depositToken(address(rageSettlementToken), amount);
     }
 
-    /// @notice claims the accumulated CRV rewards from the gauge, sells CRV rewards for LP tokens and stakes LP tokens
+    /* solhint-disable no-empty-blocks */
     function _harvestFees() internal override {
-        //NO OP
+        /// @dev NO OP but not removed because of backwards compatibility with BaseVault
     }
 
-    /// @notice stakes LP tokens (i.e deposits into reward gauge)
     /// @param amount amount of LP tokens
     function _stake(uint256 amount) internal override {
-        //NO OP
+        /// @dev NO OP but not removed because of backwards compatibility with BaseVault
     }
 
-    /// @notice total LP tokens staked in the curve rewards gauge
+    /// @notice staked LP tokens (sGLP) balance available
     function _stakedAssetBalance() internal view override returns (uint256) {
         return fsGlp.balanceOf(address(this)) + stakingManager.maxRedeem(address(this));
     }
@@ -121,7 +124,7 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     /// @notice withdraws LP tokens from gauge, sells LP token for rageSettlementToken
     /// @param usdcAmountDesired amount of USDC desired
     function _convertAssetToSettlementToken(uint256 usdcAmountDesired) internal override returns (uint256 usdcAmount) {
-        /// @dev if usdcAmountDesired < 10, then there is precision issue while redeeming for usdg
+        /// @dev if usdcAmountDesired < 10, then there is precision issue in gmx contracts while redeeming for usdg
         if (usdcAmountDesired < usdcConversionThreshold) return 0;
         uint256 glpAmountDesired = usdcAmountDesired.mulDiv(1 << 128, getPriceX128());
         // USDG has 18 decimals and usdc has 6 decimals => 18-6 = 12
@@ -150,6 +153,11 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         return aum.mulDiv(FixedPoint128.Q128, totalSupply * 1e24);
     }
 
+    /// @notice allows to redeem shares for tokens available on gmx
+    /// @param token address of required output token
+    /// @param shares amount of shares to redeem
+    /// @param minTokenOut minimum amount of token required
+    /// @param receiver address of the receiver
     function redeemToken(
         IERC20 token,
         uint256 shares,
@@ -165,6 +173,11 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         emit TokenRedeemded(address(token), sGLPReceived, shares, receiver);
     }
 
+    /// @notice allows to withdraw amount for tokens available on gmx
+    /// @param token address of required output token
+    /// @param _sGLP amount of sGLP(asset) to withdraw
+    /// @param minTokenOut minimum amount of token required
+    /// @param receiver address of the receiver
     function withdrawToken(
         IERC20 token,
         uint256 _sGLP,
