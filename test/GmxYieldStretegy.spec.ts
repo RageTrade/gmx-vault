@@ -130,15 +130,13 @@ describe('GmxYieldStrategy', () => {
 
   describe('#updateGMXParams', () => {
     it('allows owner to update params', async () => {
-      await expect(gmxYieldStrategy.updateGMXParams(signers[0].address, signers[0].address, 10, 0))
+      await expect(gmxYieldStrategy.updateGMXParams(signers[0].address, 10, 0))
         .to.emit(gmxYieldStrategy, 'GmxParamsUpdated')
         .withArgs(signers[0].address, signers[0].address, 10, 0);
     });
 
     it('reverts when not owner', async () => {
-      await expect(
-        gmxYieldStrategy.connect(signers[1]).updateGMXParams(signers[0].address, signers[0].address, 10, 0),
-      ).to.be.revertedWith(
+      await expect(gmxYieldStrategy.connect(signers[1]).updateGMXParams(signers[0].address, 10, 0)).to.be.revertedWith(
         `VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'`,
       );
     });
