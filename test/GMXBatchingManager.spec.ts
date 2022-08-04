@@ -470,6 +470,58 @@ describe('GMX Batching Manager', () => {
       expect(await gmxBatchingManager.paused()).to.be.false;
     });
 
+    it.only('Single User Claim After another deposit', async () => {
+      const depositAmount = parseTokenAmount(100n, 6);
+
+      await gmxBatchingManager
+        .connect(user1)
+        ['depositToken(address,address,uint256,uint256,address)'](
+          vault.address,
+          usdc.address,
+          depositAmount,
+          0,
+          user1.address,
+        );
+
+      await increaseBlockTimestamp(15 * 60); //15 mins
+
+      await gmxBatchingManager.connect(keeper).pauseDeposit();
+
+      expect(await gmxBatchingManager.paused()).to.be.true;
+
+      await gmxBatchingManager.executeBatchDeposit();
+
+      const balanceBeforeDeposit = await fsGlp.balanceOf(gmxBatchingManager.address);
+      await gmxBatchingManager
+        .connect(user1)
+        ['depositToken(address,address,uint256,uint256,address)'](
+          vault.address,
+          usdc.address,
+          depositAmount,
+          0,
+          user1.address,
+        );
+
+      const depositGlpAmount = (await fsGlp.balanceOf(gmxBatchingManager.address)).sub(balanceBeforeDeposit);
+
+      const roundDeposit = await gmxBatchingManager.roundDeposits(vault.address, 1);
+
+      await expect(() =>
+        gmxBatchingManager.connect(user1).claim(vault.address, user1.address, roundDeposit.totalShares),
+      ).to.changeTokenBalances(
+        vault,
+        [gmxBatchingManager, user1],
+        [roundDeposit.totalShares.mul(-1), roundDeposit.totalShares],
+      );
+
+      const user1Deposit = await gmxBatchingManager.userDeposits(vault.address, user1.address);
+
+      expect(user1Deposit.round).to.eq(2);
+      expect(user1Deposit.glpBalance).to.eq(depositGlpAmount);
+      expect(user1Deposit.unclaimedShares).to.eq(0);
+      expect(await gmxBatchingManager.paused()).to.be.false;
+    });
+
     it('Single User Claim To Receiver', async () => {
       const depositAmount = parseTokenAmount(100n, 6);
 
