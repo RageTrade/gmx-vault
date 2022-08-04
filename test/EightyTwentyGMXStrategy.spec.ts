@@ -38,15 +38,20 @@ import {
   VPoolWrapper,
   OracleMock,
   SwapSimulator,
+  GlpStakingManager,
 } from '../typechain-types';
 import { gmxYieldStrategyFixture } from './fixtures/eighty-twenty-gmx-strategy';
 import { activateMainnetFork } from './utils/mainnet-fork';
+import { expect } from 'chai';
 
 describe('EightyTwentyGMXStrategy', () => {
   let gmxYieldStrategy: GMXYieldStrategy;
+  let glpStakingManager: GlpStakingManager;
   let sGLP: ERC20;
   let fsGLP: ERC20;
+  let weth: ERC20;
   let whale: SignerWithAddress;
+  let admin: SignerWithAddress;
   let user1: SignerWithAddress;
   let user2: SignerWithAddress;
   let trader0: SignerWithAddress;
@@ -74,6 +79,8 @@ describe('EightyTwentyGMXStrategy', () => {
       gmxYieldStrategy,
       sGLP,
       fsGLP,
+      weth,
+      admin,
       user1,
       user2,
       clearingHouseLens,
@@ -83,6 +90,7 @@ describe('EightyTwentyGMXStrategy', () => {
       ethPool,
       trader0,
       trader0AccountNo,
+      glpStakingManager,
     } = await gmxYieldStrategyFixture());
 
     whale = await hre.ethers.getSigner('0x087e9c8ef2d97740340a471ff8bb49f5490f6cf6');
@@ -627,8 +635,14 @@ describe('EightyTwentyGMXStrategy', () => {
       //   0,
       //   0,
       // );
-
       // await checkNetTokenPositionApproximate(clearingHouse, vaultAccountNo, ethPoolId, -212790546738102000n);
+      //Protocol Fees Withdrawal
+      const protocolFees = await glpStakingManager.protocolFee();
+      await expect(() => glpStakingManager.withdrawFees()).to.changeTokenBalances(
+        weth,
+        [glpStakingManager, admin],
+        [protocolFees.mul(-1), protocolFees],
+      );
     });
 
     // Reset Code
