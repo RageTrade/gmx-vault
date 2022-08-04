@@ -473,7 +473,7 @@ describe('EightyTwentyGMXStrategy', () => {
       // 24hr Rebalance
       // await increaseBlockTimestamp(36400);
       // // await checkAccountNetProfit(clearingHouse, vaultAccountNo, -207756819n);
-      await gmxYieldStrategy.rebalance({ gasLimit: 10000000 });
+      await gmxYieldStrategy.rebalance();
 
       // await logVaultParams('24hr Rebalance', gmxYieldStrategy);
       // await logRageParams(
