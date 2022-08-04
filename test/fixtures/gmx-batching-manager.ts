@@ -2,6 +2,7 @@ import { deployments } from 'hardhat';
 import { ERC20 } from '../../typechain-types';
 import { getCreateAddressFor, parseTokenAmount } from '@ragetrade/sdk';
 import addresses, { GMX_ECOSYSTEM_ADDRESSES as gmxAddresses } from './addresses';
+import { generateErc20Balance } from '../utils/erc20';
 
 export const gmxBatchingManagerFixture = deployments.createFixture(async hre => {
   const [admin, keeper, user1, user2] = await hre.ethers.getSigners();
@@ -53,13 +54,13 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
     gmxAddresses.StakedGlp,
   )) as ERC20;
 
-  await usdc.connect(usdcWhale).transfer(user1.address, parseTokenAmount(1000, 6));
-  await usdc.connect(usdcWhale).transfer(user2.address, parseTokenAmount(1000, 6));
-  await usdc.connect(usdcWhale).transfer(vault.address, parseTokenAmount(1000, 6));
-  await usdc.connect(usdcWhale).transfer(stakingManager.address, parseTokenAmount(1000, 6));
-
   await usdc.connect(user1).approve(gmxBatchingManager.address, 2n ** 255n);
   await usdc.connect(user2).approve(gmxBatchingManager.address, 2n ** 255n);
+
+  await generateErc20Balance(usdc, parseTokenAmount(1000, 6), user1.address);
+  await generateErc20Balance(usdc, parseTokenAmount(1000, 6), user2.address);
+  await generateErc20Balance(usdc, parseTokenAmount(1000, 6), vault.address);
+  await generateErc20Balance(usdc, parseTokenAmount(1000, 6), stakingManager.address);
 
   return {
     admin,
