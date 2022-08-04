@@ -13,13 +13,9 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
   });
 
   const usdcWhale = await hre.ethers.getSigner(gmxAddresses.USDC_WHALE);
-  const gmxBatchingManagerAddress = await getCreateAddressFor(admin, 2);
+  const gmxBatchingManagerAddress = await getCreateAddressFor(admin, 1);
 
   const stakingManager = await (
-    await hre.ethers.getContractFactory('GmxVaultMock')
-  ).deploy(gmxBatchingManagerAddress, gmxAddresses.StakedGlp);
-
-  const vault = await (
     await hre.ethers.getContractFactory('GmxVaultMock')
   ).deploy(gmxBatchingManagerAddress, gmxAddresses.StakedGlp);
 
@@ -34,10 +30,22 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
     stakingManager.address,
     keeper.address,
   );
+
+  const vault = await (
+    await hre.ethers.getContractFactory('GmxVaultMock')
+  ).deploy(gmxBatchingManagerAddress, gmxAddresses.StakedGlp);
+
+  const vault1 = await (
+    await hre.ethers.getContractFactory('GmxVaultMock')
+  ).deploy(gmxBatchingManagerAddress, gmxAddresses.StakedGlp);
+
   await vault.grantAllowances();
+  await vault1.grantAllowances();
   await stakingManager.grantAllowances();
   await gmxBatchingManager.addVault(vault.address);
   await gmxBatchingManager.grantAllowances(vault.address);
+  await gmxBatchingManager.addVault(vault1.address);
+  await gmxBatchingManager.grantAllowances(vault1.address);
 
   const usdc = (await hre.ethers.getContractAt(
     '@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20',
@@ -60,6 +68,7 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
   await generateErc20Balance(usdc, parseTokenAmount(1000, 6), user1.address);
   await generateErc20Balance(usdc, parseTokenAmount(1000, 6), user2.address);
   await generateErc20Balance(usdc, parseTokenAmount(1000, 6), vault.address);
+  await generateErc20Balance(usdc, parseTokenAmount(1000, 6), vault1.address);
   await generateErc20Balance(usdc, parseTokenAmount(1000, 6), stakingManager.address);
 
   return {
@@ -68,6 +77,7 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
     sGlp,
     fsGlp,
     vault,
+    vault1,
     stakingManager,
     keeper,
     usdcWhale,
