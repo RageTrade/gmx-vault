@@ -24,13 +24,15 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     event TokenWithdrawn(address token, uint256 sGLPQuantity, uint256 shares, address receiver);
     event TokenRedeemded(address token, uint256 sGLPQuantity, uint256 shares, address receiver);
 
-    event GmxParamsUpdated(address stakingManager, uint256 usdcReedemSlippage, uint256 usdcConversionThreshold);
+    event GmxParamsUpdated(address stakingManager, uint256 usdcReedemSlippage, uint240 usdcConversionThreshold);
+
+    uint256[100] _gaps;
 
     /* solhint-disable var-name-mixedcase */
-    uint256 public constant MAX_BPS = 10_000;
+    uint16 public constant MAX_BPS = 10_000;
 
-    uint256 public usdcReedemSlippage;
-    uint256 public usdcConversionThreshold;
+    uint16 public usdcReedemSlippage;
+    uint240 public usdcConversionThreshold;
 
     IERC20 private glp;
     IERC20 private fsGlp;
@@ -38,6 +40,8 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     IGlpManager private glpManager;
     IRewardRouterV2 private rewardRouter;
     IGlpStakingManager private stakingManager;
+
+    uint256[100] _gaps2;
 
     struct GMXYieldStrategyInitParams {
         EightyTwentyRangeStrategyVaultInitParams eightyTwentyRangeStrategyVaultInitParams;
@@ -64,8 +68,8 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     /// @param _usdcConversionThreshold threshold value for swapping asset to settlementToken
     function updateGMXParams(
         address _stakingManager,
-        uint256 _usdcReedemSlippage,
-        uint256 _usdcConversionThreshold
+        uint16 _usdcReedemSlippage,
+        uint240 _usdcConversionThreshold
     ) external onlyOwner {
         if (_stakingManager != address(0) && _usdcReedemSlippage < MAX_BPS) {
             usdcReedemSlippage = _usdcReedemSlippage;

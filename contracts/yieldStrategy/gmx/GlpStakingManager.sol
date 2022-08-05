@@ -30,6 +30,8 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
     event TokenWithdrawn(address indexed token, uint256 shares, address indexed receiver);
     event TokenRedeemded(address indexed token, uint256 _sGLPQuantity, address indexed receiver);
 
+    uint256[100] _gaps;
+
     /* solhint-disable var-name-mixedcase */
     uint256 public constant MAX_BPS = 10_000;
 
@@ -55,6 +57,8 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
     IGMXBatchingManager private batchingManager;
 
     mapping(address => bool) public isVault;
+
+    uint256[100] _gaps2;
 
     error ZeroShares();
 
