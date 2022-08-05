@@ -1,5 +1,7 @@
 import { deployments } from 'hardhat';
+import { parseEther } from 'ethers/lib/utils';
 import { ERC20 } from '../../typechain-types';
+import { generateErc20Balance } from '../utils/erc20';
 import { getCreateAddressFor, parseTokenAmount } from '@ragetrade/sdk';
 import addresses, { GMX_ECOSYSTEM_ADDRESSES as gmxAddresses } from './addresses';
 import { generateErc20Balance } from '../utils/erc20';
@@ -11,7 +13,6 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
     method: 'hardhat_impersonateAccount',
     params: [gmxAddresses.USDC_WHALE],
   });
-
   const usdcWhale = await hre.ethers.getSigner(gmxAddresses.USDC_WHALE);
   const gmxBatchingManagerAddress = await getCreateAddressFor(admin, 1);
 
@@ -52,6 +53,11 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
     addresses.USDC,
   )) as ERC20;
 
+  const weth = (await hre.ethers.getContractAt(
+    '@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20',
+    addresses.WETH,
+  )) as ERC20;
+
   const fsGlp = (await hre.ethers.getContractAt(
     '@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20',
     gmxAddresses.fsGLP,
@@ -62,8 +68,13 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
     gmxAddresses.StakedGlp,
   )) as ERC20;
 
+  await generateErc20Balance(weth, parseEther('100'), user1.address);
+  await generateErc20Balance(weth, parseEther('100'), user2.address);
+
   await usdc.connect(user1).approve(gmxBatchingManager.address, 2n ** 255n);
   await usdc.connect(user2).approve(gmxBatchingManager.address, 2n ** 255n);
+  await weth.connect(user1).approve(gmxBatchingManager.address, 2n ** 255n);
+  await weth.connect(user2).approve(gmxBatchingManager.address, 2n ** 255n);
 
   await generateErc20Balance(usdc, parseTokenAmount(1000, 6), user1.address);
   await generateErc20Balance(usdc, parseTokenAmount(1000, 6), user2.address);
@@ -74,6 +85,7 @@ export const gmxBatchingManagerFixture = deployments.createFixture(async hre => 
   return {
     admin,
     usdc,
+    weth,
     sGlp,
     fsGlp,
     vault,
