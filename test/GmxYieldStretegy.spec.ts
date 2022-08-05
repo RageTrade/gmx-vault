@@ -142,7 +142,7 @@ describe('GmxYieldStrategy', () => {
     });
 
     it('fails - slippage threshold', async () => {
-      await expect(gmxYieldStrategy.updateGMXParams(randomAddress(), 100000, 0)).to.be.revertedWith(
+      await expect(gmxYieldStrategy.updateGMXParams(randomAddress(), 10_001, 0)).to.be.revertedWith(
         'GYS_INVALID_SETTER_VALUES()',
       );
     });
@@ -153,10 +153,6 @@ describe('GmxYieldStrategy', () => {
       );
     });
   });
-
-  // describe('#withdrawFees', () => {
-  //   it('withdraws fees and updates state', async () => {});
-  // });
 
   describe('#getMarketValue', () => {
     it('works', async () => {

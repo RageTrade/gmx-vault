@@ -7,13 +7,14 @@ import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadat
 
 import { SafeCast } from '../../libraries/SafeCast.sol';
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
+
 import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
+import { PausableUpgradeable } from '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 
 import { IERC4626 } from 'contracts/interfaces/IERC4626.sol';
 import { IGlpManager } from 'contracts/interfaces/gmx/IGlpManager.sol';
 import { IRewardRouterV2 } from 'contracts/interfaces/gmx/IRewardRouterV2.sol';
 import { IGMXBatchingManager } from 'contracts/interfaces/gmx/IGMXBatchingManager.sol';
-import { PausableUpgradeable } from '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 
 contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, PausableUpgradeable {
     using FullMath for uint256;
@@ -27,7 +28,7 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         mapping(uint256 => RoundDeposit) roundDeposits;
     }
 
-    uint256[100] _gaps;
+    uint256[100] private _gaps;
 
     address public keeper;
     address public stakingManager; // used for depositing harvested rewards
@@ -43,7 +44,7 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
 
     IERC4626[10] public vaults;
 
-    uint256[100] _gaps2;
+    uint256[100] private _gaps2;
 
     modifier onlyStakingManager() {
         if (msg.sender != stakingManager) revert CallerNotStakingManager();
@@ -85,7 +86,8 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         emit KeeperUpdated(_keeper);
     }
 
-    /// @notice gives allowance
+    /// @notice grants the allowance to the vault to pull sGLP (via safeTransfer from in vault.deposit)
+    /// @dev allowance is granted while vault is added via addVault, this is only failsafe if that allowance is exhausted
     /// @param gmxVault address of gmx vault
     function grantAllowances(IERC4626 gmxVault) external onlyOwner {
         _ensureVaultIsValid(gmxVault);
@@ -326,9 +328,14 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
     function addVault(IERC4626 vault) external onlyOwner {
         if (vaultCount == vaults.length) revert VaultsLimitExceeded();
         if (vaultBatchingState[vault].currentRound != 0) revert VaultAlreadyAdded();
+
         vaultBatchingState[vault].currentRound = 1;
         vaults[vaultCount] = vault;
         ++vaultCount;
+
+        sGlp.approve(address(vault), type(uint256).max);
+
+        emit VaultAdded(address(vault));
     }
 
     function _ensureVaultIsValid(IERC4626 vault) internal view {
