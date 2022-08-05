@@ -3,6 +3,12 @@
 pragma solidity ^0.8.0;
 
 interface IRewardRouterV2 {
+    event StakeGmx(address account, address token, uint256 amount);
+    event UnstakeGmx(address account, address token, uint256 amount);
+
+    event StakeGlp(address account, uint256 amount);
+    event UnstakeGlp(address account, uint256 amount);
+
     function batchStakeGmxForAccount(address[] memory _accounts, uint256[] memory _amounts) external;
 
     function stakeGmxForAccount(address _account, uint256 _amount) external;

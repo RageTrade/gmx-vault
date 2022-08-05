@@ -5,14 +5,18 @@ import { IERC4626 } from '../IERC4626.sol';
 pragma solidity ^0.8.0;
 
 interface IGMXBatchingManager {
-    error InvalidSetDepositPaused(bool currentValue);
-    error InsufficientShares(uint256 balance);
+    error InvalidVault(address vault);
     error InvalidInput(uint256 errorCode);
+    error InsufficientShares(uint256 balance);
+    error InvalidSetDepositPaused(bool currentValue);
+
+    error ZeroBalance();
+
+    error VaultAlreadyAdded();
+    error VaultsLimitExceeded();
+
     error CallerNotKeeper();
     error CallerNotStakingManager();
-    error ZeroBalance();
-    error VaultsLimitExceeded();
-    error VaultAlreadyAdded();
 
     event DepositToken(
         uint256 indexed round,
