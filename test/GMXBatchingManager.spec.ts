@@ -166,7 +166,7 @@ describe('GMX Batching Manager', () => {
       expect(await fsGlp.balanceOf(gmxBatchingManager.address)).to.eq(user2Deposit.glpBalance);
     });
 
-    it.only('Single Vault Deposit', async () => {
+    it('Single Vault Deposit', async () => {
       const depositAmount = parseTokenAmount(100n, 6);
 
       await expect(stakingManager.depositToken(ethers.constants.AddressZero, depositAmount, 0)).to.be.revertedWith(
@@ -1088,7 +1088,7 @@ describe('GMX Batching Manager', () => {
     });
   });
 
-  describe.only('adding and validating vault', () => {
+  describe('adding and validating vault', () => {
     it('should not add more vaults than limit', async () => {
       for (let i = 0; i < 9; i++) {
         await gmxBatchingManager.addVault(ethers.utils.getAddress(ethers.utils.hexlify(ethers.utils.randomBytes(20))));
