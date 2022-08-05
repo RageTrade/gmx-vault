@@ -25,10 +25,14 @@ interface IGMXBatchingManager {
         uint256 amount,
         uint256 glpStaked
     );
+
+    event VaultAdded(address vault);
     event VaultDeposit(uint256 vaultGlpAmount);
-    event BatchDeposit(uint256 indexed round, uint256 userGlpAmount, uint256 userShareAmount);
-    event SharesClaimed(address indexed from, address indexed receiver, uint256 claimAmount);
+
     event KeeperUpdated(address newKeeper);
+
+    event SharesClaimed(address indexed from, address indexed receiver, uint256 claimAmount);
+    event BatchDeposit(uint256 indexed round, uint256 userGlpAmount, uint256 userShareAmount);
 
     struct UserDeposit {
         uint256 round;
