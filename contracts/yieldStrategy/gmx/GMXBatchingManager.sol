@@ -27,12 +27,12 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         mapping(uint256 => RoundDeposit) roundDeposits;
     }
 
-    IERC4626[10] public vaults;
+    uint256[100] _gaps;
 
     address public keeper;
     address public stakingManager; // used for depositing harvested rewards
 
-    uint256 public vaultCount;
+    uint16 public vaultCount;
     uint256 public stakingManagerGlpBalance;
 
     IERC20 private sGlp;
@@ -40,6 +40,10 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
     IRewardRouterV2 private rewardRouter;
 
     mapping(IERC4626 => VaultBatchingState) public vaultBatchingState;
+
+    IERC4626[10] public vaults;
+
+    uint256[100] _gaps2;
 
     modifier onlyStakingManager() {
         if (msg.sender != stakingManager) revert CallerNotStakingManager();
