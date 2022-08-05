@@ -17,10 +17,8 @@ export const gmxYieldStrategyFixture = deployments.createFixture(async hre => {
   const tokenFactory = await hre.ethers.getContractFactory('ERC20PresetMinterPauser');
   const collateralToken = await tokenFactory.deploy('Collateral Token', 'CT');
 
-  const gmx = await getErc20(GMX_ECOSYSTEM_ADDRESSES.GMX);
   const glp = await getErc20(GMX_ECOSYSTEM_ADDRESSES.GLP);
   const sGLP = await getErc20(GMX_ECOSYSTEM_ADDRESSES.StakedGlp);
-  const sGMX = await getErc20(GMX_ECOSYSTEM_ADDRESSES.StakedGmx);
   const fsGLP = await getErc20(GMX_ECOSYSTEM_ADDRESSES.fsGLP);
 
   const ethPoolId = truncate(pool0.vToken.address);
@@ -105,8 +103,8 @@ export const gmxYieldStrategyFixture = deployments.createFixture(async hre => {
       baseVaultInitParams: {
         rageErc4626InitParams: {
           asset: lpToken.address,
-          name: 'TriCrypto Shares',
-          symbol: 'TCS',
+          name: 'GMX Vault Shares',
+          symbol: 'GVS',
         },
         ethPoolId,
         rageClearingHouse: clearingHouse.address,
