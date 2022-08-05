@@ -37,7 +37,7 @@ describe('GMX Batching Manager', () => {
     await gmxBatchingManagerFixture();
   });
   beforeEach(async () => {
-    ({ admin, vault, vault1, user1, user2, keeper, usdc, fsGlp, sGlp, stakingManager, gmxBatchingManager } =
+    ({ admin, vault, vault1, user1, user2, keeper, usdc, fsGlp, sGlp, stakingManager, gmxBatchingManager, weth } =
       await gmxBatchingManagerFixture());
   });
   after(async () => {
@@ -1090,7 +1090,7 @@ describe('GMX Batching Manager', () => {
 
   describe('adding and validating vault', () => {
     it('should not add more vaults than limit', async () => {
-      for (let i = 0; i < 9; i++) {
+      for (let i = 0; i < 8; i++) {
         await gmxBatchingManager.addVault(ethers.utils.getAddress(ethers.utils.hexlify(ethers.utils.randomBytes(20))));
       }
 
