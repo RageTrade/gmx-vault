@@ -41,8 +41,6 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
 
     mapping(IERC4626 => VaultBatchingState) public vaultBatchingState;
 
-    error InvalidVault(address vault);
-
     modifier onlyStakingManager() {
         if (msg.sender != stakingManager) revert CallerNotStakingManager();
         _;
@@ -83,24 +81,35 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         emit KeeperUpdated(_keeper);
     }
 
+    /// @notice gives allowance
+    /// @param gmxVault address of gmx vault
     function grantAllowances(IERC4626 gmxVault) external onlyOwner {
         _ensureVaultIsValid(gmxVault);
         sGlp.approve(address(gmxVault), type(uint256).max);
     }
 
+    /// @notice sets the keeper address (to pause & unpause deposits)
+    /// @param _keeper address of keeper
     function setKeeper(address _keeper) external onlyOwner {
         keeper = _keeper;
         emit KeeperUpdated(_keeper);
     }
 
+    /// @notice pauses deposits (to prevent DOS due to GMX 15 min cooldown)
     function pauseDeposit() external onlyKeeper {
         _pause();
     }
 
+    /// @notice unpauses the deposit function
     function unpauseDeposit() external onlyKeeper {
         _unpause();
     }
 
+    /// @notice convert the token into glp and obtain staked glp
+    /// @dev this function should be only called by staking manager
+    /// @param token address of input token (should be supported on gmx)
+    /// @param amount amount of token to be used
+    /// @param minUSDG minimum output of swap in terms of USDG
     function depositToken(
         address token,
         uint256 amount,
@@ -118,6 +127,12 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         emit DepositToken(0, token, msg.sender, amount, glpStaked);
     }
 
+    /// @notice convert the token into glp and obtain staked glp and deposits sGLP into vault
+    /// @param gmxVault address of vault in which sGLP should be deposited
+    /// @param token address of input token (should be supported on gmx)
+    /// @param amount amount of token to be used
+    /// @param minUSDG minimum output of swap in terms of USDG
+    /// @param receiver address which will receive shares from vault+
     function depositToken(
         IERC4626 gmxVault,
         address token,
@@ -128,6 +143,9 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         if (token == address(0)) revert InvalidInput(0x20);
         if (amount == 0) revert InvalidInput(0x21);
         if (receiver == address(0)) revert InvalidInput(0x22);
+
+        // input vault address should be valid registered vault
+        _ensureVaultIsValid(gmxVault);
 
         // Transfer Tokens To Manager
         IERC20(token).transferFrom(msg.sender, address(this), amount);
@@ -158,12 +176,10 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         emit DepositToken(state.currentRound, token, receiver, amount, glpStaked);
     }
 
+    /// @notice executes batch and deposits into appropriate vault with/without minting shares
     function executeBatchDeposit() external {
         // Transfer vault glp directly
-
-        // if (stakingManagerGlpBalance == 0 && state.roundGlpBalance == 0) revert ZeroBalance();
-
-        //Needs to be called only for StakingManager
+        // Needs to be called only for StakingManager
         if (stakingManagerGlpBalance > 0) {
             uint256 glpToTransfer = stakingManagerGlpBalance;
             stakingManagerGlpBalance = 0;
@@ -203,20 +219,32 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         }
     }
 
+    /// @notice get the glp balance for a given vault and account address
+    /// @param gmxVault address of vault
+    /// @param account address of user
     function glpBalance(IERC4626 gmxVault, address account) public view returns (uint256 balance) {
         balance = vaultBatchingState[gmxVault].userDeposits[account].glpBalance;
     }
 
+    /// @notice gives the combined pending glp balance from all registered vaults
+    /// @param account address of user
     function glpBalanceAllVaults(address account) external view returns (uint256 balance) {
         for (uint256 i; i < vaults.length; i++) {
             balance += glpBalance(vaults[i], account);
         }
     }
 
+    /// @notice get the unclaimed shares for a given vault and account address
+    /// @param gmxVault address of vault
+    /// @param account address of user
     function unclaimedShares(IERC4626 gmxVault, address account) external view returns (uint256 shares) {
         shares = vaultBatchingState[gmxVault].userDeposits[account].unclaimedShares;
     }
 
+    /// @notice claim the shares received from depositing batch
+    /// @param gmxVault address of vault (shares of this vault will be withdrawn)
+    /// @param receiver address of receiver
+    /// @param amount amount of shares
     function claim(
         IERC4626 gmxVault,
         address receiver,
@@ -247,22 +275,34 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         emit SharesClaimed(msg.sender, receiver, amount);
     }
 
+    /// @notice gets the current active round
+    /// @param vault address of vault
     function currentRound(IERC4626 vault) external view returns (uint256) {
         return vaultBatchingState[vault].currentRound;
     }
 
+    /// @notice get the glp balance for current active round
+    /// @param vault address of vault
     function roundGlpBalance(IERC4626 vault) external view returns (uint256) {
         return vaultBatchingState[vault].roundGlpBalance;
     }
 
+    /// @notice get the state of user deposits
+    /// @param vault address of vault
+    /// @param account address of user
     function userDeposits(IERC4626 vault, address account) external view returns (UserDeposit memory) {
         return vaultBatchingState[vault].userDeposits[account];
     }
 
+    /// @notice get the info for given vault and round
+    /// @param vault address of vault
+    /// @param round address of user
     function roundDeposits(IERC4626 vault, uint256 round) external view returns (RoundDeposit memory) {
         return vaultBatchingState[vault].roundDeposits[round];
     }
 
+    /// @notice checks if vault is valid
+    /// @param vault address of vault
     function isVaultValid(IERC4626 vault) external view returns (bool) {
         return _isVaultValid(vault);
     }
@@ -277,6 +317,8 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
         glpStaked = rewardRouter.mintAndStakeGlp(token, amount, minUSDG, 0);
     }
 
+    /// @notice adds new vault to which deposits can be batched
+    /// @param vault address of vault
     function addVault(IERC4626 vault) external onlyOwner {
         if (vaultCount == vaults.length) revert VaultsLimitExceeded();
         if (vaultBatchingState[vault].currentRound != 0) revert VaultAlreadyAdded();
