@@ -4,7 +4,15 @@ import { parseTokenAmount, slippageToSqrtPriceLimit } from '@ragetrade/sdk';
 import { expect } from 'chai';
 import { BigNumber } from 'ethers';
 import hre, { ethers } from 'hardhat';
-import { ERC20, GMXBatchingManager, GmxVaultMock, GMXYieldStrategy, IVault, IVault__factory } from '../typechain-types';
+import {
+  ERC20,
+  GMXBatchingManager,
+  GmxVaultMock,
+  GMXYieldStrategy,
+  IRewardRouterV2__factory,
+  IVault,
+  IVault__factory,
+} from '../typechain-types';
 import addresses, { GMX_ECOSYSTEM_ADDRESSES } from './fixtures/addresses';
 import { gmxBatchingManagerFixture } from './fixtures/gmx-batching-manager';
 import { unlockWhales } from './utils/curve-helper';
@@ -20,11 +28,12 @@ describe('GMX Batching Manager', () => {
   let user1: SignerWithAddress;
   let user2: SignerWithAddress;
   let usdc: ERC20;
+  let weth: ERC20;
   let fsGlp: ERC20;
   let sGlp: ERC20;
   let gmxBatchingManager: GMXBatchingManager;
   before(async () => {
-    // await activateMainnetFork({ blockNumber: 18099162 });
+    await activateMainnetFork({ blockNumber: 18099162 });
     await gmxBatchingManagerFixture();
   });
   beforeEach(async () => {
@@ -87,6 +96,21 @@ describe('GMX Batching Manager', () => {
           ),
       ).to.be.revertedWith('InvalidInput(34)');
     });
+    it('Fails - Invalid Vault', async () => {
+      const depositAmount = parseTokenAmount(100n, 6);
+
+      await expect(
+        gmxBatchingManager
+          .connect(user1)
+          ['depositToken(address,address,uint256,uint256,address)'](
+            user1.address,
+            usdc.address,
+            depositAmount,
+            0,
+            user1.address,
+          ),
+      ).to.be.revertedWith(`'InvalidVault("${user1.address}")`);
+    });
     it('Single User Deposit', async () => {
       const depositAmount = parseTokenAmount(100n, 6);
 
@@ -142,8 +166,16 @@ describe('GMX Batching Manager', () => {
       expect(await fsGlp.balanceOf(gmxBatchingManager.address)).to.eq(user2Deposit.glpBalance);
     });
 
-    it('Single Vault Deposit', async () => {
+    it.only('Single Vault Deposit', async () => {
       const depositAmount = parseTokenAmount(100n, 6);
+
+      await expect(stakingManager.depositToken(ethers.constants.AddressZero, depositAmount, 0)).to.be.revertedWith(
+        'InvalidInput(48)',
+      );
+      await expect(stakingManager.depositToken(usdc.address, 0, 0)).to.be.revertedWith('InvalidInput(49)');
+      await expect(
+        gmxBatchingManager.connect(user1)['depositToken(address,uint256,uint256)'](usdc.address, depositAmount, 0),
+      ).to.be.revertedWith('CallerNotStakingManager()');
 
       await expect(() => stakingManager.depositToken(usdc.address, depositAmount, 0)).to.changeTokenBalance(
         usdc,
@@ -537,6 +569,10 @@ describe('GMX Batching Manager', () => {
 
       const roundDeposit = await gmxBatchingManager.roundDeposits(vault.address, 1);
 
+      await expect(
+        gmxBatchingManager.connect(user1).claim(vault.address, user1.address, roundDeposit.totalShares.add(1)),
+      ).to.be.revertedWith(`InsufficientShares(${roundDeposit.totalShares})`);
+
       await expect(() =>
         gmxBatchingManager.connect(user1).claim(vault.address, user1.address, roundDeposit.totalShares),
       ).to.changeTokenBalances(
@@ -894,8 +930,6 @@ describe('GMX Batching Manager', () => {
 
       usdg = usdg.mul(BigNumber.from(10).pow(18)).div(BigNumber.from(10).pow(6));
 
-      // console.log('usdg from test', usdg.toString());
-
       await expect(
         gmxBatchingManager
           .connect(user1)
@@ -933,6 +967,138 @@ describe('GMX Batching Manager', () => {
           usdg,
           user1.address,
         );
+    });
+  });
+
+  describe('getters at various states', () => {
+    it('currentRound', async () => {
+      // current round if vault does not exists
+      expect(await gmxBatchingManager.currentRound(user1.address)).to.eq(0);
+      // current round if vault exists
+      expect(await gmxBatchingManager.currentRound(vault.address)).to.eq(1);
+    });
+
+    it('roundGlpBalance', async () => {
+      // roundGlpBalance if vault does not exists
+      expect(await gmxBatchingManager.roundGlpBalance(user1.address)).to.eq(0);
+      // roundGlpBalance if vault exists but no balance exists
+      expect(await gmxBatchingManager.roundGlpBalance(vault.address)).to.eq(0);
+
+      const rewardRouter = IRewardRouterV2__factory.connect(GMX_ECOSYSTEM_ADDRESSES.RewardRouter, user1);
+      const filter = rewardRouter.filters.StakeGlp();
+
+      let tx = await (
+        await gmxBatchingManager
+          .connect(user1)
+          ['depositToken(address,address,uint256,uint256,address)'](
+            vault.address,
+            usdc.address,
+            parseTokenAmount(100n, 6),
+            0,
+            user1.address,
+          )
+      ).wait();
+      await increaseBlockTimestamp(15 * 60); //15 mins
+
+      let filtered = await rewardRouter.queryFilter(filter, tx.blockNumber);
+      const previousAmount = filtered[0].args.amount;
+
+      // roundGlpBalance if vault and round exists
+      expect(await gmxBatchingManager.roundGlpBalance(vault.address)).to.eq(filtered[0].args.amount);
+
+      // roundGlpBalance on multiple deposits of different tokens and users
+      tx = await (
+        await gmxBatchingManager
+          .connect(user1)
+          ['depositToken(address,address,uint256,uint256,address)'](
+            vault.address,
+            weth.address,
+            parseTokenAmount(100n, 6),
+            0,
+            user1.address,
+          )
+      ).wait();
+      await increaseBlockTimestamp(15 * 60); //15 mins
+
+      filtered = await rewardRouter.queryFilter(filter, tx.blockNumber);
+
+      expect(await gmxBatchingManager.roundGlpBalance(vault.address)).to.eq(
+        filtered[0].args.amount.add(previousAmount),
+      );
+
+      // roundGlpBalance after executeBatch
+      await gmxBatchingManager.executeBatchDeposit();
+      expect(await gmxBatchingManager.roundGlpBalance(vault.address)).to.eq(0);
+    });
+
+    it('user state getters', async () => {
+      // when vault does not exists
+      let userDeposits = await gmxBatchingManager.userDeposits(user1.address, user1.address);
+      expect(userDeposits.round).to.eq(0);
+      expect(await gmxBatchingManager.glpBalance(vault.address, user1.address)).to.eq(0);
+      expect(await gmxBatchingManager.unclaimedShares(vault.address, user1.address)).to.eq(0);
+
+      // when vault exists and user has not deposited
+      userDeposits = await gmxBatchingManager.userDeposits(vault.address, user1.address);
+      expect(userDeposits.round).to.eq(0);
+      expect(await gmxBatchingManager.glpBalance(vault.address, user1.address)).to.eq(0);
+      expect(await gmxBatchingManager.unclaimedShares(vault.address, user1.address)).to.eq(0);
+
+      await gmxBatchingManager
+        .connect(user1)
+        ['depositToken(address,address,uint256,uint256,address)'](
+          vault.address,
+          weth.address,
+          parseTokenAmount(100n, 6),
+          0,
+          user1.address,
+        );
+      userDeposits = await gmxBatchingManager.userDeposits(vault.address, user1.address);
+
+      const bal = await fsGlp.balanceOf(gmxBatchingManager.address);
+
+      // when vault exists and user has deposited
+      userDeposits = await gmxBatchingManager.userDeposits(vault.address, user1.address);
+      expect(userDeposits.round).to.eq(1);
+      expect(await gmxBatchingManager.glpBalance(vault.address, user1.address)).to.eq(bal);
+      expect(await gmxBatchingManager.unclaimedShares(vault.address, user1.address)).to.eq(0);
+
+      await increaseBlockTimestamp(15 * 60); //15 mins
+      await gmxBatchingManager.executeBatchDeposit();
+
+      await gmxBatchingManager
+        .connect(user1)
+        ['depositToken(address,address,uint256,uint256,address)'](
+          vault.address,
+          weth.address,
+          parseTokenAmount(100n, 6),
+          0,
+          user1.address,
+        );
+
+      userDeposits = await gmxBatchingManager.userDeposits(vault.address, user1.address);
+
+      // when user deposits in different round
+      userDeposits = await gmxBatchingManager.userDeposits(vault.address, user1.address);
+      expect(userDeposits.round).to.eq(2);
+      expect(await gmxBatchingManager.glpBalance(vault.address, user1.address)).to.eq(
+        await fsGlp.balanceOf(gmxBatchingManager.address),
+      );
+      expect(await gmxBatchingManager.unclaimedShares(vault.address, user1.address)).to.eq(bal);
+    });
+  });
+
+  describe.only('adding and validating vault', () => {
+    it('should not add more vaults than limit', async () => {
+      for (let i = 0; i < 9; i++) {
+        await gmxBatchingManager.addVault(ethers.utils.getAddress(ethers.utils.hexlify(ethers.utils.randomBytes(20))));
+      }
+
+      await expect(gmxBatchingManager.addVault(user1.address)).to.be.revertedWith(`'VaultsLimitExceeded()'`);
+    });
+    it('should not add vault if already added', async () => {
+      await gmxBatchingManager.addVault(user1.address);
+      await expect(gmxBatchingManager.addVault(user1.address)).to.be.revertedWith(`'VaultAlreadyAdded()'`);
     });
   });
 });
