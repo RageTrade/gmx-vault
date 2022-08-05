@@ -4,7 +4,6 @@ import { ERC20 } from '../../typechain-types';
 import { generateErc20Balance } from '../utils/erc20';
 import { getCreateAddressFor, parseTokenAmount } from '@ragetrade/sdk';
 import addresses, { GMX_ECOSYSTEM_ADDRESSES as gmxAddresses } from './addresses';
-import { generateErc20Balance } from '../utils/erc20';
 
 export const gmxBatchingManagerFixture = deployments.createFixture(async hre => {
   const [admin, keeper, user1, user2] = await hre.ethers.getSigners();
