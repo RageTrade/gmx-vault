@@ -26,7 +26,7 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
     event GmxParamsUpdated(address stakingManager, uint256 usdcReedemSlippage, uint240 usdcConversionThreshold);
 
-    uint256[100] _gaps;
+    uint256[100] private _gaps;
 
     /* solhint-disable var-name-mixedcase */
     uint16 public constant MAX_BPS = 10_000;
@@ -41,7 +41,7 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     IRewardRouterV2 private rewardRouter;
     IGlpStakingManager private stakingManager;
 
-    uint256[100] _gaps2;
+    uint256[100] private _gaps2;
 
     struct GMXYieldStrategyInitParams {
         EightyTwentyRangeStrategyVaultInitParams eightyTwentyRangeStrategyVaultInitParams;
