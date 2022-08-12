@@ -133,6 +133,7 @@ export const gmxYieldStrategyFixture = deployments.createFixture(async hre => {
     weth: addresses.WETH,
     usdc: addresses.USDC,
     rewardRouter: GMX_ECOSYSTEM_ADDRESSES.RewardRouter,
+    feeRecipient: admin.address,
   });
 
   const gmxBatchingManagerFactory = await hre.ethers.getContractFactory('GMXBatchingManager');

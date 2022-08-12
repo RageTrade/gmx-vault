@@ -29,6 +29,7 @@ import { impersonateAccount } from '@nomicfoundation/hardhat-network-helpers';
 import {
   ClearingHouseLens,
   ERC20,
+  GlpStakingManager,
   GMXYieldStrategy,
   OracleMock,
   SwapSimulator,
@@ -37,12 +38,16 @@ import {
 } from '../typechain-types';
 import { activateMainnetFork } from './utils/mainnet-fork';
 import { gmxYieldStrategyFixture } from './fixtures/eighty-twenty-gmx-strategy';
+import { expect } from 'chai';
 
 describe('EightyTwentyGMXStrategy', () => {
   let gmxYieldStrategy: GMXYieldStrategy;
+  let glpStakingManager: GlpStakingManager;
   let sGLP: ERC20;
   let fsGLP: ERC20;
+  let weth: ERC20;
   let whale: SignerWithAddress;
+  let admin: SignerWithAddress;
   let user1: SignerWithAddress;
   let user2: SignerWithAddress;
   let trader0: SignerWithAddress;
@@ -68,6 +73,9 @@ describe('EightyTwentyGMXStrategy', () => {
   beforeEach(async () => {
     ({
       gmxYieldStrategy,
+      glpStakingManager,
+      weth,
+      admin,
       sGLP,
       fsGLP,
       user1,
@@ -607,6 +615,13 @@ describe('EightyTwentyGMXStrategy', () => {
       await ethPool.oracle.setPriceX128(await priceToPriceX128(4951.48786057211, 6, 18));
       //Arb2 - trader0 : Arb to close user2 withdrawn position
       await swapToken(clearingHouse, trader0, trader0AccountNo, ethPoolId, -53377188544524200n, 0, false, false);
+
+      const protocolFees = await glpStakingManager.protocolFee();
+      expect(() => glpStakingManager.withdrawFees()).to.changeTokenBalances(
+        weth,
+        [glpStakingManager, admin],
+        [protocolFees.mul(-1), protocolFees],
+      );
 
       // await logVaultParams('Arb2', gmxYieldStrategy);
       // await logRageParams(
