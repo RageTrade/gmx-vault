@@ -21,10 +21,12 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
 
     error GSM_CALLER_NOT_VAULT();
     error GSM_INVALID_SET_VAULT();
+    error GSM_INVALID_SET_FEE_RECEIPIENT();
     error GSM_INVALID_SETTER_VALUES();
 
     event FeesWithdrawn(uint256 vaule);
     event VaultUpdated(address vaultAddress, bool isVault);
+    event FeeRecipientUpdated(address feeRecipient);
     event GmxParamsUpdated(uint256 newFee, uint256 wethThreshold, uint256 slippageThreshold, address batchingManager);
 
     event TokenWithdrawn(address indexed token, uint256 shares, address indexed receiver);
@@ -46,6 +48,7 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
     uint256 public protocolFee;
     uint256 public wethThreshold;
     uint256 public slippageThreshold;
+    address public feeRecipient;
 
     IERC20 private weth;
     IERC20 private usdc;
@@ -66,6 +69,7 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
         RageERC4626InitParams rageErc4626InitParams;
         IERC20 weth;
         IERC20 usdc;
+        address feeRecipient;
         IRewardRouterV2 rewardRouter;
     }
 
@@ -80,6 +84,7 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
         weth = params.weth;
         usdc = params.usdc;
         rewardRouter = params.rewardRouter;
+        feeRecipient = params.feeRecipient;
 
         fsGlp = IERC20(ISGLPExtended(address(asset)).stakedGlpTracker());
         glpManager = IGlpManager(ISGLPExtended(address(asset)).glpManager());
@@ -119,6 +124,14 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
         emit VaultUpdated(vaultAddress, _isVault);
     }
 
+    function setFeeRecipient(address _feeRecipient) external onlyOwner {
+        if (feeRecipient != _feeRecipient) {
+            feeRecipient = _feeRecipient;
+        } else revert GSM_INVALID_SET_FEE_RECEIPIENT();
+
+        emit FeeRecipientUpdated(_feeRecipient);
+    }
+
     /// @notice grants one time max allowance to various third parties
     function grantAllowances() public onlyOwner {
         asset.approve(address(glpManager), type(uint256).max);
@@ -131,10 +144,10 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
     }
 
     /// @notice withdraw accumulated WETH fees
-    function withdrawFees() external onlyOwner {
+    function withdrawFees() external {
         uint256 amount = protocolFee;
         protocolFee = 0;
-        weth.transfer(msg.sender, amount);
+        weth.transfer(feeRecipient, amount);
         emit FeesWithdrawn(amount);
     }
 

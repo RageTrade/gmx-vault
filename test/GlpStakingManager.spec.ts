@@ -85,17 +85,6 @@ describe('GmxYieldStrategy', () => {
     });
   });
 
-  describe('#withdraw fees', () => {
-    it('fails not owner', async () => {
-      await expect(glpStakingManager.connect(signers[1]).withdrawFees()).to.be.revertedWith(
-        'Ownable: caller is not the owner',
-      );
-    });
-    it.skip('fails zero protocol fees', async () => {
-      await expect(glpStakingManager.withdrawFees()).to.be.revertedWith('Ownable: caller is not the owner');
-    });
-  });
-
   describe('#called not vault ', () => {
     it('deposit', async () => {
       await expect(glpStakingManager.connect(signers[1]).deposit(10, signers[1].address)).to.be.revertedWith(
