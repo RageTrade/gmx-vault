@@ -2,8 +2,8 @@ import { truncate } from '@ragetrade/sdk';
 import { parseUnits } from 'ethers/lib/utils';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { GMXYieldStrategy, GMXYieldStrategy__factory, ClearingHouseLens__factory } from '../typechain-types';
-import { getNetworkInfo, waitConfirmations } from './network-info';
+import { GMXYieldStrategy, GMXYieldStrategy__factory, ClearingHouseLens__factory } from '../../typechain-types';
+import { getNetworkInfo, waitConfirmations } from '../network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
@@ -48,15 +48,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       resetPositionThresholdBps: 2000,
       minNotionalPositionToCloseThreshold: 100e6,
     },
-    gmx: networkInfo.GMX_ADDRESS,
-    glp: networkInfo.GLP_ADDRESS,
-    weth: networkInfo.WETH_ADDRESS,
-    esGMX: networkInfo.ESGMX_ADDRESS, // TODO needs to change
-    glpManager: networkInfo.GLP_MANAGER_ADDRESS,
     rewardRouter: networkInfo.REWARD_ROUTER_ADDRESS,
   };
 
-  const ProxyDeployment = await deploy('GMXYieldStrategy', {
+  const proxyDeployment = await deploy('GMXYieldStrategy', {
     contract: 'TransparentUpgradeableProxy',
     from: deployer,
     log: true,
@@ -68,62 +63,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     estimateGasExtra: 1_000_000,
     waitConfirmations,
   });
-  await save('GMXYieldStrategy', { ...ProxyDeployment, abi: gmxYieldStrategyLogicDeployment.abi });
-
-  if (ProxyDeployment.newlyDeployed) {
-    await execute(
-      'GMXYieldStrategy',
-      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
-      'grantAllowances',
-    );
-
-    await execute(
-      'GMXYieldStrategy',
-      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
-      'updateBaseParams',
-      parseUnits(networkInfo.DEPOSIT_CAP_C3CLT.toString(), 18),
-      networkInfo.KEEPER_ADDRESS,
-      86400, // rebalanceTimeThreshold
-      500, // rebalancePriceThresholdBps
-    );
-
-    const gbm = await get('GMXBatchingManager');
-    await execute(
-      'GMXBatchingManager',
-      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
-      'initialize',
-      networkInfo.SGLP_ADDRESS,
-      networkInfo.REWARD_ROUTER_ADDRESS,
-      networkInfo.GLP_MANAGER_ADDRESS,
-      gbm.address,
-      networkInfo.KEEPER_ADDRESS,
-    );
-
-    await execute(
-      'GMXYieldStrategy',
-      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
-      'updateGMXParams',
-      1000, // feeBps
-      gbm.address, // batchingManager
-    );
-
-    // transfer ownership to team multisig
-    await execute(
-      'GMXYieldStrategy',
-      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
-      'transferOwnership',
-      networkInfo.MULTISIG,
-    );
-
-    const MINTER_ROLE = await read('CollateralToken', 'MINTER_ROLE');
-    await execute(
-      'CollateralToken',
-      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
-      'grantRole',
-      MINTER_ROLE,
-      ProxyDeployment.address,
-    );
-  }
+  await save('GMXYieldStrategy', { ...proxyDeployment, abi: gmxYieldStrategyLogicDeployment.abi });
 };
 
 export default func;

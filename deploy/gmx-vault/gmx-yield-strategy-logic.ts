@@ -1,6 +1,6 @@
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { waitConfirmations } from './network-info';
+import { waitConfirmations } from '../network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
@@ -10,12 +10,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const { deployer } = await getNamedAccounts();
 
-  const logicLib = await get('LogicLibrary');
+  const logicLibraryDeployment = await get('LogicLibrary');
 
   await deploy('GMXYieldStrategyLogic', {
     contract: 'GMXYieldStrategy',
     libraries: {
-      Logic: logicLib.address,
+      Logic: logicLibraryDeployment.address,
     },
     from: deployer,
     log: true,
