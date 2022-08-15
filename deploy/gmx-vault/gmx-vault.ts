@@ -14,24 +14,30 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const networkInfo = getNetworkInfo(hre.network.config.chainId ?? 31337);
 
-  const gmxBatchingManagerDeployment = await get('GMXBatchingManager');
   const gmxYieldStrategyDeployment = await get('GMXYieldStrategy');
+  const gmxBatchingManagerDeployment = await get('GMXBatchingManager');
+  const glpStakingManagerDeployment = await get('GlpStakingManager');
+
+  //
+  // provide minter role
+  //
 
   const MINTER_ROLE = await read('CollateralToken', 'MINTER_ROLE');
   await execute(
     'CollateralToken',
-    { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
+    { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations, log: true },
     'grantRole',
     MINTER_ROLE,
     gmxYieldStrategyDeployment.address,
   );
 
   //
-  // GlpStakingManager
+  // update params
   //
+
   await execute(
     'GlpStakingManager',
-    { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
+    { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations, log: true },
     'updateGMXParams',
     1000, // _feeBps,
     parseEther('0.01'), // _wethThreshold,
@@ -39,35 +45,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     gmxBatchingManagerDeployment.address,
   );
 
-  //
-  // GMXBatchingManager
-  //
-  await execute(
-    'GMXBatchingManager',
-    { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
-    'addVault',
-    gmxYieldStrategyDeployment.address,
-  );
-
-  await execute(
-    'GMXBatchingManager',
-    { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
-    'grantAllowances',
-    gmxYieldStrategyDeployment.address,
-  );
-
-  //
-  // GMXYieldStrategy
-  //
   await execute(
     'GMXYieldStrategy',
-    { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
-    'grantAllowances',
-  );
-
-  await execute(
-    'GMXYieldStrategy',
-    { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
+    { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations, log: true },
     'updateBaseParams',
     parseUnits(networkInfo.DEPOSIT_CAP_C3CLT.toString(), 18),
     networkInfo.KEEPER_ADDRESS,
@@ -77,15 +57,44 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   await execute(
     'GMXYieldStrategy',
-    { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
+    { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations, log: true },
     'updateGMXParams',
-    1000, // feeBps
-    gmxBatchingManagerDeployment.address, // batchingManager
+    glpStakingManagerDeployment.address,
+    1000, // _usdcReedemSlippage
+    1e6, // _usdcConversionThreshold
+  );
+
+  await execute(
+    'GMXBatchingManager',
+    { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations, log: true },
+    'addVault',
+    gmxYieldStrategyDeployment.address,
+  );
+
+  //
+  // grant allowances
+  //
+
+  await execute(
+    'GMXBatchingManager',
+    { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations, log: true },
+    'grantAllowances',
+    gmxYieldStrategyDeployment.address,
   );
 
   await execute(
     'GMXYieldStrategy',
-    { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
+    { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations, log: true },
+    'grantAllowances',
+  );
+
+  //
+  // finally transfer ownership
+  //
+
+  await execute(
+    'GMXYieldStrategy',
+    { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations, log: true },
     'transferOwnership',
     networkInfo.MULTISIG,
   );

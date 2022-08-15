@@ -75,13 +75,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   if (ProxyDeployment.newlyDeployed) {
     await execute(
       'CurveYieldStrategy',
-      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
+      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations, log: true },
       'grantAllowances',
     );
 
     await execute(
       'CurveYieldStrategy',
-      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
+      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations, log: true },
       'updateBaseParams',
       parseUnits(networkInfo.DEPOSIT_CAP_C3CLT.toString(), 18),
       networkInfo.KEEPER_ADDRESS,
@@ -91,7 +91,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     await execute(
       'CurveYieldStrategy',
-      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
+      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations, log: true },
       'updateCurveParams',
       1000, // feeBps
       100, // stablecoinSlippage
@@ -103,7 +103,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const MINTER_ROLE = await read('CollateralToken', 'MINTER_ROLE');
     await execute(
       'CollateralToken',
-      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
+      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations, log: true },
       'grantRole',
       MINTER_ROLE,
       ProxyDeployment.address,
@@ -112,7 +112,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     // transfer ownership to team multisig
     await execute(
       'CurveYieldStrategy',
-      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
+      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations, log: true },
       'transferOwnership',
       networkInfo.MULTISIG,
     );
