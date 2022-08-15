@@ -5255,6 +5255,11 @@ hardhat-gas-reporter@^1.0.4:
     eth-gas-reporter "^0.2.24"
     sha1 "^1.1.1"
 
+hardhat-live-fork@^0.1.2:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/hardhat-live-fork/-/hardhat-live-fork-0.1.2.tgz#459f29de6e2691a44e59681cbb0ae0c6dbda298c"
+  integrity sha512-69DO7QHkyRhXMkdlHjtbJ4f33Wxlpg3P857+fldD0w8xmb/T8vtWQRmJNkWuRIl9SYnbbmJWjt9o/nTsVI16Jg==
+
 hardhat-tracer@^1.1.0-rc.5:
   version "1.1.0-rc.6"
   resolved "https://registry.yarnpkg.com/hardhat-tracer/-/hardhat-tracer-1.1.0-rc.6.tgz#963f9058a2e1ca7f1dac19d8b00ab2c2e556a1f4"
