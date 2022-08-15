@@ -25,6 +25,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     weth: networkInfo.WETH_ADDRESS,
     usdc: networkInfo.RAGE_SETTLEMENT_TOKEN_ADDRESS ?? (await get('SettlementToken')).address,
     rewardRouter: networkInfo.REWARD_ROUTER_ADDRESS,
+    feeRecipient: networkInfo.MULTISIG,
   };
 
   const proxyDeployment = await deploy('GlpStakingManager', {
