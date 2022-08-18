@@ -5,7 +5,7 @@ import { getNetworkInfo, waitConfirmations } from '../network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
-    deployments: { get, deploy, save, execute, read },
+    deployments: { get, deploy, save },
     getNamedAccounts,
   } = hre;
 
@@ -38,6 +38,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       GlpStakingManager__factory.createInterface().encodeFunctionData('initialize', [initializeArg]),
     ],
     estimateGasExtra: 1_000_000,
+    gasLimit: 10_000_000,
     waitConfirmations,
   });
   await save('GlpStakingManager', { ...proxyDeployment, abi: glpStakingManagerLogicDeployment.abi });

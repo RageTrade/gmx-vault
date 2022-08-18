@@ -33,7 +33,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   ];
 
   if (logicDeployment.newlyDeployed) {
-    await execute('VaultPeriphery', { from: deployer, waitConfirmations }, 'initialize', ...initializeArgs);
+    await execute('VaultPeriphery', { from: deployer, waitConfirmations, log: true }, 'initialize', ...initializeArgs);
 
     // transfer ownership to team multisig
     await execute(
