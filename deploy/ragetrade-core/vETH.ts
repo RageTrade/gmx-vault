@@ -54,7 +54,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         from: deployer,
         log: true,
       });
-      await execute('ETH-IndexOracle', { from: deployer }, 'setPriceX128', await priceToPriceX128(3000, 6, 18));
+      await execute(
+        'ETH-IndexOracle',
+        { from: deployer, log: true },
+        'setPriceX128',
+        await priceToPriceX128(3000, 6, 18),
+      );
     }
 
     const deployVTokenParams: VTokenDeployer.DeployVTokenParamsStruct = {
@@ -81,7 +86,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       slotsToInitialize: 100,
     };
 
-    const tx = await execute('RageTradeFactory', { from: deployer }, 'initializePool', params);
+    const tx = await execute('RageTradeFactory', { from: deployer, log: true }, 'initializePool', params);
 
     const poolInitializedLog = tx.events?.find(
       event => event?.event === 'PoolInitialized',

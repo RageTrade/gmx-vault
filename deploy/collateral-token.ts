@@ -28,7 +28,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   if (CollateralTokenDeployment.newlyDeployed) {
     await execute(
       'ClearingHouse',
-      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations },
+      { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations, log: true },
       'updateCollateralSettings',
       CollateralTokenDeployment.address,
       {
