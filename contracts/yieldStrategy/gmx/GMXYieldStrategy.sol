@@ -21,8 +21,22 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
     error GYS_INVALID_SETTER_VALUES();
 
-    event TokenWithdrawn(address token, uint256 sGLPQuantity, uint256 shares, address receiver);
-    event TokenRedeemded(address token, uint256 sGLPQuantity, uint256 shares, address receiver);
+    event TokenWithdrawn(
+        address indexed caller,
+        address indexed owner,
+        address indexed receiver,
+        address token,
+        uint256 sGLPQuantity,
+        uint256 shares
+    );
+    event TokenRedeemed(
+        address indexed caller,
+        address indexed owner,
+        address indexed receiver,
+        address token,
+        uint256 sGLPQuantity,
+        uint256 shares
+    );
 
     event GmxParamsUpdated(address stakingManager, uint256 usdcReedemSlippage, uint240 usdcConversionThreshold);
 
@@ -164,15 +178,35 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         IERC20 token,
         uint256 shares,
         uint256 minTokenOut,
+        address from,
         address receiver
     ) external {
-        uint256 sGLPReceived = redeem(shares, address(this), msg.sender);
+        _beforeShareAllocation();
 
-        asset.approve(address(glpManager), sGLPReceived);
+        // Check for rounding error since we round down in previewRedeem.
+        uint256 assets = convertToAssets(shares);
+        (uint256 sGLPToRedeem, int256 tokensToTrade) = _simulateBeforeWithdraw(assets);
+        uint256 sharesToRedeem = _convertToSharesRoundUp(sGLPToRedeem);
+        require(sGLPToRedeem != 0, 'ZERO_ASSETS');
 
-        rewardRouter.unstakeAndRedeemGlp(address(token), sGLPReceived, minTokenOut, receiver);
+        if (msg.sender != from) {
+            uint256 allowed = allowance(from, msg.sender); // Saves gas for limited approvals.
+            if (allowed != type(uint256).max) _approve(from, msg.sender, allowed - sharesToRedeem);
+        }
+        //Additional cap on withdraw to ensure the position closed does not breach slippage tolerance
+        //In case tolerance is reached only partial withdraw is executed
 
-        emit TokenRedeemded(address(token), sGLPReceived, shares, receiver);
+        beforeWithdrawClosePosition(tokensToTrade);
+
+        beforeWithdraw(sGLPToRedeem, sharesToRedeem);
+
+        _burn(from, sharesToRedeem);
+
+        asset.approve(address(glpManager), sGLPToRedeem);
+
+        rewardRouter.unstakeAndRedeemGlp(address(token), sGLPToRedeem, minTokenOut, receiver);
+
+        emit TokenRedeemed(msg.sender, from, receiver, address(token), sGLPToRedeem, sharesToRedeem);
     }
 
     /// @notice allows to withdraw amount for tokens available on gmx
@@ -184,14 +218,30 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         IERC20 token,
         uint256 _sGLP,
         uint256 minTokenOut,
+        address from,
         address receiver
     ) external {
-        uint256 shares = withdraw(_sGLP, address(this), msg.sender);
+        _beforeShareAllocation();
+        (uint256 sGLPToWithdraw, int256 tokensToTrade) = _simulateBeforeWithdraw(_sGLP);
 
-        asset.approve(address(glpManager), _sGLP);
+        uint256 shares = _convertToSharesRoundUp(sGLPToWithdraw);
 
-        rewardRouter.unstakeAndRedeemGlp(address(token), _sGLP, minTokenOut, receiver);
+        beforeWithdrawClosePosition(tokensToTrade);
 
-        emit TokenWithdrawn(address(token), _sGLP, shares, receiver);
+        if (msg.sender != from) {
+            uint256 allowed = allowance(from, msg.sender); // Saves gas for limited approvals.
+
+            if (allowed != type(uint256).max) _approve(from, msg.sender, allowed - shares);
+        }
+
+        beforeWithdraw(sGLPToWithdraw, shares);
+
+        _burn(from, shares);
+
+        asset.approve(address(glpManager), sGLPToWithdraw);
+
+        rewardRouter.unstakeAndRedeemGlp(address(token), sGLPToWithdraw, minTokenOut, receiver);
+
+        emit TokenWithdrawn(msg.sender, from, receiver, address(token), sGLPToWithdraw, shares);
     }
 }

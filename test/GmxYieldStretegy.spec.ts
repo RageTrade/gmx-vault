@@ -205,7 +205,9 @@ describe('GmxYieldStrategy', () => {
       await gmxYieldStrategy.approve(gmxYieldStrategy.address, ethers.constants.MaxUint256);
       await gmxYieldStrategy.connect(whale).deposit(parseEther('2'), whale.address);
 
-      const tx = gmxYieldStrategy.connect(whale).withdrawToken(addresses.WETH, parseEther('1.5'), 0, whale.address);
+      const tx = gmxYieldStrategy
+        .connect(whale)
+        .withdrawToken(addresses.WETH, parseEther('1.5'), 0, whale.address, whale.address);
 
       await expect(tx).to.emit(gmxYieldStrategy, 'TokenWithdrawn');
     });
@@ -214,7 +216,9 @@ describe('GmxYieldStrategy', () => {
       await sGLP.connect(whale).approve(gmxYieldStrategy.address, parseEther('2'));
       await gmxYieldStrategy.connect(whale).deposit(parseEther('2'), whale.address);
 
-      const tx = gmxYieldStrategy.connect(whale).withdrawToken(addresses.WETH, parseEther('2.1'), 0, whale.address);
+      const tx = gmxYieldStrategy
+        .connect(whale)
+        .withdrawToken(addresses.WETH, parseEther('2.1'), 0, whale.address, whale.address);
 
       await expect(tx).to.be.reverted;
     });
@@ -226,16 +230,20 @@ describe('GmxYieldStrategy', () => {
       await gmxYieldStrategy.approve(gmxYieldStrategy.address, ethers.constants.MaxUint256);
       await gmxYieldStrategy.connect(whale).deposit(parseEther('2'), whale.address);
 
-      const tx = gmxYieldStrategy.connect(whale).redeemToken(addresses.WETH, parseEther('1.5'), 0, whale.address);
+      const tx = gmxYieldStrategy
+        .connect(whale)
+        .redeemToken(addresses.WETH, parseEther('1.5'), 0, whale.address, whale.address);
 
-      await expect(tx).to.emit(gmxYieldStrategy, 'TokenRedeemded');
+      await expect(tx).to.emit(gmxYieldStrategy, 'TokenRedeemed');
     });
 
     it('does not redeem if not enough shares', async () => {
       await sGLP.connect(whale).approve(gmxYieldStrategy.address, parseEther('2'));
       await gmxYieldStrategy.connect(whale).deposit(parseEther('2'), whale.address);
 
-      const tx = gmxYieldStrategy.connect(whale).redeemToken(addresses.WETH, parseEther('2.1'), 0, whale.address);
+      const tx = gmxYieldStrategy
+        .connect(whale)
+        .redeemToken(addresses.WETH, parseEther('2.1'), 0, whale.address, whale.address);
 
       await expect(tx).to.be.reverted;
     });
