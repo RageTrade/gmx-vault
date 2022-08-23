@@ -170,11 +170,11 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
     }
 
     function maxWithdraw(address owner) public view override returns (uint256) {
-        return previewWithdraw(convertToAssets(balanceOf(owner)));
+        return previewRedeem(balanceOf(owner));
     }
 
     function maxRedeem(address owner) public view override returns (uint256) {
-        return previewRedeem(balanceOf(owner));
+        return previewWithdraw(convertToAssets(balanceOf(owner)));
     }
 
     /// @notice grants allowances for base vault
