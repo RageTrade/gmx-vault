@@ -134,12 +134,8 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
 
     /// @notice grants one time max allowance to various third parties
     function grantAllowances() public onlyOwner {
-        asset.approve(address(glpManager), type(uint256).max);
-
-        weth.approve(address(glpManager), type(uint256).max);
         weth.approve(address(batchingManager), type(uint256).max);
 
-        usdc.approve(address(glpManager), type(uint256).max);
         usdc.approve(address(batchingManager), type(uint256).max);
     }
 
