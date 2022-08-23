@@ -161,6 +161,22 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         vaultMarketValue += (getMarketValue(totalAssets())).toInt256();
     }
 
+    function maxDeposit(address) public view virtual override returns (uint256) {
+        return depositCap - totalAssets();
+    }
+
+    function maxMint(address) public view virtual override returns (uint256) {
+        return convertToShares(maxDeposit(address(0)));
+    }
+
+    function maxWithdraw(address owner) public view override returns (uint256) {
+        return previewWithdraw(convertToAssets(balanceOf(owner)));
+    }
+
+    function maxRedeem(address owner) public view override returns (uint256) {
+        return previewRedeem(balanceOf(owner));
+    }
+
     /// @notice grants allowances for base vault
     function _grantBaseAllowances() internal {
         rageCollateralToken.approve(address(rageClearingHouse), type(uint256).max);
