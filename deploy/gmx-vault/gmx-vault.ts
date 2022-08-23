@@ -71,6 +71,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     gmxYieldStrategyDeployment.address,
   );
 
+  await execute(
+    'GlpStakingManager',
+    { from: deployer, estimateGasExtra: 1_000_000, waitConfirmations, log: true },
+    'setVault',
+    gmxYieldStrategyDeployment.address,
+    true,
+  );
+
   //
   // grant allowances
   //
