@@ -84,10 +84,8 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
     function grantAllowances() public override onlyOwner {
         _grantBaseAllowances();
 
-        asset.approve(address(glpManager), type(uint256).max);
         asset.approve(address(stakingManager), type(uint256).max);
 
-        rageSettlementToken.approve(address(glpManager), type(uint256).max);
         rageSettlementToken.approve(address(stakingManager), type(uint256).max);
     }
 
