@@ -1,12 +1,12 @@
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { getNetworkNameFromChainId, getDeployment, ContractDeployment } from '@ragetrade/sdk';
+import { getNetworkNameFromChainId } from '@ragetrade/sdk';
 import { ProxyAdmin__factory } from '../typechain-types';
 import { waitConfirmations } from './network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
-    deployments: { deploy, save },
+    deployments: { deploy, save, get },
     getNamedAccounts,
   } = hre;
 
@@ -21,6 +21,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   } catch {
     // if doesn't contain a proxy admin then deploy a new one
     console.log('No core deployment found');
+    try {
+      // should throw if no ProxyAdmin deployment found
+      await get('ProxyAdmin');
+      return; // if already deployed then don't (even if openzeppelin version updated)
+    } catch {}
     await deploy('ProxyAdmin', {
       contract: 'ProxyAdmin',
       from: deployer,
