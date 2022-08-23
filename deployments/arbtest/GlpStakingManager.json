@@ -1,73 +1,29 @@
 {
-  "address": "0xb0212a93d2d6b863c8De47a33bC8e259E6439d9d",
+  "address": "0xc75B127d442E9CBeeF9bD4F20FE57bD65cf67b10",
   "abi": [
     {
       "inputs": [],
-      "name": "CallerNotKeeper",
+      "name": "GSM_CALLER_NOT_VAULT",
       "type": "error"
     },
     {
       "inputs": [],
-      "name": "CallerNotStakingManager",
-      "type": "error"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "balance",
-          "type": "uint256"
-        }
-      ],
-      "name": "InsufficientShares",
-      "type": "error"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "errorCode",
-          "type": "uint256"
-        }
-      ],
-      "name": "InvalidInput",
-      "type": "error"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bool",
-          "name": "currentValue",
-          "type": "bool"
-        }
-      ],
-      "name": "InvalidSetDepositPaused",
-      "type": "error"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "vault",
-          "type": "address"
-        }
-      ],
-      "name": "InvalidVault",
+      "name": "GSM_INVALID_SETTER_VALUES",
       "type": "error"
     },
     {
       "inputs": [],
-      "name": "VaultAlreadyAdded",
+      "name": "GSM_INVALID_SET_FEE_RECEIPIENT",
       "type": "error"
     },
     {
       "inputs": [],
-      "name": "VaultsLimitExceeded",
+      "name": "GSM_INVALID_SET_VAULT",
       "type": "error"
     },
     {
       "inputs": [],
-      "name": "ZeroBalance",
+      "name": "ZeroShares",
       "type": "error"
     },
     {
@@ -75,24 +31,24 @@
       "inputs": [
         {
           "indexed": true,
-          "internalType": "uint256",
-          "name": "round",
-          "type": "uint256"
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
         },
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "userGlpAmount",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "userShareAmount",
+          "name": "value",
           "type": "uint256"
         }
       ],
-      "name": "BatchDeposit",
+      "name": "Approval",
       "type": "event"
     },
     {
@@ -100,36 +56,87 @@
       "inputs": [
         {
           "indexed": true,
-          "internalType": "uint256",
-          "name": "round",
-          "type": "uint256"
-        },
-        {
-          "indexed": true,
           "internalType": "address",
-          "name": "token",
+          "name": "caller",
           "type": "address"
         },
         {
           "indexed": true,
           "internalType": "address",
-          "name": "receiver",
+          "name": "owner",
           "type": "address"
         },
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "amount",
+          "name": "assets",
           "type": "uint256"
         },
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "glpStaked",
+          "name": "shares",
           "type": "uint256"
         }
       ],
-      "name": "DepositToken",
+      "name": "Deposit",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "feeRecipient",
+          "type": "address"
+        }
+      ],
+      "name": "FeeRecipientUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "vaule",
+          "type": "uint256"
+        }
+      ],
+      "name": "FeesWithdrawn",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "newFee",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "wethThreshold",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "slippageThreshold",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "batchingManager",
+          "type": "address"
+        }
+      ],
+      "name": "GmxParamsUpdated",
       "type": "event"
     },
     {
@@ -143,19 +150,6 @@
         }
       ],
       "name": "Initialized",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "newKeeper",
-          "type": "address"
-        }
-      ],
-      "name": "KeeperUpdated",
       "type": "event"
     },
     {
@@ -181,13 +175,50 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": false,
+          "indexed": true,
           "internalType": "address",
-          "name": "account",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_sGLPQuantity",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "receiver",
           "type": "address"
         }
       ],
-      "name": "Paused",
+      "name": "TokenRedeemded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "shares",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "receiver",
+          "type": "address"
+        }
+      ],
+      "name": "TokenWithdrawn",
       "type": "event"
     },
     {
@@ -202,17 +233,17 @@
         {
           "indexed": true,
           "internalType": "address",
-          "name": "receiver",
+          "name": "to",
           "type": "address"
         },
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "claimAmount",
+          "name": "value",
           "type": "uint256"
         }
       ],
-      "name": "SharesClaimed",
+      "name": "Transfer",
       "type": "event"
     },
     {
@@ -221,84 +252,111 @@
         {
           "indexed": false,
           "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "Unpaused",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "vault",
-          "type": "address"
-        }
-      ],
-      "name": "VaultAdded",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "vaultGlpAmount",
-          "type": "uint256"
-        }
-      ],
-      "name": "VaultDeposit",
-      "type": "event"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "contract IERC4626",
-          "name": "vault",
-          "type": "address"
-        }
-      ],
-      "name": "addVault",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "contract IERC4626",
-          "name": "gmxVault",
+          "name": "vaultAddress",
           "type": "address"
         },
         {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "isVault",
+          "type": "bool"
+        }
+      ],
+      "name": "VaultUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "caller",
+          "type": "address"
+        },
+        {
+          "indexed": true,
           "internalType": "address",
           "name": "receiver",
           "type": "address"
         },
         {
+          "indexed": true,
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
           "internalType": "uint256",
-          "name": "amount",
+          "name": "assets",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "shares",
           "type": "uint256"
         }
       ],
-      "name": "claim",
-      "outputs": [],
-      "stateMutability": "nonpayable",
+      "name": "Withdraw",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "FEE",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
-      "inputs": [
+      "inputs": [],
+      "name": "MAX_BPS",
+      "outputs": [
         {
-          "internalType": "contract IERC4626",
-          "name": "vault",
-          "type": "address"
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
         }
       ],
-      "name": "currentRound",
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "PRICE_PRECISION",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "USDG_DECIMALS",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "WETH_DECIMALS",
       "outputs": [
         {
           "internalType": "uint256",
@@ -313,25 +371,175 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "token",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        }
+      ],
+      "name": "allowance",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "spender",
           "type": "address"
         },
         {
           "internalType": "uint256",
           "name": "amount",
           "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "minUSDG",
-          "type": "uint256"
         }
       ],
-      "name": "depositToken",
+      "name": "approve",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "asset",
+      "outputs": [
+        {
+          "internalType": "contract IERC20Metadata",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "balanceOf",
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "glpStaked",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "shares",
+          "type": "uint256"
+        }
+      ],
+      "name": "convertToAssets",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "assets",
+          "type": "uint256"
+        }
+      ],
+      "name": "convertToShares",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "decimals",
+      "outputs": [
+        {
+          "internalType": "uint8",
+          "name": "",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "subtractedValue",
+          "type": "uint256"
+        }
+      ],
+      "name": "decreaseAllowance",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        }
+      ],
+      "name": "deposit",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "shares",
           "type": "uint256"
         }
       ],
@@ -341,11 +549,6 @@
     {
       "inputs": [
         {
-          "internalType": "contract IERC4626",
-          "name": "gmxVault",
-          "type": "address"
-        },
-        {
           "internalType": "address",
           "name": "token",
           "type": "address"
@@ -354,23 +557,13 @@
           "internalType": "uint256",
           "name": "amount",
           "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "minUSDG",
-          "type": "uint256"
-        },
-        {
-          "internalType": "address",
-          "name": "receiver",
-          "type": "address"
         }
       ],
       "name": "depositToken",
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "glpStaked",
+          "name": "shares",
           "type": "uint256"
         }
       ],
@@ -379,62 +572,19 @@
     },
     {
       "inputs": [],
-      "name": "executeBatchDeposit",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "contract IERC4626",
-          "name": "gmxVault",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "glpBalance",
+      "name": "feeRecipient",
       "outputs": [
         {
-          "internalType": "uint256",
-          "name": "balance",
-          "type": "uint256"
+          "internalType": "address",
+          "name": "",
+          "type": "address"
         }
       ],
       "stateMutability": "view",
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "glpBalanceAllVaults",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "balance",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "contract IERC4626",
-          "name": "gmxVault",
-          "type": "address"
-        }
-      ],
+      "inputs": [],
       "name": "grantAllowances",
       "outputs": [],
       "stateMutability": "nonpayable",
@@ -443,29 +593,77 @@
     {
       "inputs": [
         {
-          "internalType": "contract IERC20",
-          "name": "_sGlp",
-          "type": "address"
-        },
-        {
-          "internalType": "contract IRewardRouterV2",
-          "name": "_rewardRouter",
-          "type": "address"
-        },
-        {
-          "internalType": "contract IGlpManager",
-          "name": "_glpManager",
-          "type": "address"
-        },
-        {
           "internalType": "address",
-          "name": "_stakingManager",
+          "name": "spender",
           "type": "address"
         },
         {
-          "internalType": "address",
-          "name": "_keeper",
-          "type": "address"
+          "internalType": "uint256",
+          "name": "addedValue",
+          "type": "uint256"
+        }
+      ],
+      "name": "increaseAllowance",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "components": [
+                {
+                  "internalType": "contract IERC20Metadata",
+                  "name": "asset",
+                  "type": "address"
+                },
+                {
+                  "internalType": "string",
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "symbol",
+                  "type": "string"
+                }
+              ],
+              "internalType": "struct RageERC4626.RageERC4626InitParams",
+              "name": "rageErc4626InitParams",
+              "type": "tuple"
+            },
+            {
+              "internalType": "contract IERC20",
+              "name": "weth",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IERC20",
+              "name": "usdc",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "feeRecipient",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IRewardRouterV2",
+              "name": "rewardRouter",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct GlpStakingManager.GlpStakingManagerInitParams",
+          "name": "glpStakingManagerInitParams",
+          "type": "tuple"
         }
       ],
       "name": "initialize",
@@ -476,12 +674,12 @@
     {
       "inputs": [
         {
-          "internalType": "contract IERC4626",
-          "name": "vault",
+          "internalType": "address",
+          "name": "",
           "type": "address"
         }
       ],
-      "name": "isVaultValid",
+      "name": "isVault",
       "outputs": [
         {
           "internalType": "bool",
@@ -493,13 +691,113 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "keeper",
-      "outputs": [
+      "inputs": [
         {
           "internalType": "address",
           "name": "",
           "type": "address"
+        }
+      ],
+      "name": "maxDeposit",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "maxMint",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        }
+      ],
+      "name": "maxRedeem",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        }
+      ],
+      "name": "maxWithdraw",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "shares",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        }
+      ],
+      "name": "mint",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "name",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
         }
       ],
       "stateMutability": "view",
@@ -519,23 +817,121 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "pauseDeposit",
-      "outputs": [],
-      "stateMutability": "nonpayable",
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "assets",
+          "type": "uint256"
+        }
+      ],
+      "name": "previewDeposit",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "shares",
+          "type": "uint256"
+        }
+      ],
+      "name": "previewMint",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "shares",
+          "type": "uint256"
+        }
+      ],
+      "name": "previewRedeem",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "assets",
+          "type": "uint256"
+        }
+      ],
+      "name": "previewWithdraw",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
       "inputs": [],
-      "name": "paused",
+      "name": "protocolFee",
       "outputs": [
         {
-          "internalType": "bool",
+          "internalType": "uint256",
           "name": "",
-          "type": "bool"
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "shares",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        }
+      ],
+      "name": "redeem",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -548,87 +944,37 @@
     {
       "inputs": [
         {
-          "internalType": "contract IERC4626",
-          "name": "vault",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "round",
-          "type": "uint256"
-        }
-      ],
-      "name": "roundDeposits",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "uint128",
-              "name": "totalGlp",
-              "type": "uint128"
-            },
-            {
-              "internalType": "uint128",
-              "name": "totalShares",
-              "type": "uint128"
-            }
-          ],
-          "internalType": "struct IGMXBatchingManager.RoundDeposit",
-          "name": "",
-          "type": "tuple"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "contract IERC4626",
-          "name": "vault",
+          "internalType": "address",
+          "name": "_feeRecipient",
           "type": "address"
         }
       ],
-      "name": "roundGlpBalance",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
+      "name": "setFeeRecipient",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
       "inputs": [
         {
           "internalType": "address",
-          "name": "_keeper",
+          "name": "vaultAddress",
           "type": "address"
+        },
+        {
+          "internalType": "bool",
+          "name": "_isVault",
+          "type": "bool"
         }
       ],
-      "name": "setKeeper",
+      "name": "setVault",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
     {
       "inputs": [],
-      "name": "stakingManager",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "stakingManagerGlpBalance",
+      "name": "slippageThreshold",
       "outputs": [
         {
           "internalType": "uint256",
@@ -637,6 +983,98 @@
         }
       ],
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "symbol",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalAssets",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalSupply",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "transfer",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "transferFrom",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -655,17 +1093,63 @@
     {
       "inputs": [
         {
-          "internalType": "contract IERC4626",
-          "name": "gmxVault",
+          "internalType": "uint256",
+          "name": "_feeBps",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_wethThreshold",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_slippageThreshold",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_batchingManager",
+          "type": "address"
+        }
+      ],
+      "name": "updateGMXParams",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "wethThreshold",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
           "type": "address"
         },
         {
           "internalType": "address",
-          "name": "account",
+          "name": "from",
           "type": "address"
         }
       ],
-      "name": "unclaimedShares",
+      "name": "withdraw",
       "outputs": [
         {
           "internalType": "uint256",
@@ -673,143 +1157,46 @@
           "type": "uint256"
         }
       ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "unpauseDeposit",
-      "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "contract IERC4626",
-          "name": "vault",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "userDeposits",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "uint256",
-              "name": "round",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint128",
-              "name": "glpBalance",
-              "type": "uint128"
-            },
-            {
-              "internalType": "uint128",
-              "name": "unclaimedShares",
-              "type": "uint128"
-            }
-          ],
-          "internalType": "struct IGMXBatchingManager.UserDeposit",
-          "name": "",
-          "type": "tuple"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "contract IERC4626",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "name": "vaultBatchingState",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "currentRound",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "roundGlpBalance",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
       "inputs": [],
-      "name": "vaultCount",
-      "outputs": [
-        {
-          "internalType": "uint16",
-          "name": "",
-          "type": "uint16"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "name": "vaults",
-      "outputs": [
-        {
-          "internalType": "contract IERC4626",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
+      "name": "withdrawFees",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     }
   ],
-  "transactionHash": "0xb93153ebdf8588c194dcbb7b7cee614ba07d01af4559353683ec08c2cfc9fffb",
+  "transactionHash": "0xa2d40ffa476d2863828ff57aab2f27efa44006524a48f7fa9bc58baa1027ec84",
   "receipt": {
     "to": null,
     "from": "0x4ec0dda0430A54b4796109913545F715B2d89F34",
-    "contractAddress": "0xb0212a93d2d6b863c8De47a33bC8e259E6439d9d",
+    "contractAddress": "0xc75B127d442E9CBeeF9bD4F20FE57bD65cf67b10",
     "transactionIndex": 1,
-    "gasUsed": "744225",
-    "logsBloom": "0x00000000000000000000400000200000400000000000000008a00000000000000000000000000000000000000800000000000000000000000000040000000000000000200000000000000000000002000001000000000000000000000000000000000000020000000000000000000800000000800000000000000000000000400000000000000000000000000000000000000000000080040000001000800000000000000000000000000000000400000000000000000000000000000000000000008020000000000080000000040000000000000400000000000000000020000000000000000000000000000000000000000000000000000200000000000000",
-    "blockHash": "0xf63d8eb346e32926d8701e5247bda2c0c6dbf61be4901ef04e5647fe0211e574",
-    "transactionHash": "0xb93153ebdf8588c194dcbb7b7cee614ba07d01af4559353683ec08c2cfc9fffb",
+    "gasUsed": "870873",
+    "logsBloom": "0x00000000000000000000000000000000400000000000000000a00000000002000004000000000000000000000000000040000000000000000000040000000000000000000000000000000000000002000001000000000000000000000000000000000000020000000000000000000800000000800000000000000000000000400000000000000000000000000000000000400000000080000000000004800000000000000000000000000000000400000000000000000000000000000000000000000020000000000000000000040000000000000400000000000000000020000000000000000000000000000000000000000000000200000200000000000000",
+    "blockHash": "0x8ce8489f10f9f3198ef2df9f6718cc9ec5bc68eb124b4de5b66977d35014a203",
+    "transactionHash": "0xa2d40ffa476d2863828ff57aab2f27efa44006524a48f7fa9bc58baa1027ec84",
     "logs": [
       {
         "transactionIndex": 1,
-        "blockNumber": 14635428,
-        "transactionHash": "0xb93153ebdf8588c194dcbb7b7cee614ba07d01af4559353683ec08c2cfc9fffb",
-        "address": "0xb0212a93d2d6b863c8De47a33bC8e259E6439d9d",
+        "blockNumber": 14635416,
+        "transactionHash": "0xa2d40ffa476d2863828ff57aab2f27efa44006524a48f7fa9bc58baa1027ec84",
+        "address": "0xc75B127d442E9CBeeF9bD4F20FE57bD65cf67b10",
         "topics": [
           "0xbc7cd75a20ee27fd9adebab32041f755214dbc6bffa90cc0225b39da2e5c2d3b",
-          "0x000000000000000000000000898969ca8eb8c94171c6de1bf054f98ef5ea793e"
+          "0x000000000000000000000000eb9bd380c6bb35f25b9874d1bb0f84a65e8a02d4"
         ],
         "data": "0x",
         "logIndex": 0,
-        "blockHash": "0xf63d8eb346e32926d8701e5247bda2c0c6dbf61be4901ef04e5647fe0211e574"
+        "blockHash": "0x8ce8489f10f9f3198ef2df9f6718cc9ec5bc68eb124b4de5b66977d35014a203"
       },
       {
         "transactionIndex": 1,
-        "blockNumber": 14635428,
-        "transactionHash": "0xb93153ebdf8588c194dcbb7b7cee614ba07d01af4559353683ec08c2cfc9fffb",
-        "address": "0xb0212a93d2d6b863c8De47a33bC8e259E6439d9d",
+        "blockNumber": 14635416,
+        "transactionHash": "0xa2d40ffa476d2863828ff57aab2f27efa44006524a48f7fa9bc58baa1027ec84",
+        "address": "0xc75B127d442E9CBeeF9bD4F20FE57bD65cf67b10",
         "topics": [
           "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0",
           "0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -817,54 +1204,42 @@
         ],
         "data": "0x",
         "logIndex": 1,
-        "blockHash": "0xf63d8eb346e32926d8701e5247bda2c0c6dbf61be4901ef04e5647fe0211e574"
+        "blockHash": "0x8ce8489f10f9f3198ef2df9f6718cc9ec5bc68eb124b4de5b66977d35014a203"
       },
       {
         "transactionIndex": 1,
-        "blockNumber": 14635428,
-        "transactionHash": "0xb93153ebdf8588c194dcbb7b7cee614ba07d01af4559353683ec08c2cfc9fffb",
-        "address": "0xb0212a93d2d6b863c8De47a33bC8e259E6439d9d",
-        "topics": [
-          "0x0425bcd291db1d48816f2a98edc7ecaf6dd5c64b973d9e4b3b6b750763dc6c2e"
-        ],
-        "data": "0x000000000000000000000000e1829bad81e9146e18f28e28691d930c052483ba",
-        "logIndex": 2,
-        "blockHash": "0xf63d8eb346e32926d8701e5247bda2c0c6dbf61be4901ef04e5647fe0211e574"
-      },
-      {
-        "transactionIndex": 1,
-        "blockNumber": 14635428,
-        "transactionHash": "0xb93153ebdf8588c194dcbb7b7cee614ba07d01af4559353683ec08c2cfc9fffb",
-        "address": "0xb0212a93d2d6b863c8De47a33bC8e259E6439d9d",
+        "blockNumber": 14635416,
+        "transactionHash": "0xa2d40ffa476d2863828ff57aab2f27efa44006524a48f7fa9bc58baa1027ec84",
+        "address": "0xc75B127d442E9CBeeF9bD4F20FE57bD65cf67b10",
         "topics": [
           "0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498"
         ],
         "data": "0x0000000000000000000000000000000000000000000000000000000000000001",
-        "logIndex": 3,
-        "blockHash": "0xf63d8eb346e32926d8701e5247bda2c0c6dbf61be4901ef04e5647fe0211e574"
+        "logIndex": 2,
+        "blockHash": "0x8ce8489f10f9f3198ef2df9f6718cc9ec5bc68eb124b4de5b66977d35014a203"
       },
       {
         "transactionIndex": 1,
-        "blockNumber": 14635428,
-        "transactionHash": "0xb93153ebdf8588c194dcbb7b7cee614ba07d01af4559353683ec08c2cfc9fffb",
-        "address": "0xb0212a93d2d6b863c8De47a33bC8e259E6439d9d",
+        "blockNumber": 14635416,
+        "transactionHash": "0xa2d40ffa476d2863828ff57aab2f27efa44006524a48f7fa9bc58baa1027ec84",
+        "address": "0xc75B127d442E9CBeeF9bD4F20FE57bD65cf67b10",
         "topics": [
           "0x7e644d79422f17c01e4894b5f4f588d331ebfa28653d42ae832dc59e38c9798f"
         ],
         "data": "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000035b663c38988eafd0750f95a86c79dfc0567b793",
-        "logIndex": 4,
-        "blockHash": "0xf63d8eb346e32926d8701e5247bda2c0c6dbf61be4901ef04e5647fe0211e574"
+        "logIndex": 3,
+        "blockHash": "0x8ce8489f10f9f3198ef2df9f6718cc9ec5bc68eb124b4de5b66977d35014a203"
       }
     ],
-    "blockNumber": 14635428,
-    "cumulativeGasUsed": "744225",
+    "blockNumber": 14635416,
+    "cumulativeGasUsed": "870873",
     "status": 1,
     "byzantium": true
   },
   "args": [
-    "0x898969Ca8eB8C94171c6de1bf054F98ef5ea793E",
+    "0xeB9Bd380c6bb35F25B9874D1bB0F84a65E8a02D4",
     "0x35B663c38988Eafd0750f95A86c79DFC0567B793",
-    "0x1459457a000000000000000000000000fa14956e27d55427f7e267313d1e12d2217747e6000000000000000000000000e4180809231b554423b28efb8c13819fe5b2c930000000000000000000000000d875d99e09118d2be80579b9d23e83469077b498000000000000000000000000c75b127d442e9cbeef9bd4f20fe57bd65cf67b10000000000000000000000000e1829bad81e9146e18f28e28691d930c052483ba"
+    "0x9a03ceba000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000fcfbfcc11d12bcf816415794e5dc1bbcc5304e01000000000000000000000000f0dcd4737a20ed33481a49de94c599944a3ca7370000000000000000000000004ec0dda0430a54b4796109913545f715b2d89f34000000000000000000000000e4180809231b554423b28efb8c13819fe5b2c930000000000000000000000000fa14956e27d55427f7e267313d1e12d2217747e6000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000011476c705374616b696e674d616e61676572000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000347534d0000000000000000000000000000000000000000000000000000000000"
   ],
   "numDeployments": 2,
   "solcInputHash": "af3c35c12a0548d291e772ec0045e375",
