@@ -295,9 +295,9 @@ abstract contract BaseVault is IBaseVault, RageERC4626, IBaseYieldStrategy, Owna
         uint256 amount,
         uint256 /** shares **/
     ) internal virtual override {
-        if (totalAssets() > depositCap) revert BV_DepositCap(depositCap, totalAssets());
         _afterDepositYield(amount);
         _afterDepositRanges(totalAssets(), amount);
+        if (totalAssets() > depositCap) revert BV_DepositCap(depositCap, totalAssets());
     }
 
     /// @notice handling accounting on rage first before withdrawing assets (unstaking from gauge)
