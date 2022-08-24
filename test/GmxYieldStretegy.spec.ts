@@ -17,6 +17,7 @@ import {
 import addresses, { GMX_ECOSYSTEM_ADDRESSES } from './fixtures/addresses';
 import { gmxYieldStrategyFixture } from './fixtures/gmx-yield-strategy';
 import { activateMainnetFork } from './utils/mainnet-fork';
+import { checkTotalAssetsApproximate } from './utils/vault-helpers';
 
 describe('GmxYieldStrategy', () => {
   let gmxYieldStrategy: GMXYieldStrategy;
@@ -246,6 +247,25 @@ describe('GmxYieldStrategy', () => {
         .redeemToken(addresses.WETH, parseEther('2.1'), 0, whale.address, whale.address);
 
       await expect(tx).to.be.reverted;
+    });
+  });
+
+  describe('check transfer attack', () => {
+    it('checks transfer attack', async () => {
+      await gmxYieldStrategy.updateBaseParams(ethers.constants.MaxUint256, ethers.constants.AddressZero, 0, 0);
+      await sGLP.connect(whale).approve(gmxYieldStrategy.address, ethers.constants.MaxUint256);
+      await sGLP.connect(signers[0]).approve(gmxYieldStrategy.address, ethers.constants.MaxUint256);
+
+      await sGLP.connect(whale).transfer(signers[0].address, parseEther('100'));
+
+      await gmxYieldStrategy.connect(whale).deposit(parseEther('0.1'), whale.address);
+      await checkTotalAssetsApproximate(gmxYieldStrategy, parseEther('0.1'));
+
+      await sGLP.connect(whale).transfer(gmxYieldStrategy.address, parseEther('100'));
+      await checkTotalAssetsApproximate(gmxYieldStrategy, parseEther('0.1'));
+
+      await gmxYieldStrategy.connect(signers[0]).deposit(parseEther('1'), signers[0].address);
+      await checkTotalAssetsApproximate(gmxYieldStrategy, parseEther('1.1'));
     });
   });
 
