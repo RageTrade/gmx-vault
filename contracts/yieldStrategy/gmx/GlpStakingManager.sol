@@ -148,7 +148,7 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
     }
 
     /// @notice stakes the rewards from the staked Glp and claims WETH to buy glp
-    function _harvestFees() internal {
+    function harvestFees() public {
         rewardRouter.handleRewards(
             false, // _shouldClaimGmx
             false, // _shouldStakeGmx
@@ -181,7 +181,7 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
     function _beforeShareAllocation() internal override {
         /// @dev check if the msg.sender is vault
         if (!isVault[msg.sender]) revert GSM_CALLER_NOT_VAULT();
-        _harvestFees();
+        harvestFees();
     }
 
     /* solhint-disable no-empty-blocks */
