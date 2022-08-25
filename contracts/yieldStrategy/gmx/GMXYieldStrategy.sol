@@ -29,14 +29,6 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         uint256 sGLPQuantity,
         uint256 shares
     );
-    event TokenRedeemed(
-        address indexed caller,
-        address indexed owner,
-        address indexed receiver,
-        address token,
-        uint256 sGLPQuantity,
-        uint256 shares
-    );
 
     event GmxParamsUpdated(address stakingManager, uint256 usdcReedemSlippage, uint240 usdcConversionThreshold);
 
@@ -206,7 +198,7 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
 
         rewardRouter.unstakeAndRedeemGlp(address(token), sGLPToRedeem, minTokenOut, receiver);
 
-        emit TokenRedeemed(msg.sender, from, receiver, address(token), sGLPToRedeem, sharesToRedeem);
+        emit TokenWithdrawn(msg.sender, from, receiver, address(token), sGLPToRedeem, sharesToRedeem);
     }
 
     /// @notice allows to withdraw amount for tokens available on gmx
