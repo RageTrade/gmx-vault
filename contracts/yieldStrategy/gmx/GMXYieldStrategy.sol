@@ -148,7 +148,7 @@ contract GMXYieldStrategy is EightyTwentyRangeStrategyVault {
         rewardRouter.unstakeAndRedeemGlp(
             address(rageSettlementToken),
             glpAmountDesired, // glp amount
-            usdcAmountDesired.mulDiv(usdcReedemSlippage, MAX_BPS), // usdc
+            usdcAmountDesired.mulDiv(MAX_BPS - usdcReedemSlippage, MAX_BPS), // usdc
             address(this)
         );
 

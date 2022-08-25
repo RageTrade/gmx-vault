@@ -249,6 +249,23 @@ describe('GmxYieldStrategy', () => {
     });
   });
 
+  describe('check transfer attack', () => {
+    it('checks transfer attack', async () => {
+      await gmxYieldStrategy.updateBaseParams(ethers.constants.MaxUint256, ethers.constants.AddressZero, 0, 0);
+      console.log('whale bal: ', formatEther(await sGLP.balanceOf(whale.address)));
+      await sGLP.connect(whale).approve(gmxYieldStrategy.address, ethers.constants.MaxUint256);
+      await sGLP.connect(signers[0]).approve(gmxYieldStrategy.address, ethers.constants.MaxUint256);
+
+      await sGLP.connect(whale).transfer(signers[0].address, parseEther('100'));
+
+      await gmxYieldStrategy.connect(whale).deposit(parseEther('0.1'), whale.address);
+      await sGLP.connect(whale).transfer(gmxYieldStrategy.address, parseEther('100'));
+
+      await gmxYieldStrategy.connect(signers[0]).deposit(parseEther('1'), signers[0].address);
+      console.log(await gmxYieldStrategy.balanceOf(signers[0].address));
+    });
+  });
+
   describe('compouding rewards and profit', () => {
     it('increases eth rewards, esGMX and multiplier points', () => {
       /**
