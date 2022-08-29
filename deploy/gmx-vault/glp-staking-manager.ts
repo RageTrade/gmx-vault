@@ -22,8 +22,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       name: 'GlpStakingManager',
       symbol: 'GSM',
     },
-    weth: networkInfo.WETH_ADDRESS,
-    usdc: networkInfo.RAGE_SETTLEMENT_TOKEN_ADDRESS ?? (await get('SettlementToken')).address,
+    weth: (await get('WETH')).address,
+    usdc: (await get('SettlementToken')).address,
     rewardRouter: networkInfo.REWARD_ROUTER_ADDRESS,
     feeRecipient: networkInfo.MULTISIG,
   };
@@ -47,4 +47,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 export default func;
 
 func.tags = ['GlpStakingManager'];
-func.dependencies = ['ProxyAdmin', 'GlpStakingManagerLogic', 'SettlementToken'];
+func.dependencies = ['ProxyAdmin', 'GlpStakingManagerLogic', 'SettlementToken', 'WETH'];

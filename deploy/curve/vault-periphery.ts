@@ -1,7 +1,7 @@
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { VaultPeriphery } from '../typechain-types';
-import { getNetworkInfo, waitConfirmations } from './network-info';
+import { VaultPeriphery } from '../../typechain-types';
+import { getNetworkInfo, waitConfirmations } from '../network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
@@ -21,14 +21,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const networkInfo = getNetworkInfo(hre.network.config.chainId);
 
   const initializeArgs: Parameters<VaultPeriphery['initialize']> = [
-    networkInfo.RAGE_SETTLEMENT_TOKEN_ADDRESS ?? (await get('SettlementToken')).address,
-    networkInfo.USDT_ADDRESS,
-    networkInfo.WETH_ADDRESS,
-    networkInfo.CURVE_TRICRYPTO_LP_TOKEN,
+    (await get('SettlementToken')).address,
+    (await get('USDT')).address,
+    (await get('WETH')).address,
+    (await get('CurveTriCryptoLpToken')).address,
     (await get('CurveYieldStrategy')).address,
     networkInfo.UNISWAP_V3_ROUTER_ADDRESS,
-    networkInfo.CURVE_QUOTER,
-    networkInfo.CURVE_TRICRYPTO_POOL,
+    (await get('CurveQuoter')).address,
+    (await get('CurveTriCryptoPool')).address,
     networkInfo.ETH_USD_ORACLE,
   ];
 
@@ -48,4 +48,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 export default func;
 
 func.tags = ['VaultPeriphery'];
-func.dependencies = ['vETH', 'CurveYieldStrategy'];
+func.dependencies = ['vETH', 'CurveYieldStrategy', 'USDT', 'WETH'];
