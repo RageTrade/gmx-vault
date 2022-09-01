@@ -34,8 +34,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       baseVaultInitParams: {
         rageErc4626InitParams: {
           asset: networkInfo.SGLP_ADDRESS,
-          name: '80-20 TriCrypto Strategy',
-          symbol: 'TCS',
+          name: '80-20 Gmx Strategy',
+          symbol: 'GCS',
         },
         ethPoolId,
         swapSimulator: (await get('SwapSimulator')).address,
