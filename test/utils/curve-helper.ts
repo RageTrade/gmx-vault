@@ -158,7 +158,7 @@ export const accrueFees = async (
   // console.log('LP TOKENS FROM CRV FEES (90% CRV swapped): ', lpTokensBefore);
   // console.log('PRICE PER SHARE : ', await curveYieldStrategy.previewMint(10n ** 18n));
 
-  await gauge.claimable_reward_write(address, addresses.CRV);
+  // await gauge.claimable_reward_write(address, addresses.CRV);
 
   // console.log('AFTER ACCRUING FEES : ');
 
