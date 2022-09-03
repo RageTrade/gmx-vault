@@ -565,7 +565,7 @@ describe('CurveYieldStrategy', () => {
         crv.balanceOf(curveYieldStrategy.address),
       ]);
 
-      await curveYieldStrategy.withdrawFees();
+      await curveYieldStrategy.withdrawFees(admin.address);
 
       const [totalAssetsAfterWithdrawFees, crvBalanceAfterWithdrawFees] = await Promise.all([
         curveYieldStrategy.convertToAssets(amount),
@@ -618,7 +618,7 @@ describe('CurveYieldStrategy', () => {
 
       const before = await curveYieldStrategy.totalAssets();
 
-      await curveYieldStrategy.withdrawFees();
+      await curveYieldStrategy.withdrawFees(admin.address);
 
       const after = await curveYieldStrategy.totalAssets();
 
@@ -721,7 +721,7 @@ describe('CurveYieldStrategy', () => {
       await curveYieldStrategy.harvestFees();
       const balBeforeWithdraw = await crv.balanceOf(curveYieldStrategy.address);
 
-      await curveYieldStrategy.withdrawFees();
+      await curveYieldStrategy.withdrawFees(admin.address);
       const balAfterWithdraw = await crv.balanceOf(curveYieldStrategy.address);
 
       // expect(claimable).to.be.eq(balBeforeWithdraw.mul(10));
@@ -772,7 +772,7 @@ describe('CurveYieldStrategy', () => {
 
       expect(tx.logs.find(item => item.topics[0] === reqTopic)?.topics.length).to.be.eq(1);
 
-      await curveYieldStrategy.withdrawFees();
+      await curveYieldStrategy.withdrawFees(admin.address);
       const balAfterWithdraw_ = await crv.balanceOf(curveYieldStrategy.address);
 
       // console.log('CLAIMABLE : ', claimable_)
@@ -791,7 +791,7 @@ describe('CurveYieldStrategy', () => {
       const between = await crv.balanceOf(curveYieldStrategy.address);
 
       expect(between).to.be.eq(balAfterWithdraw_.div(10));
-      await curveYieldStrategy.withdrawFees();
+      await curveYieldStrategy.withdrawFees(admin.address);
 
       expect(tx2.logs.find(item => item.topics[0] === reqTopic)).to.be.eq(undefined);
 

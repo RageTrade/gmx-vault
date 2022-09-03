@@ -254,7 +254,7 @@ describe('Update Implementation', () => {
 
     await increaseBlockTimestamp(3_600 * 24);
     await vaultWithLogicAbi.connect(keeperSigner).rebalance();
-    await vaultWithLogicAbi.connect(ownerSigner).withdrawFees();
+    await vaultWithLogicAbi.connect(ownerSigner).withdrawFees(ownerSigner.address);
 
     const crvBal = await crv.balanceOf(ownerSigner.address);
     expect(crvBal).to.gt(0);

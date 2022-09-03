@@ -130,9 +130,9 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     /// @notice withdraw accumulated CRV fees
-    function withdrawFees() external onlyOwner {
+    function withdrawFees(address feeRecipient) external onlyOwner {
         uint256 bal = crvToken.balanceOf(address(this)) - crvPendingToSwap;
-        crvToken.transfer(msg.sender, bal);
+        crvToken.transfer(feeRecipient, bal);
         emit Logic.FeesWithdrawn(bal);
     }
 
