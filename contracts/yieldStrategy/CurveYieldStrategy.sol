@@ -29,7 +29,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     error CYS_INVALID_SETTER_VALUE();
     error CYS_EXTERAL_CALL_FAILED(string reason);
 
-    IGaugeFactory private constant guageFactory = IGaugeFactory(0xabC000d88f23Bb45525E447528DBF656A9D55bf5);
+    IGaugeFactory private constant GAUGE_FACTORY = IGaugeFactory(0xabC000d88f23Bb45525E447528DBF656A9D55bf5);
 
     IERC20 private usdt; // 6 decimals
     IERC20 private weth; // 18 decimals
@@ -168,7 +168,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     /// @notice claims the accumulated CRV rewards from the gauge, sells CRV rewards for LP tokens and stakes LP tokens
     function _harvestFees() internal override {
         uint256 before = crvToken.balanceOf(address(this));
-        guageFactory.mint(address(gauge));
+        GAUGE_FACTORY.mint(address(gauge));
         gauge.claim_rewards();
         uint256 afterBal = crvToken.balanceOf(address(this));
 
@@ -257,8 +257,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         return Logic.getPriceX128(lpPriceHolder);
     }
 
-    /// @notice migrates funds from curvefi's old gauge to new gauge;
-    ///     TODO add reference to further info
+    /// @notice migrates funds from curvefi's old gauge to new gauge
     /// @dev this method is intended for one time use
     function migrate() external onlyOwner {
         Logic.migrate();
