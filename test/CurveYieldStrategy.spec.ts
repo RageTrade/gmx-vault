@@ -680,7 +680,7 @@ describe('CurveYieldStrategy', () => {
       const curveYieldStrategy = curveYieldStrategyTest.connect(admin);
       await curveYieldStrategy.grantAllowances();
 
-      await curveYieldStrategy.updateCurveParams(2_000, 1_000, 0, 3_000, addresses.CRV_ORACLE);
+      await curveYieldStrategy.updateCurveParams(2_000, 1_000, 0, 3_000, addresses.NEW_GAUGE, addresses.CRV_ORACLE);
       expect(await curveYieldStrategy.FEE()).to.be.eq(BigNumber.from(2000));
     });
 
@@ -691,7 +691,7 @@ describe('CurveYieldStrategy', () => {
       await curveYieldStrategy.grantAllowances();
 
       await expect(
-        curveYieldStrategyTest.updateCurveParams(10_001, 1_000, 0, 3_000, addresses.CRV_ORACLE),
+        curveYieldStrategyTest.updateCurveParams(10_001, 1_000, 0, 3_000, addresses.NEW_GAUGE, addresses.CRV_ORACLE),
       ).to.be.revertedWith('CYS_INVALID_SETTER_VALUE()');
     });
 
@@ -760,7 +760,9 @@ describe('CurveYieldStrategy', () => {
       await hre.network.provider.send('evm_increaseTime', [10_000_000]);
       await hre.network.provider.send('evm_mine', []);
 
-      await curveYieldStrategy.connect(admin).updateCurveParams(1000, 4_000, 0, 100, addresses.CRV_ORACLE);
+      await curveYieldStrategy
+        .connect(admin)
+        .updateCurveParams(1000, 4_000, 0, 100, addresses.NEW_GAUGE, addresses.CRV_ORACLE);
 
       await gauge.claimable_reward_write(curveYieldStrategy.address, crv.address);
       const claimable_ = await gauge.claimable_reward(curveYieldStrategy.address, crv.address);
@@ -786,7 +788,9 @@ describe('CurveYieldStrategy', () => {
       expect(claimable_).to.be.eq(balBeforeWithdraw_);
       expect(balAfterWithdraw_).to.be.eq(claimable_);
 
-      await curveYieldStrategy.connect(admin).updateCurveParams(1000, 4_000, 0, 3_000, addresses.CRV_ORACLE);
+      await curveYieldStrategy
+        .connect(admin)
+        .updateCurveParams(1000, 4_000, 0, 3_000, addresses.NEW_GAUGE, addresses.CRV_ORACLE);
 
       const tx2 = await (await curveYieldStrategy.harvestFees()).wait();
 

@@ -57,6 +57,7 @@ library Logic {
         uint256 stablecoinSlippage,
         uint256 crvHarvestThreshold,
         uint256 crvSlippageTolerance,
+        address indexed gauge,
         address indexed crvOracle
     );
 
@@ -304,5 +305,15 @@ library Logic {
     function _getPriceX128(ILPPriceGetter lpPriceHolder) internal view returns (uint256 priceX128) {
         uint256 pricePerLP = lpPriceHolder.lp_price();
         return pricePerLP.mulDiv(FixedPoint128.Q128, 10**30); // 10**6 / (10**18*10**18)
+    }
+
+    function migrate() external {
+        ICurveGauge oldGauge = ICurveGauge(0x97E2768e8E73511cA874545DC5Ff8067eB19B787);
+        ICurveGauge newGauge = ICurveGauge(0x555766f3da968ecBefa690Ffd49A2Ac02f47aa5f);
+
+        uint256 bal = oldGauge.balanceOf(address(this));
+
+        oldGauge.withdraw(bal);
+        newGauge.deposit(bal);
     }
 }

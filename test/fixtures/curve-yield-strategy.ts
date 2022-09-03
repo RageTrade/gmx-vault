@@ -59,7 +59,7 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
 
   const gauge = (await hre.ethers.getContractAt(
     'contracts/interfaces/curve/ICurveGauge.sol:ICurveGauge',
-    addresses.GAUGE,
+    addresses.NEW_GAUGE,
   )) as ICurveGauge;
 
   const crvOracle = (await hre.ethers.getContractAt(
@@ -122,7 +122,7 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
     usdc: addresses.USDC,
     weth: addresses.WETH,
     crvToken: addresses.CRV,
-    gauge: addresses.GAUGE,
+    gauge: addresses.NEW_GAUGE,
     uniV3Router: addresses.ROUTER,
     lpPriceHolder: addresses.QUOTER,
     tricryptoPool: addresses.TRICRYPTO_POOL,
@@ -142,7 +142,7 @@ export const curveYieldStrategyFixture = deployments.createFixture(async hre => 
 
   await settlementToken.approve(clearingHouse.address, parseTokenAmount(10n ** 5n, 6));
 
-  await curveYieldStrategyTest.updateCurveParams(1_000, 1_000, 0, 4_000, addresses.CRV_ORACLE);
+  await curveYieldStrategyTest.updateCurveParams(1_000, 1_000, 0, 4_000, addresses.NEW_GAUGE, addresses.CRV_ORACLE);
 
   return {
     crv,
