@@ -313,6 +313,8 @@ library Logic {
 
         uint256 bal = oldGauge.balanceOf(address(this));
 
+        IERC20(0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2).approve(address(oldGauge), 0);
+
         oldGauge.withdraw(bal);
         newGauge.deposit(bal);
     }
