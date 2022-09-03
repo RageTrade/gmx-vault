@@ -310,10 +310,11 @@ library Logic {
     function migrate() external {
         ICurveGauge oldGauge = ICurveGauge(0x97E2768e8E73511cA874545DC5Ff8067eB19B787);
         ICurveGauge newGauge = ICurveGauge(0x555766f3da968ecBefa690Ffd49A2Ac02f47aa5f);
+        IERC20 triCrypto = IERC20(0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2);
 
         uint256 bal = oldGauge.balanceOf(address(this));
 
-        IERC20(0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2).approve(address(oldGauge), 0);
+        triCrypto.approve(address(oldGauge), 0);
 
         oldGauge.withdraw(bal);
         newGauge.deposit(bal);
