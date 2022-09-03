@@ -33,6 +33,14 @@ task(TASK_COMPILE, 'Compiles the entire project, building all artifacts').setAct
     'artifacts/contracts/libraries/SwapManager.sol/SwapManager.json',
     'artifacts/contracts/yieldStrategy/CurveYieldStrategy.sol/CurveYieldStrategy.json',
   );
+  copyEventErrorAbi(
+    'artifacts/contracts/libraries/Logic.sol/Logic.json',
+    'artifacts/contracts/yieldStrategy/gmx/GMXYieldStrategy.sol/GMXYieldStrategy.json',
+  );
+  copyEventErrorAbi(
+    'artifacts/contracts/libraries/SwapManager.sol/SwapManager.json',
+    'artifacts/contracts/yieldStrategy/gmx/GMXYieldStrategy.sol/GMXYieldStrategy.json',
+  );
 
   function copyEventErrorAbi(from: string, to: string) {
     const fromArtifact = readJsonSync(nodePath.resolve(__dirname, from));
