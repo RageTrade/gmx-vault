@@ -33,7 +33,7 @@ const within = (value: BigNumber, start: BigNumber, end: BigNumber): Boolean => 
   return false;
 };
 
-describe('EightyTwentyCurveStrategy', () => {
+describe.skip('EightyTwentyCurveStrategy', () => {
   before(async () => {
     await eightyTwentyCurveStrategyFixture();
   });
