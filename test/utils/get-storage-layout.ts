@@ -39,16 +39,17 @@ export async function getStorageLayout(
   throw new Error('Cannot find storage layout');
 }
 
-// export function getEntryFromStorage(storage: StorageEntry[], label: string): StorageEntry;
-// export function getEntryFromStorage(storage: StorageEntry[], astId: number): StorageEntry;
+export function getEntryFromStorage(storage: StorageEntry[], label: string, astId?: number): StorageEntry {
+  const filteredLabel = storage.filter(s => s.label === label);
+  let entry: StorageEntry | undefined;
+  if (filteredLabel.length === 1) {
+    entry = filteredLabel[0];
+  } else {
+    entry = filteredLabel.find(s => s.astId === astId);
+  }
 
-export function getEntryFromStorage(storage: StorageEntry[], astIdOrLabel: string | number): StorageEntry {
-  const entry =
-    typeof astIdOrLabel === 'number'
-      ? storage.find(s => s.astId === astIdOrLabel)
-      : storage.find(s => s.label === astIdOrLabel);
   if (entry === undefined) {
-    throw new Error(`${typeof astIdOrLabel === 'number' ? 'AstId' : 'Label'} ${astIdOrLabel} not found in storage`);
+    throw new Error(`Label ${label}` + (astId !== undefined ? ` with AstId ${astId}` : '') + `not found in storage`);
   }
   return entry;
 }

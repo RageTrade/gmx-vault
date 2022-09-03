@@ -33,7 +33,7 @@ const within = (value: BigNumber, start: BigNumber, end: BigNumber): Boolean => 
   return false;
 };
 
-describe('EightyTwentyCurveStrategy', () => {
+describe.skip('EightyTwentyCurveStrategy', () => {
   before(async () => {
     await eightyTwentyCurveStrategyFixture();
   });
@@ -965,7 +965,7 @@ describe('EightyTwentyCurveStrategy', () => {
       const { crv, usdt, lpToken, curveYieldStrategyTest, triCrypto } = await eightyTwentyCurveStrategyFixture();
       const curveYieldStrategy = curveYieldStrategyTest.connect(admin);
 
-      await curveYieldStrategy.withdrawFees();
+      await curveYieldStrategy.withdrawFees(admin.address);
     });
   });
 });

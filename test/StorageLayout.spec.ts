@@ -116,8 +116,7 @@ describe('StorageLayout', () => {
   function runTestCases(testCases: Array<TestCase>) {
     for (const { label, slot, offset, astId } of testCases) {
       it(`${label} is at ${slot}`, async () => {
-        const astIdOrLabel = astId ?? label;
-        const entry = getEntryFromStorage(storage, astIdOrLabel);
+        const entry = getEntryFromStorage(storage, label, astId);
         expect(+entry.slot).to.eq(slot);
         expect(+entry.offset).to.eq(offset ?? 0);
       });

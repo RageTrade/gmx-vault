@@ -8,6 +8,7 @@ import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadat
 import { EightyTwentyRangeStrategyVault } from '../rangeStrategy/EightyTwentyRangeStrategyVault.sol';
 
 import { ICurveGauge } from '../interfaces/curve/ICurveGauge.sol';
+import { IGaugeFactory } from '../interfaces/curve/IGaugeFactory.sol';
 import { ILPPriceGetter } from '../interfaces/curve/ILPPriceGetter.sol';
 import { ICurveStableSwap } from '../interfaces/curve/ICurveStableSwap.sol';
 
@@ -27,6 +28,8 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
     error CYS_INVALID_SETTER_VALUE();
     error CYS_EXTERAL_CALL_FAILED(string reason);
+
+    IGaugeFactory private constant GAUGE_FACTORY = IGaugeFactory(0xabC000d88f23Bb45525E447528DBF656A9D55bf5);
 
     IERC20 private usdt; // 6 decimals
     IERC20 private weth; // 18 decimals
@@ -85,10 +88,12 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
         uint256 _stablecoinSlippage,
         uint256 _crvHarvestThreshold,
         uint256 _crvSlippageTolerance,
+        ICurveGauge _gauge,
         AggregatorV3Interface _crvOracle
     ) external onlyOwner {
         if (_feeBps < MAX_BPS && _stablecoinSlippage < MAX_BPS && _crvSlippageTolerance < MAX_BPS) {
             FEE = _feeBps;
+            gauge = _gauge;
             crvOracle = _crvOracle;
             crvHarvestThreshold = _crvHarvestThreshold;
             crvSwapSlippageTolerance = _crvSlippageTolerance;
@@ -100,6 +105,7 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
             _stablecoinSlippage,
             _crvHarvestThreshold,
             _crvSlippageTolerance,
+            address(_gauge),
             address(_crvOracle)
         );
     }
@@ -124,9 +130,9 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     }
 
     /// @notice withdraw accumulated CRV fees
-    function withdrawFees() external onlyOwner {
+    function withdrawFees(address feeRecipient) external onlyOwner {
         uint256 bal = crvToken.balanceOf(address(this)) - crvPendingToSwap;
-        crvToken.transfer(msg.sender, bal);
+        crvToken.transfer(feeRecipient, bal);
         emit Logic.FeesWithdrawn(bal);
     }
 
@@ -161,11 +167,15 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
 
     /// @notice claims the accumulated CRV rewards from the gauge, sells CRV rewards for LP tokens and stakes LP tokens
     function _harvestFees() internal override {
-        uint256 claimable = gauge.claimable_reward(address(this), address(crvToken)) + crvPendingToSwap;
+        uint256 before = crvToken.balanceOf(address(this));
+        GAUGE_FACTORY.mint(address(gauge));
+        gauge.claim_rewards();
+        uint256 afterBal = crvToken.balanceOf(address(this));
+
+        uint256 claimable = (afterBal - before) + crvPendingToSwap;
 
         if (claimable > crvHarvestThreshold) {
             uint256 afterDeductions = claimable - ((claimable * FEE) / MAX_BPS);
-            gauge.claim_rewards(address(this));
 
             emit Logic.Harvested(claimable);
 
@@ -203,6 +213,8 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
                 // if external call fails due to any other reason, revert with same
                 else revert CYS_EXTERAL_CALL_FAILED(reason);
             }
+        } else {
+            crvPendingToSwap = claimable;
         }
     }
 
@@ -243,5 +255,11 @@ contract CurveYieldStrategy is EightyTwentyRangeStrategyVault {
     /// @notice gives x128 price of 1 tricrypto LP token
     function getPriceX128() public view override returns (uint256 priceX128) {
         return Logic.getPriceX128(lpPriceHolder);
+    }
+
+    /// @notice migrates funds from curvefi's old gauge to new gauge
+    /// @dev this method is intended for one time use
+    function migrate() external onlyOwner {
+        Logic.migrate();
     }
 }
