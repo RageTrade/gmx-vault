@@ -32,7 +32,7 @@ async function main() {
 
   const oldGauge = (await hre.ethers.getContractAt(
     'contracts/interfaces/curve/ICurveGauge.sol:ICurveGauge',
-    addresses.GAUGE,
+    addresses.OLD_GAUGE,
   )) as ICurveGauge;
 
   const newGauge = (await hre.ethers.getContractAt(
