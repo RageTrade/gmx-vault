@@ -9,6 +9,7 @@ import { IERC20Metadata } from '@openzeppelin/contracts/interfaces/IERC20Metadat
 import { IGlpManager } from 'contracts/interfaces/gmx/IGlpManager.sol';
 import { IVault as IGMXVault } from 'contracts/interfaces/gmx/IVault.sol';
 import { ISGLPExtended } from 'contracts/interfaces/gmx/ISGLPExtended.sol';
+import { IRewardTracker } from 'contracts/interfaces/gmx/IRewardTracker.sol';
 import { IRewardRouterV2 } from 'contracts/interfaces/gmx/IRewardRouterV2.sol';
 import { IGMXBatchingManager } from 'contracts/interfaces/gmx/IGMXBatchingManager.sol';
 import { FullMath } from '@uniswap/v3-core-0.8-support/contracts/libraries/FullMath.sol';
@@ -201,6 +202,17 @@ contract GlpStakingManager is RageERC4626, OwnableUpgradeable {
     /// @notice total assets controlled by this staking manager
     function totalAssets() public view override returns (uint256) {
         return fsGlp.balanceOf(address(this)) + batchingManager.stakingManagerGlpBalance();
+    }
+
+    /// @notice unclaimed WETH rewards of sGlp, esGmx & bnGmx
+    function unclaimedFees() external view returns (uint256) {
+        IRewardTracker feeGmxTracker = IRewardTracker(rewardRouter.feeGmxTracker());
+        IRewardTracker feeGlpTracker = IRewardTracker(rewardRouter.feeGlpTracker());
+
+        uint256 wethGmx = feeGmxTracker.claimable(address(this));
+        uint256 wethGlp = feeGlpTracker.claimable(address(this));
+
+        return wethGmx + wethGlp;
     }
 
     /// @notice converts input token to sGLP
