@@ -282,7 +282,7 @@ describe('Update Implementation', () => {
     await expect(tx3).to.emit(vaultWithLogicAbi, 'EightyTwentyParamsUpdated');
   });
 
-  it.only('tests updating implementation', async () => {
+  it('tests updating implementation', async () => {
     const {
       deployments: { deploy },
     } = hre;
