@@ -965,7 +965,7 @@ describe.skip('EightyTwentyCurveStrategy', () => {
       const { crv, usdt, lpToken, curveYieldStrategyTest, triCrypto } = await eightyTwentyCurveStrategyFixture();
       const curveYieldStrategy = curveYieldStrategyTest.connect(admin);
 
-      await curveYieldStrategy.withdrawFees();
+      await curveYieldStrategy.withdrawFees(admin.address);
     });
   });
 });
