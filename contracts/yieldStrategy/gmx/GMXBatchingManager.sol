@@ -244,7 +244,14 @@ contract GMXBatchingManager is IGMXBatchingManager, OwnableUpgradeable, Pausable
     /// @param gmxVault address of vault
     /// @param account address of user
     function unclaimedShares(IERC4626 gmxVault, address account) external view returns (uint256 shares) {
-        shares = vaultBatchingState[gmxVault].userDeposits[account].unclaimedShares;
+        VaultBatchingState storage vaultState = vaultBatchingState[gmxVault];
+        UserDeposit memory userDeposit = vaultState.userDeposits[account];
+        shares = userDeposit.unclaimedShares;
+
+        if (userDeposit.round < vaultState.currentRound && userDeposit.glpBalance > 0) {
+            RoundDeposit memory roundDeposit = vaultState.roundDeposits[userDeposit.round];
+            shares += userDeposit.glpBalance.mulDiv(roundDeposit.totalShares, roundDeposit.totalGlp).toUint128();
+        }
     }
 
     /// @notice claim the shares received from depositing batch
