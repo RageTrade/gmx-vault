@@ -3,6 +3,7 @@ import 'hardhat-tracer';
 import '@typechain/hardhat';
 import 'hardhat-gas-reporter';
 import 'hardhat-contract-sizer';
+import 'hardhat-live-fork';
 import 'hardhat-deploy';
 import 'solidity-coverage';
 import '@nomiclabs/hardhat-etherscan';
@@ -31,6 +32,14 @@ task(TASK_COMPILE, 'Compiles the entire project, building all artifacts').setAct
   copyEventErrorAbi(
     'artifacts/contracts/libraries/SwapManager.sol/SwapManager.json',
     'artifacts/contracts/yieldStrategy/CurveYieldStrategy.sol/CurveYieldStrategy.json',
+  );
+  copyEventErrorAbi(
+    'artifacts/contracts/libraries/Logic.sol/Logic.json',
+    'artifacts/contracts/yieldStrategy/gmx/GMXYieldStrategy.sol/GMXYieldStrategy.json',
+  );
+  copyEventErrorAbi(
+    'artifacts/contracts/libraries/SwapManager.sol/SwapManager.json',
+    'artifacts/contracts/yieldStrategy/gmx/GMXYieldStrategy.sol/GMXYieldStrategy.json',
   );
 
   function copyEventErrorAbi(from: string, to: string) {
@@ -177,5 +186,11 @@ export default {
   tenderly: {
     project: process.env.TENDERLY_PROJECT,
     username: process.env.TENDERLY_USERNAME,
+  },
+  liveFork: {
+    txMatcher: (tx: any) => {
+      // only replay txs to chainlink eth usd aggregator
+      return tx.to === '0x3607e46698d218B3a5Cae44bF381475C0a5e2ca7';
+    },
   },
 };

@@ -75,7 +75,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   await execute(
     'ClearingHouse',
-    { from: deployer },
+    { from: deployer, log: true },
     'updateProtocolSettings',
     {
       rangeLiquidationFeeFraction: 1500,

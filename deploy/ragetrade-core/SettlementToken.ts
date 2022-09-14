@@ -25,7 +25,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log: true,
   });
 
-  await execute('SettlementToken', { from: deployer }, 'mint', deployer, hre.ethers.BigNumber.from(10).pow(8));
+  await execute(
+    'SettlementToken',
+    { from: deployer, log: true },
+    'mint',
+    deployer,
+    hre.ethers.BigNumber.from(10).pow(8),
+  );
 };
 
 export default func;
