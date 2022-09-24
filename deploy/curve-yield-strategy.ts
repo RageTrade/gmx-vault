@@ -52,7 +52,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     usdt: networkInfo.USDT_ADDRESS,
     weth: networkInfo.WETH_ADDRESS,
     crvToken: networkInfo.CURVE_TOKEN_ADDRESS,
-    gauge: networkInfo.CURVE_GAUGE_ADDRESS,
+    gauge: networkInfo.CURVE_NEW_GAUGE,
     uniV3Router: networkInfo.UNISWAP_V3_ROUTER_ADDRESS,
     lpPriceHolder: networkInfo.CURVE_QUOTER,
     tricryptoPool: networkInfo.CURVE_TRICRYPTO_POOL,
@@ -97,6 +97,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       100, // stablecoinSlippage
       parseUnits('2', 18), // crvHarvestThreshold
       500, // crvSlippageTolerance
+      networkInfo.CURVE_NEW_GAUGE,
       networkInfo.CURVE_USD_ORACLE,
     );
 
