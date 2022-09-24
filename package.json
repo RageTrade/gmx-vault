@@ -1,7 +1,7 @@
 {
-  "name": "@ragetrade/vaults",
-  "version": "1.0.1",
-  "repository": "https://github.com/ragetrade/vaults.git",
+  "name": "@ragetrade/gmx-vault",
+  "version": "1.0.0",
+  "repository": "https://github.com/ragetrade/gmx-vault.git",
   "license": "MIT",
   "scripts": {
     "clean": "hardhat clean",
