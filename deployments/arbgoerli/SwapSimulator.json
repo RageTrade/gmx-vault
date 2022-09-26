@@ -1,0 +1,322 @@
+{
+  "address": "0x4c9D46915Ed7a8e8ef7eaB44E676959CCEc64595",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "uint160",
+          "name": "sqrtPriceLimitX96",
+          "type": "uint160"
+        }
+      ],
+      "name": "InvalidSqrtPriceLimit",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "R",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "T",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "ZeroAmount",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IClearingHouse",
+          "name": "clearingHouse",
+          "type": "address"
+        },
+        {
+          "internalType": "uint32",
+          "name": "poolId",
+          "type": "uint32"
+        },
+        {
+          "internalType": "int256",
+          "name": "amount",
+          "type": "int256"
+        },
+        {
+          "internalType": "uint160",
+          "name": "sqrtPriceLimitX96",
+          "type": "uint160"
+        },
+        {
+          "internalType": "bool",
+          "name": "isNotional",
+          "type": "bool"
+        }
+      ],
+      "name": "simulateSwap",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "int256",
+              "name": "amountSpecified",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "vTokenIn",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "vQuoteIn",
+              "type": "int256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "liquidityFees",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "protocolFees",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint160",
+              "name": "sqrtPriceX96Start",
+              "type": "uint160"
+            },
+            {
+              "internalType": "uint160",
+              "name": "sqrtPriceX96End",
+              "type": "uint160"
+            }
+          ],
+          "internalType": "struct IVPoolWrapper.SwapResult",
+          "name": "swapResult",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "uint160",
+              "name": "sqrtPriceX96Start",
+              "type": "uint160"
+            },
+            {
+              "internalType": "int24",
+              "name": "tickStart",
+              "type": "int24"
+            },
+            {
+              "internalType": "uint8",
+              "name": "feeProtocol",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint128",
+              "name": "liquidityStart",
+              "type": "uint128"
+            },
+            {
+              "internalType": "int24",
+              "name": "tickSpacing",
+              "type": "int24"
+            },
+            {
+              "internalType": "uint24",
+              "name": "fee",
+              "type": "uint24"
+            },
+            {
+              "internalType": "uint256",
+              "name": "value1",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "value2",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct SimulateSwap.Cache",
+          "name": "cache",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "components": [
+                {
+                  "internalType": "uint160",
+                  "name": "sqrtPriceStartX96",
+                  "type": "uint160"
+                },
+                {
+                  "internalType": "int24",
+                  "name": "tickNext",
+                  "type": "int24"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "initialized",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "uint160",
+                  "name": "sqrtPriceNextX96",
+                  "type": "uint160"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "amountIn",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "amountOut",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "feeAmount",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct SimulateSwap.Step",
+              "name": "step",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "int256",
+                  "name": "amountSpecifiedRemaining",
+                  "type": "int256"
+                },
+                {
+                  "internalType": "int256",
+                  "name": "amountCalculated",
+                  "type": "int256"
+                },
+                {
+                  "internalType": "uint160",
+                  "name": "sqrtPriceX96",
+                  "type": "uint160"
+                },
+                {
+                  "internalType": "int24",
+                  "name": "tick",
+                  "type": "int24"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "feeGrowthGlobalIncreaseX128",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint128",
+                  "name": "protocolFee",
+                  "type": "uint128"
+                },
+                {
+                  "internalType": "uint128",
+                  "name": "liquidity",
+                  "type": "uint128"
+                }
+              ],
+              "internalType": "struct SimulateSwap.State",
+              "name": "state",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct SwapSimulator.SwapStepAndState[]",
+          "name": "steps",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IClearingHouse",
+          "name": "clearingHouse",
+          "type": "address"
+        },
+        {
+          "internalType": "uint32",
+          "name": "poolId",
+          "type": "uint32"
+        },
+        {
+          "internalType": "int256",
+          "name": "amount",
+          "type": "int256"
+        },
+        {
+          "internalType": "uint160",
+          "name": "sqrtPriceLimitX96",
+          "type": "uint160"
+        },
+        {
+          "internalType": "bool",
+          "name": "isNotional",
+          "type": "bool"
+        }
+      ],
+      "name": "simulateSwapView",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "int256",
+              "name": "amountSpecified",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "vTokenIn",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "vQuoteIn",
+              "type": "int256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "liquidityFees",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "protocolFees",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint160",
+              "name": "sqrtPriceX96Start",
+              "type": "uint160"
+            },
+            {
+              "internalType": "uint160",
+              "name": "sqrtPriceX96End",
+              "type": "uint160"
+            }
+          ],
+          "internalType": "struct IVPoolWrapper.SwapResult",
+          "name": "swapResult",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "numDeployments": 1
+}
