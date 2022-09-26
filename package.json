@@ -1,6 +1,6 @@
 {
   "name": "@ragetrade/gmx-vault",
-  "version": "1.0.1",
+  "version": "1.0.1-arbgoerli",
   "repository": "https://github.com/ragetrade/gmx-vault.git",
   "license": "MIT",
   "scripts": {
