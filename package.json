@@ -65,7 +65,7 @@
     "hardhat-deploy": "^0.10.5",
     "hardhat-gas-reporter": "^1.0.4",
     "hardhat-live-fork": "^0.1.2",
-    "hardhat-tracer": "^1.1.0-rc.5",
+    "hardhat-tracer": "^1.1.0-rc.9",
     "patch-package": "^6.4.7",
     "prettier": "^2.6.2",
     "solhint": "^3.3.6",

@@ -8,6 +8,18 @@ index fea4f72..7c142a6 100755
  "use strict";
  var __importDefault = (this && this.__importDefault) || function (mod) {
      return (mod && mod.__esModule) ? mod : { "default": mod };
+diff --git a/node_modules/hardhat/internal/hardhat-network/provider/fork/ForkBlockchain.js b/node_modules/hardhat/internal/hardhat-network/provider/fork/ForkBlockchain.js
+index 5aa8404..831aa0a 100644
+--- a/node_modules/hardhat/internal/hardhat-network/provider/fork/ForkBlockchain.js
++++ b/node_modules/hardhat/internal/hardhat-network/provider/fork/ForkBlockchain.js
+@@ -199,6 +199,7 @@ class ForkBlockchain extends BlockchainBase_1.BlockchainBase {
+                 tx = new ReadOnlyValidEIP1559Transaction_1.ReadOnlyValidEIP1559Transaction(new ethereumjs_util_1.Address(transaction.from), (0, rpcToTxData_1.rpcToTxData)(transaction));
+             }
+             else {
++                continue;
+                 throw new errors_1.InternalError(`Unknown transaction type ${transaction.type.toString()}`);
+             }
+             block.transactions.push(tx);
 diff --git a/node_modules/hardhat/internal/hardhat-network/provider/utils/makeForkClient.js b/node_modules/hardhat/internal/hardhat-network/provider/utils/makeForkClient.js
 index 8e94b7c..b45e824 100644
 --- a/node_modules/hardhat/internal/hardhat-network/provider/utils/makeForkClient.js
