@@ -1,16 +1,38 @@
-import { truncate } from '@ragetrade/sdk';
+import { ERC20PresetMinterPauser__factory, getNetworkNameFromChainId, truncate } from '@ragetrade/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { ClearingHouseLens__factory, ClearingHouse__factory } from '../typechain-types';
-import { waitConfirmations } from './network-info';
+import { getNetworkInfo, waitConfirmations } from './network-info';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
-    deployments: { deploy, get, execute },
+    deployments: { deploy, get, execute, save },
     getNamedAccounts,
   } = hre;
 
   const { deployer } = await getNamedAccounts();
+
+  try {
+    const networkName = getNetworkNameFromChainId(hre.network.config.chainId ?? 31337);
+    // this throws if core deployment does not contain a proxy admin
+    const tricryptoDeploymentAddress =
+      require(`@ragetrade/tricrypto-vault/deployments/${networkName}/CollateralToken.json`).address;
+    await save('CollateralToken', {
+      abi: ERC20PresetMinterPauser__factory.abi,
+      address: tricryptoDeploymentAddress,
+    });
+    console.log('Saved CollateralToken address:', tricryptoDeploymentAddress);
+
+    return; // if already deployed in other repo then reuse same collateral token
+  } catch {
+    // if doesn't contain a proxy admin then deploy a new one
+    console.log('No core deployment found');
+    try {
+      // should throw if no ProxyAdmin deployment found
+      await get('ProxyAdmin');
+      return; // if already deployed then don't (even if openzeppelin version updated)
+    } catch {}
+  }
 
   const CollateralTokenDeployment = await deploy('CollateralToken', {
     contract: 'ERC20PresetMinterPauser',

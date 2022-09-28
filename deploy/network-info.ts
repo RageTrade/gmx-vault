@@ -113,7 +113,7 @@ export const arbitrumGoerliInfo: () => NetworkInfo = () => ({
   RAGE_ETH_VTOKEN_ADDRESS: require('@ragetrade/core/deployments/arbgoerli/ETH-vToken.json').address,
   RAGE_SWAP_SIMULATOR: require('@ragetrade/core/deployments/arbgoerli/SwapSimulator.json').address,
 
-  ETH_USD_ORACLE: '0xef54dB43b6b7a28A26041577716b1aD5F78f699E',
+  ETH_USD_ORACLE: '0xAB55677e97D211c260C84807293D8F7cf7ddDff9',
 
   WETH_ADDRESS: '0x007354C7DD2EB9f636204192092d7221c9d988F2',
   USDT_ADDRESS: '0x37E607e9f601D718A50221f62b3f4816D0e6352e',
