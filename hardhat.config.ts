@@ -143,7 +143,6 @@ export default {
       '@ragetrade/core/contracts/protocol/RageTradeFactory.sol',
       '@ragetrade/core/contracts/protocol/wrapper/VPoolWrapper.sol',
       '@ragetrade/core/contracts/protocol/insurancefund/InsuranceFund.sol',
-      '@ragetrade/core/contracts/lens/SwapSimulator.sol',
       '@ragetrade/core/contracts/oracles/ChainlinkOracle.sol',
       '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol',
       '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol',
